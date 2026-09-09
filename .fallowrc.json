@@ -1,0 +1,118 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "entry": [
+    "src/index.ts"
+  ],
+  "rules": {
+    "unused-dependencies": "warn",
+    "private-type-leaks": "error",
+    "require-suppression-reason": "error"
+  },
+  "health": {
+    "coverage": "coverage/coverage-final.json",
+    "maxCrap": 5,
+    "maxCyclomatic": 5,
+    "maxCognitive": 5,
+    "maxUnitSize": 20,
+    "crapRefactorBand": 2
+  },
+  "production": {
+    "health": true
+  },
+  "boundaries": {
+    "zones": [
+      {
+        "name": "error",
+        "patterns": [
+          "src/error/**"
+        ]
+      },
+      {
+        "name": "parser",
+        "patterns": [
+          "src/parser/**"
+        ]
+      },
+      {
+        "name": "recognition",
+        "patterns": [
+          "src/recognition/**"
+        ]
+      },
+      {
+        "name": "rule",
+        "patterns": [
+          "src/rule/**"
+        ]
+      },
+      {
+        "name": "token",
+        "patterns": [
+          "src/token/**"
+        ]
+      },
+      {
+        "name": "type",
+        "patterns": [
+          "src/type/**"
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "from": "error",
+        "allow": []
+      },
+      {
+        "from": "parser",
+        "allow": [
+          "error",
+          "recognition",
+          "rule",
+          "token",
+          "type"
+        ]
+      },
+      {
+        "from": "recognition",
+        "allow": []
+      },
+      {
+        "from": "rule",
+        "allow": [
+          "recognition"
+        ]
+      },
+      {
+        "from": "token",
+        "allow": []
+      },
+      {
+        "from": "type",
+        "allow": [
+          "token"
+        ]
+      }
+    ]
+  },
+  "ignoreDependencies": [
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "eslint-config-airbnb-base",
+    "eslint-config-prettier",
+    "eslint-import-resolver-typescript",
+    "eslint-plugin-deprecation",
+    "eslint-plugin-import",
+    "eslint-plugin-json-format",
+    "eslint-plugin-prettier",
+    "fallow"
+  ],
+  "ignoreExports": [
+    {
+      "file": "src/**/*.ts",
+      "exports": [
+        "*"
+      ]
+    }
+  ]
+}
