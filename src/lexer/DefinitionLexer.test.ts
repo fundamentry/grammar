@@ -11,6 +11,7 @@ const definitionFor = (
   type: string,
   test: (element: string) => boolean = element => element === type
 ): Token.Definition<string, TestToken> => ({
+  type,
   test,
   create: element => new TestToken(type, element, element),
 });
@@ -36,7 +37,7 @@ describe('DefinitionLexer', () => {
       const create = vi.fn(
         (element: string) => new TestToken('a', element, element)
       );
-      const lexer = new DefinitionLexer([{ test, create }]);
+      const lexer = new DefinitionLexer([{ type: 'a', test, create }]);
 
       Array.from(lexer.tokenize(['a']));
 

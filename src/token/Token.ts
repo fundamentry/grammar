@@ -1,5 +1,6 @@
 export namespace Token {
   export interface Definition<Element, T extends Token> {
+    type: ReturnType<T['type']>;
     test(element: Element): boolean;
     create(element: Element): T;
   }
