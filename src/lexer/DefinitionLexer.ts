@@ -28,4 +28,10 @@ export class DefinitionLexer<
   definitions() {
     return this.#definitions;
   }
+
+  hasDefinitionFor(token: Token): boolean {
+    return this.#definitions.some(
+      definition => definition.type === token.type()
+    );
+  }
 }
