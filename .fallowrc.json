@@ -64,6 +64,13 @@
         "allow": []
       },
       {
+        "from": "lexer",
+        "allow": [
+          "error",
+          "token"
+        ]
+      },
+      {
         "from": "parser",
         "allow": [
           "error",
