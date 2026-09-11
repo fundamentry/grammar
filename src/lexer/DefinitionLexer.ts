@@ -24,4 +24,8 @@ export class DefinitionLexer<
       yield definition.create(element);
     }
   }
+
+  definitions() {
+    return this.#definitions;
+  }
 }

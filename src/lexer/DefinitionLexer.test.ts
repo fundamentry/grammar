@@ -118,4 +118,14 @@ describe('DefinitionLexer', () => {
       expect(Array.from(lexer.tokenize(''))).toEqual([]);
     });
   });
+
+  describe('definitions', () => {
+    it('must return the definitions the lexer was constructed with', () => {
+      const first = definitionFor('a');
+      const second = definitionFor('b');
+      const lexer = new DefinitionLexer([first, second]);
+
+      expect(lexer.definitions()).toEqual([first, second]);
+    });
+  });
 });
