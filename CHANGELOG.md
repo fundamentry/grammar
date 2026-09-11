@@ -1,3 +1,11 @@
+## 1.2.0
+
+### 🚀 Features
+
+- add 'type' attribute to 'Token.Definition' ([705117e](https://github.com/fundamentry/grammar/commit/705117e))
+- add 'definitions' method on 'DefinitionLexer' ([3084d3b](https://github.com/fundamentry/grammar/commit/3084d3b))
+- add 'hasDefinitionFor' method on 'DefinitionLexer' ([3c3ca20](https://github.com/fundamentry/grammar/commit/3c3ca20))
+
 ## 1.1.0
 
 ### 🚀 Features
