@@ -1,3 +1,9 @@
+## 1.3.0
+
+### 🚀 Features
+
+- change input argument in 'hasDefinitionFor' method on 'DefinitionLexer' ([e76e893](https://github.com/fundamentry/grammar/commit/e76e893))
+
 ## 1.2.0
 
 ### 🚀 Features
