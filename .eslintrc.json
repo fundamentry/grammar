@@ -52,7 +52,8 @@
           }
         ],
         "class-methods-use-this": "off",
-        "no-plusplus": "off"
+        "no-plusplus": "off",
+        "no-restricted-syntax": "off"
       }
     },
     {
