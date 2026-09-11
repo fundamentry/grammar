@@ -28,6 +28,12 @@
         ]
       },
       {
+        "name": "lexer",
+        "patterns": [
+          "src/lexer/**"
+        ]
+      },
+      {
         "name": "parser",
         "patterns": [
           "src/parser/**"
@@ -50,12 +56,6 @@
         "patterns": [
           "src/token/**"
         ]
-      },
-      {
-        "name": "type",
-        "patterns": [
-          "src/type/**"
-        ]
       }
     ],
     "rules": [
@@ -67,10 +67,10 @@
         "from": "parser",
         "allow": [
           "error",
+          "lexer",
           "recognition",
           "rule",
-          "token",
-          "type"
+          "token"
         ]
       },
       {
@@ -86,12 +86,6 @@
       {
         "from": "token",
         "allow": []
-      },
-      {
-        "from": "type",
-        "allow": [
-          "token"
-        ]
       }
     ]
   },

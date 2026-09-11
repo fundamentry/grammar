@@ -1,9 +1,9 @@
 import { Tape } from '@fundamentry/stream';
 
 import { ParseError } from '#project/error';
+import { type Lexer } from '#project/lexer';
 import { Matched } from '#project/recognition';
 import { type Rule } from '#project/rule';
-import { type Lexer } from '#project/type';
 
 export class Parser<Source, Value> {
   readonly #rule: Rule<Value>;

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ParseError } from '#project/error';
+import { type Lexer } from '#project/lexer';
 import { Rule } from '#project/rule';
 import { Token } from '#project/token';
-import { type Lexer } from '#project/type';
 
 import { Parser } from './Parser.js';
 
