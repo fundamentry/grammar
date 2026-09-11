@@ -5,15 +5,16 @@ import { type Lexer } from './Lexer.js';
 
 export class DefinitionLexer<
   Element,
+  Type extends string = string,
   Source extends Iterable<Element> = Iterable<Element>,
 > implements Lexer<Source> {
-  readonly #definitions: readonly Token.Definition<Element, Token>[];
+  readonly #definitions: readonly Token.Definition<Element, Token<Type>>[];
 
-  constructor(definitions: readonly Token.Definition<Element, Token>[]) {
+  constructor(definitions: readonly Token.Definition<Element, Token<Type>>[]) {
     this.#definitions = definitions;
   }
 
-  *tokenize(source: Source): Iterable<Token> {
+  *tokenize(source: Source): Iterable<Token<Type>> {
     for (const element of source) {
       const definition = this.#definitions.find(candidate =>
         candidate.test(element)
@@ -29,9 +30,7 @@ export class DefinitionLexer<
     return this.#definitions;
   }
 
-  hasDefinitionFor(token: Token): boolean {
-    return this.#definitions.some(
-      definition => definition.type === token.type()
-    );
+  hasDefinitionFor(type: Type): boolean {
+    return this.#definitions.some(definition => definition.type === type);
   }
 }

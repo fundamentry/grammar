@@ -136,13 +136,13 @@ describe('DefinitionLexer', () => {
         definitionFor('b'),
       ]);
 
-      expect(lexer.hasDefinitionFor(new TestToken('b', 'b', 'b'))).toBe(true);
+      expect(lexer.hasDefinitionFor('b')).toBe(true);
     });
 
     it('must return false when no definition matches the token type', () => {
       const lexer = new DefinitionLexer([definitionFor('a')]);
 
-      expect(lexer.hasDefinitionFor(new TestToken('z', 'z', 'z'))).toBe(false);
+      expect(lexer.hasDefinitionFor('z')).toBe(false);
     });
   });
 });
