@@ -188,6 +188,24 @@ describe('Rule', () => {
     });
   });
 
+  describe('required', () => {
+    it('must return the matched value', () => {
+      const input = new Tape([1]);
+      const rule = Rule.matching(isNumber).optional().required();
+
+      expectMatched(rule.derive(input), 1);
+      expect(input.tell()).toBe(1);
+    });
+
+    it('must fail without consuming when the value is undefined', () => {
+      const input = new Tape(['a']);
+      const rule = Rule.matching(isNumber).optional().required();
+
+      expectUnmatched(rule.derive(input));
+      expect(input.tell()).toBe(0);
+    });
+  });
+
   describe('filter', () => {
     it('must call the predicate with the matched value exactly once and keep a value that satisfies it', () => {
       const predicate = vi.fn(value => value % 2 === 0);

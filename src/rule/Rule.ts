@@ -82,6 +82,12 @@ export class Rule<T> {
     });
   }
 
+  required(): Rule<NonNullable<T>> {
+    return this.filter(
+      (value): value is NonNullable<T> => value !== undefined && value !== null
+    );
+  }
+
   filter<S extends T>(predicate: (value: T) => value is S): Rule<S>;
 
   filter(predicate: (value: T) => boolean): Rule<T>;
