@@ -1,3 +1,9 @@
+## 1.5.0
+
+### 🚀 Features
+
+- add 'or' rule modifier ([b31f71f](https://github.com/fundamentry/grammar/commit/b31f71f))
+
 ## 1.4.0
 
 ### 🚀 Features
