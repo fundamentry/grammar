@@ -247,6 +247,32 @@ describe('Rule', () => {
     });
   });
 
+  describe('or', () => {
+    it('must return the value from this rule when it matches', () => {
+      const input = new Tape([1]);
+      const rule = Rule.matching(isNumber).or(Rule.matching(isString));
+
+      expectMatched(rule.derive(input), 1);
+      expect(input.tell()).toBe(1);
+    });
+
+    it('must try the other rule when this one fails', () => {
+      const input = new Tape(['a']);
+      const rule = Rule.matching(isNumber).or(Rule.matching(isString));
+
+      expectMatched(rule.derive(input), 'a');
+      expect(input.tell()).toBe(1);
+    });
+
+    it('must fail without consuming when neither rule matches', () => {
+      const input = new Tape([true]);
+      const rule = Rule.matching(isNumber).or(Rule.matching(isString));
+
+      expectUnmatched(rule.derive(input));
+      expect(input.tell()).toBe(0);
+    });
+  });
+
   describe('matching', () => {
     it('must consume and return the value when the predicate matches', () => {
       const input = new Tape([1, 'a']);

@@ -102,6 +102,10 @@ export class Rule<T> {
     });
   }
 
+  or<R>(other: Rule<R>): Rule<T | R> {
+    return Rule.oneOf(this, other);
+  }
+
   static matching<T>(predicate: (value: unknown) => value is T): Rule<T> {
     return new Rule<T>(input => {
       const value = input.consumeIf(predicate);
