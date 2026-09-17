@@ -1,3 +1,9 @@
+## 1.4.0
+
+### 🚀 Features
+
+- add 'required' rule modifier ([bf48451](https://github.com/fundamentry/grammar/commit/bf48451))
+
 ## 1.3.0
 
 ### 🚀 Features
