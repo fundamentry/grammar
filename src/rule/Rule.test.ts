@@ -326,6 +326,24 @@ describe('Rule', () => {
     });
   });
 
+  describe('precededBy', () => {
+    it("must return this rule's value when both rules match", () => {
+      const input = new Tape(['a', 1]);
+      const rule = Rule.matching(isNumber).precededBy(Rule.matching(isString));
+
+      expectMatched(rule.derive(input), 1);
+      expect(input.tell()).toBe(2);
+    });
+
+    it('must fail and restore the input position when the other rule fails', () => {
+      const input = new Tape([1, 2]);
+      const rule = Rule.matching(isNumber).precededBy(Rule.matching(isString));
+
+      expectUnmatched(rule.derive(input));
+      expect(input.tell()).toBe(0);
+    });
+  });
+
   describe('matching', () => {
     it('must consume and return the value when the predicate matches', () => {
       const input = new Tape([1, 'a']);

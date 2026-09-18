@@ -114,6 +114,10 @@ export class Rule<T> {
     return Rule.sequence(this, other).map(([value]) => value);
   }
 
+  precededBy<R>(other: Rule<R>): Rule<T> {
+    return Rule.sequence(other, this).map(([, value]) => value);
+  }
+
   static matching<T>(predicate: (value: unknown) => value is T): Rule<T> {
     return new Rule<T>(input => {
       const value = input.consumeIf(predicate);
