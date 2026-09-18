@@ -344,6 +344,40 @@ describe('Rule', () => {
     });
   });
 
+  describe('join', () => {
+    it('must join the matched array values with the given separator', () => {
+      const input = new Tape(['a', 'b', 'c']);
+      const rule = Rule.matching(isString).many().join('-');
+
+      expectMatched(rule.derive(input), 'a-b-c');
+      expect(input.tell()).toBe(3);
+    });
+
+    it('must default to joining with an empty separator', () => {
+      const input = new Tape(['a', 'b']);
+      const rule = Rule.matching(isString).many().join();
+
+      expectMatched(rule.derive(input), 'ab');
+      expect(input.tell()).toBe(2);
+    });
+
+    it('must join arrays of any element type by stringifying each value', () => {
+      const input = new Tape([1, 2, 3]);
+      const rule = Rule.matching(isNumber).many().join(',');
+
+      expectMatched(rule.derive(input), '1,2,3');
+      expect(input.tell()).toBe(3);
+    });
+
+    it('must fail without consuming when the underlying rule is unmatched', () => {
+      const input = new Tape([1]);
+      const rule = Rule.matching(isNumber).times(nonNegative(2)).join(',');
+
+      expectUnmatched(rule.derive(input));
+      expect(input.tell()).toBe(0);
+    });
+  });
+
   describe('matching', () => {
     it('must consume and return the value when the predicate matches', () => {
       const input = new Tape([1, 'a']);

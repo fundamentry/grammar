@@ -118,6 +118,10 @@ export class Rule<T> {
     return Rule.sequence(other, this).map(([, value]) => value);
   }
 
+  join<U>(this: Rule<U[]>, separator = ''): Rule<string> {
+    return this.map(values => values.join(separator));
+  }
+
   static matching<T>(predicate: (value: unknown) => value is T): Rule<T> {
     return new Rule<T>(input => {
       const value = input.consumeIf(predicate);
