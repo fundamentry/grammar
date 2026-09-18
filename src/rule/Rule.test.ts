@@ -378,6 +378,38 @@ describe('Rule', () => {
     });
   });
 
+  describe('reduce', () => {
+    it('must reduce the matched array values with the given reducer and initial value', () => {
+      const input = new Tape([1, 2, 3]);
+      const rule = Rule.matching(isNumber)
+        .many()
+        .reduce((sum, value) => sum + value, 0);
+
+      expectMatched(rule.derive(input), 6);
+      expect(input.tell()).toBe(3);
+    });
+
+    it('must return the initial value without consuming when the array is empty', () => {
+      const input = new Tape(['a']);
+      const rule = Rule.matching(isNumber)
+        .many()
+        .reduce((sum, value) => sum + value, 0);
+
+      expectMatched(rule.derive(input), 0);
+      expect(input.tell()).toBe(0);
+    });
+
+    it('must fail without consuming when the underlying rule is unmatched', () => {
+      const input = new Tape([1]);
+      const rule = Rule.matching(isNumber)
+        .times(nonNegative(2))
+        .reduce((sum, value) => sum + value, 0);
+
+      expectUnmatched(rule.derive(input));
+      expect(input.tell()).toBe(0);
+    });
+  });
+
   describe('matching', () => {
     it('must consume and return the value when the predicate matches', () => {
       const input = new Tape([1, 'a']);

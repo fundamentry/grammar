@@ -122,6 +122,14 @@ export class Rule<T> {
     return this.map(values => values.join(separator));
   }
 
+  reduce<U, A>(
+    this: Rule<U[]>,
+    reducer: (accumulator: A, value: U, index: number) => A,
+    initial: A
+  ): Rule<A> {
+    return this.map(values => values.reduce(reducer, initial));
+  }
+
   static matching<T>(predicate: (value: unknown) => value is T): Rule<T> {
     return new Rule<T>(input => {
       const value = input.consumeIf(predicate);
