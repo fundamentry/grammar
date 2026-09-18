@@ -50,12 +50,6 @@
         "patterns": [
           "src/rule/**"
         ]
-      },
-      {
-        "name": "token",
-        "patterns": [
-          "src/token/**"
-        ]
       }
     ],
     "rules": [
@@ -66,8 +60,7 @@
       {
         "from": "lexer",
         "allow": [
-          "error",
-          "token"
+          "error"
         ]
       },
       {
@@ -76,8 +69,7 @@
           "error",
           "lexer",
           "recognition",
-          "rule",
-          "token"
+          "rule"
         ]
       },
       {
@@ -89,10 +81,6 @@
         "allow": [
           "recognition"
         ]
-      },
-      {
-        "from": "token",
-        "allow": []
       }
     ]
   },

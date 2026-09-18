@@ -1,5 +1,3 @@
-import { type Token } from '#project/token';
-
-export interface Lexer<Source = string> {
+export interface Lexer<Source, Token> {
   tokenize(source: Source): Iterable<Token>;
 }

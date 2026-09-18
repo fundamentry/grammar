@@ -3,16 +3,26 @@ import { describe, expect, it, vi } from 'vitest';
 import { ParseError } from '#project/error';
 import { type Lexer } from '#project/lexer';
 import { Rule } from '#project/rule';
-import { Token } from '#project/token';
 
 import { Parser } from './Parser.js';
 
-class TestToken extends Token {}
+interface Token<Type extends string = string> {
+  type: Type;
+  value: unknown;
+}
+
+const token = <Type extends string>(
+  type: Type,
+  value: unknown
+): Token<Type> => ({ type, value });
 
 const isType =
-  (type: string) =>
-  (token: unknown): token is TestToken =>
-    token instanceof TestToken && token.type() === type;
+  <Type extends string>(type: Type) =>
+  (candidate: unknown): candidate is Token<Type> =>
+    typeof candidate === 'object' &&
+    candidate !== null &&
+    'type' in candidate &&
+    candidate.type === type;
 
 const expectParseError = (thrown: unknown, message: string) => {
   expect(thrown).toBeInstanceOf(ParseError);
@@ -20,8 +30,8 @@ const expectParseError = (thrown: unknown, message: string) => {
   if (thrown instanceof ParseError) expect(thrown.message).toBe(message);
 };
 
-const parseAndCatch = <Source, Value>(
-  parser: Parser<Source, Value>,
+const parseAndCatch = <Source, Value, Element>(
+  parser: Parser<Source, Value, Element>,
   source: Source
 ) => {
   try {
@@ -34,26 +44,23 @@ const parseAndCatch = <Source, Value>(
 describe('Parser', () => {
   describe('parse', () => {
     it('must return the matched value when the grammar matches all tokens', () => {
-      const lexer: Lexer = {
-        tokenize: () => [new TestToken('NUMBER', '1', 1)],
+      const lexer: Lexer<string, Token> = {
+        tokenize: () => [token('NUMBER', 1)],
       };
-      const rule = Rule.matching(isType('NUMBER')).map(token => token.value());
+      const rule = Rule.matching(isType('NUMBER')).map(match => match.value);
       const parser = new Parser(rule, lexer);
 
       expect(parser.parse('1')).toBe(1);
     });
 
     it('must combine multiple tokens according to the grammar', () => {
-      const lexer: Lexer = {
-        tokenize: () => [
-          new TestToken('NUMBER', '1', 1),
-          new TestToken('STRING', 'a', 'a'),
-        ],
+      const lexer: Lexer<string, Token> = {
+        tokenize: () => [token('NUMBER', 1), token('STRING', 'a')],
       };
       const rule = Rule.sequence(
         Rule.matching(isType('NUMBER')),
         Rule.matching(isType('STRING'))
-      ).map(([number, string]) => [number.value(), string.value()]);
+      ).map(([number, string]) => [number.value, string.value]);
       const parser = new Parser(rule, lexer);
 
       expect(parser.parse('1a')).toEqual([1, 'a']);
@@ -62,7 +69,7 @@ describe('Parser', () => {
     it('must call tokenize with the exact source exactly once', () => {
       const source = Symbol('source');
       const tokenize = vi.fn(() => []);
-      const lexer: Lexer<symbol> = { tokenize };
+      const lexer: Lexer<symbol, Token> = { tokenize };
       const parser = new Parser(Rule.sequence(), lexer);
 
       parser.parse(source);
@@ -72,8 +79,8 @@ describe('Parser', () => {
     });
 
     it('must call derive on the rule exactly once', () => {
-      const lexer: Lexer = {
-        tokenize: () => [new TestToken('NUMBER', '1', 1)],
+      const lexer: Lexer<string, Token> = {
+        tokenize: () => [token('NUMBER', 1)],
       };
       const rule = Rule.matching(isType('NUMBER'));
       const derive = vi.spyOn(rule, 'derive');
@@ -85,8 +92,8 @@ describe('Parser', () => {
     });
 
     it('must throw when the grammar does not match', () => {
-      const lexer: Lexer = {
-        tokenize: () => [new TestToken('STRING', 'a', 'a')],
+      const lexer: Lexer<string, Token> = {
+        tokenize: () => [token('STRING', 'a')],
       };
       const rule = Rule.matching(isType('NUMBER'));
       const parser = new Parser(rule, lexer);
@@ -98,11 +105,8 @@ describe('Parser', () => {
     });
 
     it('must throw when the grammar matches only a prefix of the tokens', () => {
-      const lexer: Lexer = {
-        tokenize: () => [
-          new TestToken('NUMBER', '1', 1),
-          new TestToken('NUMBER', '2', 2),
-        ],
+      const lexer: Lexer<string, Token> = {
+        tokenize: () => [token('NUMBER', 1), token('NUMBER', 2)],
       };
       const rule = Rule.matching(isType('NUMBER'));
       const parser = new Parser(rule, lexer);
@@ -114,7 +118,7 @@ describe('Parser', () => {
     });
 
     it('must succeed on an empty token stream when the rule accepts zero tokens', () => {
-      const lexer: Lexer = { tokenize: () => [] };
+      const lexer: Lexer<string, Token> = { tokenize: () => [] };
       const rule = Rule.sequence().map(() => 'empty');
       const parser = new Parser(rule, lexer);
 
@@ -122,7 +126,7 @@ describe('Parser', () => {
     });
 
     it('must throw "does not match" on an empty token stream when the rule requires at least one token', () => {
-      const lexer: Lexer = { tokenize: () => [] };
+      const lexer: Lexer<string, Token> = { tokenize: () => [] };
       const rule = Rule.matching(isType('NUMBER'));
       const parser = new Parser(rule, lexer);
 
@@ -134,8 +138,8 @@ describe('Parser', () => {
 
     it('must propagate an error thrown by the rule without wrapping it', () => {
       const error = new Error('boom');
-      const lexer: Lexer = {
-        tokenize: () => [new TestToken('NUMBER', '1', 1)],
+      const lexer: Lexer<string, Token> = {
+        tokenize: () => [token('NUMBER', 1)],
       };
       const rule = new Rule(() => {
         throw error;
@@ -147,7 +151,7 @@ describe('Parser', () => {
 
     it('must propagate an error thrown by the lexer without wrapping it', () => {
       const error = new Error('boom');
-      const lexer: Lexer = {
+      const lexer: Lexer<string, Token> = {
         tokenize: () => {
           throw error;
         },
@@ -159,11 +163,10 @@ describe('Parser', () => {
     });
 
     it('must work with a non-string Source type', () => {
-      const lexer: Lexer<readonly number[]> = {
-        tokenize: source =>
-          source.map(value => new TestToken('NUMBER', String(value), value)),
+      const lexer: Lexer<readonly number[], Token> = {
+        tokenize: source => source.map(value => token('NUMBER', value)),
       };
-      const rule = Rule.matching(isType('NUMBER')).map(token => token.value());
+      const rule = Rule.matching(isType('NUMBER')).map(match => match.value);
       const parser = new Parser(rule, lexer);
 
       expect(parser.parse([42])).toBe(42);
@@ -171,8 +174,8 @@ describe('Parser', () => {
 
     it('must return the exact value produced by the rule', () => {
       const value = Symbol('value');
-      const lexer: Lexer = {
-        tokenize: () => [new TestToken('NUMBER', '1', 1)],
+      const lexer: Lexer<string, Token> = {
+        tokenize: () => [token('NUMBER', 1)],
       };
       const rule = Rule.matching(isType('NUMBER')).map(() => value);
       const parser = new Parser(rule, lexer);
@@ -181,7 +184,7 @@ describe('Parser', () => {
     });
 
     it('must return undefined when it is the value the rule legitimately produces', () => {
-      const lexer: Lexer = { tokenize: () => [] };
+      const lexer: Lexer<string, Token> = { tokenize: () => [] };
       const rule = Rule.matching(isType('NUMBER')).optional();
       const parser = new Parser(rule, lexer);
 
@@ -189,14 +192,28 @@ describe('Parser', () => {
     });
 
     it('must be reusable across multiple parse calls', () => {
-      const lexer: Lexer<number> = {
-        tokenize: value => [new TestToken('NUMBER', String(value), value)],
+      const lexer: Lexer<number, Token> = {
+        tokenize: value => [token('NUMBER', value)],
       };
-      const rule = Rule.matching(isType('NUMBER')).map(token => token.value());
+      const rule = Rule.matching(isType('NUMBER')).map(match => match.value);
       const parser = new Parser(rule, lexer);
 
       expect(parser.parse(1)).toBe(1);
       expect(parser.parse(2)).toBe(2);
+    });
+
+    it('must work when Elements are plain primitive values rather than structured objects', () => {
+      const isDigit = (value: unknown): value is string =>
+        typeof value === 'string' && /^[0-9]$/.test(value);
+      const lexer: Lexer<string, string> = {
+        tokenize: source => source.split(''),
+      };
+      const rule = Rule.matching(isDigit)
+        .many()
+        .map(digits => Number(digits.join('')));
+      const parser = new Parser(rule, lexer);
+
+      expect(parser.parse('42')).toBe(42);
     });
   });
 });

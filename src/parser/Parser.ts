@@ -5,12 +5,12 @@ import { type Lexer } from '#project/lexer';
 import { Matched } from '#project/recognition';
 import { type Rule } from '#project/rule';
 
-export class Parser<Source, Value> {
+export class Parser<Source, Value, Token> {
   readonly #rule: Rule<Value>;
 
-  readonly #lexer: Lexer<Source>;
+  readonly #lexer: Lexer<Source, Token>;
 
-  constructor(rule: Rule<Value>, lexer: Lexer<Source>) {
+  constructor(rule: Rule<Value>, lexer: Lexer<Source, Token>) {
     this.#rule = rule;
     this.#lexer = lexer;
   }
