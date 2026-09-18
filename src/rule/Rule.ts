@@ -88,6 +88,10 @@ export class Rule<T> {
     );
   }
 
+  default(fallback: () => NonNullable<T>): Rule<NonNullable<T>> {
+    return this.map(value => value ?? fallback());
+  }
+
   filter<S extends T>(predicate: (value: T) => value is S): Rule<S>;
 
   filter(predicate: (value: T) => boolean): Rule<T>;

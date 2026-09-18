@@ -206,6 +206,41 @@ describe('Rule', () => {
     });
   });
 
+  describe('default', () => {
+    it('must return the matched value', () => {
+      const input = new Tape([1]);
+      const rule = Rule.matching(isNumber)
+        .optional()
+        .default(() => 0);
+
+      expectMatched(rule.derive(input), 1);
+      expect(input.tell()).toBe(1);
+    });
+
+    it('must return the fallback value without consuming when unmatched', () => {
+      const input = new Tape(['a']);
+      const rule = Rule.matching(isNumber)
+        .optional()
+        .default(() => 0);
+
+      expectMatched(rule.derive(input), 0);
+      expect(input.tell()).toBe(0);
+    });
+
+    it('must only invoke the fallback callback when unmatched', () => {
+      const fallback = vi.fn(() => 0);
+      const matchedInput = new Tape([1]);
+      const unmatchedInput = new Tape(['a']);
+      const rule = Rule.matching(isNumber).optional().default(fallback);
+
+      expectMatched(rule.derive(matchedInput), 1);
+      expect(fallback).not.toHaveBeenCalled();
+
+      expectMatched(rule.derive(unmatchedInput), 0);
+      expect(fallback).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('filter', () => {
     it('must call the predicate with the matched value exactly once and keep a value that satisfies it', () => {
       const predicate = vi.fn(value => value % 2 === 0);
