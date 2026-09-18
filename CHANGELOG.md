@@ -1,3 +1,13 @@
+## 1.6.0
+
+### 🚀 Features
+
+- add 'default' rule modifier ([f54734f](https://github.com/fundamentry/grammar/commit/f54734f))
+- add 'followedBy' rule modifier ([170cf53](https://github.com/fundamentry/grammar/commit/170cf53))
+- add 'precededBy' rule modifier ([23c7289](https://github.com/fundamentry/grammar/commit/23c7289))
+- add 'join' rule modifier ([6bf9845](https://github.com/fundamentry/grammar/commit/6bf9845))
+- add 'reduce' rule modifier ([c2b2a0d](https://github.com/fundamentry/grammar/commit/c2b2a0d))
+
 ## 1.5.0
 
 ### 🚀 Features
