@@ -1,3 +1,13 @@
+# 2.0.0
+
+### 🚀 Features
+
+- ⚠️  generalise 'Lexer' and 'Parser' over arbitrary tokens ([e9555ab](https://github.com/fundamentry/grammar/commit/e9555ab))
+
+### ⚠️  Breaking Changes
+
+- generalise 'Lexer' and 'Parser' over arbitrary tokens  ([e9555ab](https://github.com/fundamentry/grammar/commit/e9555ab))
+
 ## 1.6.0
 
 ### 🚀 Features
