@@ -59,7 +59,8 @@
   },
   "dependencies": {
     "@fundamentry/number": "catalog:",
-    "@fundamentry/stream": "catalog:"
+    "@fundamentry/stream": "catalog:",
+    "@fundamentry/trait": "catalog:"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

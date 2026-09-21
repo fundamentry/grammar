@@ -40,6 +40,12 @@
         ]
       },
       {
+        "name": "printer",
+        "patterns": [
+          "src/printer/**"
+        ]
+      },
+      {
         "name": "recognition",
         "patterns": [
           "src/recognition/**"
@@ -71,6 +77,10 @@
           "recognition",
           "rule"
         ]
+      },
+      {
+        "from": "printer",
+        "allow": []
       },
       {
         "from": "recognition",

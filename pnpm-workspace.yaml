@@ -6,6 +6,7 @@ catalog:
   '@fundamentry/eslint-config-typescript': 1.1.11
   '@fundamentry/number': 1.0.3
   '@fundamentry/stream': 1.1.0
+  '@fundamentry/trait': 1.1.0
   '@fundamentry/typescript-config': 2.0.0
   '@nx/js': 23.2.1
   '@typescript-eslint/eslint-plugin': 8.70.0
@@ -39,3 +40,4 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - '@fundamentry/number@1.0.3'
   - '@fundamentry/stream@1.1.0'
+  - '@fundamentry/trait@1.1.0'
