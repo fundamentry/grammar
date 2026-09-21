@@ -1,3 +1,9 @@
+## 2.1.0
+
+### 🚀 Features
+
+- implement 'Printer' ([73556db](https://github.com/fundamentry/grammar/commit/73556db))
+
 # 2.0.0
 
 ### 🚀 Features
