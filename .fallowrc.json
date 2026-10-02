@@ -57,6 +57,12 @@
         ]
       },
       {
+        "name": "production",
+        "patterns": [
+          "src/production/**"
+        ]
+      },
+      {
         "name": "recognition",
         "patterns": [
           "src/recognition/**"
@@ -104,6 +110,12 @@
       {
         "from": "printer",
         "allow": []
+      },
+      {
+        "from": "production",
+        "allow": [
+          "codec"
+        ]
       },
       {
         "from": "recognition",
