@@ -27,6 +27,12 @@
   "boundaries": {
     "zones": [
       {
+        "name": "codec",
+        "patterns": [
+          "src/codec/**"
+        ]
+      },
+      {
         "name": "error",
         "patterns": [
           "src/error/**"
@@ -70,6 +76,12 @@
       }
     ],
     "rules": [
+      {
+        "from": "codec",
+        "allow": [
+          "error"
+        ]
+      },
       {
         "from": "error",
         "allow": []

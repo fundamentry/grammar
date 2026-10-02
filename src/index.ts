@@ -1,3 +1,4 @@
+export * from '#project/codec';
 export * from '#project/error';
 export * from '#project/lexer';
 export * from '#project/parser';
