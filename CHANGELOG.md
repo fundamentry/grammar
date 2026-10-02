@@ -1,3 +1,16 @@
+## 2.2.0
+
+### 🚀 Features
+
+- implement 'Symbol', 'Terminal', and 'Nonterminal' ([ace3a95](https://github.com/fundamentry/grammar/commit/ace3a95))
+- implement 'Codec' ([d02af38](https://github.com/fundamentry/grammar/commit/d02af38))
+- implement 'Production' ([91bb5a7](https://github.com/fundamentry/grammar/commit/91bb5a7))
+
+### 🩹 Fixes
+
+- resolve internal imports to compiled declarations for consumers ([602a6bc](https://github.com/fundamentry/grammar/commit/602a6bc))
+- exclude test files from the published package ([d03bbef](https://github.com/fundamentry/grammar/commit/d03bbef))
+
 ## 2.1.0
 
 ### 🚀 Features
