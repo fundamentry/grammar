@@ -60,7 +60,11 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@fundamentry/category": "catalog:",
+    "@fundamentry/coproduct": "catalog:",
     "@fundamentry/number": "catalog:",
+    "@fundamentry/range": "catalog:",
+    "@fundamentry/scalar": "catalog:",
     "@fundamentry/stream": "catalog:",
     "@fundamentry/trait": "catalog:"
   },

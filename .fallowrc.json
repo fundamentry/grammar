@@ -61,6 +61,12 @@
         "patterns": [
           "src/rule/**"
         ]
+      },
+      {
+        "name": "symbol",
+        "patterns": [
+          "src/symbol/**"
+        ]
       }
     ],
     "rules": [
@@ -95,6 +101,12 @@
         "from": "rule",
         "allow": [
           "recognition"
+        ]
+      },
+      {
+        "from": "symbol",
+        "allow": [
+          "error"
         ]
       }
     ]

@@ -4,3 +4,4 @@ export * from '#project/parser';
 export * from '#project/printer';
 export * from '#project/recognition';
 export * from '#project/rule';
+export * from '#project/symbol';
