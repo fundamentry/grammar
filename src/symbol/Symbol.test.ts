@@ -51,6 +51,24 @@ describe('Symbol', () => {
     });
   });
 
+  describe('instanceof', () => {
+    it('must recognise an instance of its own class and of Symbol', () => {
+      expect(stub(ZERO)).toBeInstanceOf(Stub);
+      expect(stub(ZERO)).toBeInstanceOf(Symbol);
+    });
+
+    it('must not recognise an instance of a different symbol class', () => {
+      expect(new Twin(new Repetition([ZERO]))).not.toBeInstanceOf(Stub);
+    });
+
+    it.each([
+      ['a non-object', 0],
+      ['an object it did not construct', Object.create(Stub.prototype)],
+    ])('must not recognise %s', (_, value) => {
+      expect(value).not.toBeInstanceOf(Stub);
+    });
+  });
+
   describe('prism', () => {
     const prism = Stub.prism();
 
@@ -82,6 +100,12 @@ describe('Symbol', () => {
         expect(() => prism.review({} as unknown as Stub)).toThrow(
           PrintMismatchError
         );
+      });
+
+      it('must throw for an instance of a different symbol class', () => {
+        expect(() =>
+          prism.review(new Twin(new Repetition([ZERO])) as unknown as Stub)
+        ).toThrow(PrintMismatchError);
       });
 
       it('must mention the value and the class name in the error message', () => {

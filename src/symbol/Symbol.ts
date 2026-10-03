@@ -19,8 +19,15 @@ export abstract class Symbol<out Elements extends Node = Node>
       );
   }
 
-  static [globalThis.Symbol.hasInstance](value: unknown): value is Symbol {
-    return value instanceof Object && #elements in value;
+  static [globalThis.Symbol.hasInstance]<S extends Symbol>(
+    this: abstract new (...args: never) => S,
+    value: unknown
+  ): value is S {
+    return (
+      value instanceof Object &&
+      #elements in value &&
+      Function.prototype[globalThis.Symbol.hasInstance].call(this, value)
+    );
   }
 
   static prism<Elements extends Node, S extends Symbol<Elements>>(
