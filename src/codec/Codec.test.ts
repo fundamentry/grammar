@@ -3,150 +3,103 @@ import { assert, describe, expect, it, vi } from 'vitest';
 import { Prism } from '@fundamentry/category';
 import { Failure, type Result, Success } from '@fundamentry/coproduct';
 import { nonNegativeInteger, positiveInfinity } from '@fundamentry/number';
+import { CodePoint } from '@fundamentry/scalar';
 import { Point } from '@fundamentry/stream';
+import { type Equatable, type Stringable } from '@fundamentry/trait';
+
+import { PrintMismatchError } from '#project/error';
+import {
+  Literal,
+  type Node,
+  Option,
+  Repetition,
+  Sequence,
+} from '#project/tree';
 
 import { Codec } from './Codec.js';
 
-const decode = <A>(
-  codec: Codec<string, A, string>,
+class Octet implements Equatable<unknown>, Stringable {
+  readonly #value: number;
+
+  constructor(value: number) {
+    this.#value = value;
+  }
+
+  equals(other: unknown): boolean {
+    return other instanceof Octet && this.#value === other.#value;
+  }
+
+  toString(): string {
+    return String(this.#value);
+  }
+}
+
+const codePoints = (text: string): readonly CodePoint[] =>
+  Array.from(text, CodePoint.of);
+
+const literal = (character: string): Literal =>
+  new Literal(CodePoint.of(character));
+
+const literals = (text: string): readonly Literal[] =>
+  Array.from(text, literal);
+
+const parse = <A extends Node>(
+  codec: Codec<CodePoint, A, string>,
   input: string
-): Result<A, Point.Step<string, string>> =>
-  codec
-    .parse(Point.of(input))
-    .flatMap(({ value, rest }) =>
-      rest.isAtEnd()
-        ? new Success(value)
-        : new Failure({ value: 'Expected end of input', rest })
-    );
+): Codec.Parsed<CodePoint, A, string> =>
+  codec.parse(Point.of(codePoints(input)));
 
-const digit = Codec.token(
-  Prism.fromPredicate<string, string>(
-    candidate => /^[0-9]$/u.test(candidate),
-    candidate => `Expected a digit, got '${candidate}'`
-  )
-);
+const decode = <A extends Node>(
+  codec: Codec<CodePoint, A, string>,
+  input: string
+): Result<A, Point.Step<CodePoint, string>> =>
+  parse(codec, input).flatMap(({ value, rest }) =>
+    rest.isAtEnd()
+      ? new Success(value)
+      : new Failure({ value: 'Expected end of input', rest })
+  );
 
-const letter = Codec.token(
-  Prism.fromPredicate<string, string>(
-    candidate => /^[a-z]$/u.test(candidate),
-    candidate => `Expected a letter, got '${candidate}'`
-  )
-);
+const character = (pattern: RegExp, name: string) =>
+  Codec.token(
+    Prism.of<CodePoint, Literal, string>(
+      candidate =>
+        pattern.test(candidate.toString())
+          ? new Success(new Literal(candidate))
+          : new Failure(`Expected ${name}, got '${candidate.toString()}'`),
+      value => value.codePoint()
+    )
+  );
 
-const joined = Prism.of<readonly string[], string, string>(
-  values => new Success(values.join('')),
-  value => Array.from(value)
-);
+const digit = character(/^[0-9]$/u, 'a digit');
+const letter = character(/^[a-z]$/u, 'a letter');
+
+const error = new Error('Oops!');
 
 const mockedCodec = () => {
-  const preview = vi.fn<(token: string) => Result<string, string>>();
-
-  const review = vi.fn<(value: string) => string>();
+  const preview = vi.fn<(token: CodePoint) => Result<Literal, string>>();
+  const review = vi.fn<(value: Literal) => CodePoint>();
 
   return { codec: Codec.token(Prism.of(preview, review)), preview, review };
 };
 
 describe('Codec', () => {
   describe('token', () => {
-    const { codec, preview, review } = mockedCodec();
-
-    const input = 'x';
-
     it('must report end of input', () => {
-      const outcome = decode(codec, '');
+      const outcome = decode(digit, '');
 
       assert(!outcome.ok());
       expect(outcome.error().value).toBe('Expected a token, got end of input');
     });
 
     it('must parse a token into whatever the prism previews it as', () => {
-      preview.mockReturnValueOnce(new Success('ok'));
-
-      expect(decode(codec, input)).toEqual(new Success('ok'));
+      expect(decode(digit, '1')).toEqual(new Success(literal('1')));
     });
 
-    it('must report the rejection message for a token that fails the predicate', () => {
-      preview.mockReturnValueOnce(new Failure('nope'));
-
-      const outcome = decode(codec, input);
+    it('must report the rejection message for a token the prism does not accept', () => {
+      const outcome = decode(digit, 'x');
 
       assert(!outcome.ok());
-      expect(outcome.error().value).toBe('nope');
-    });
-
-    it('must reject printing a value that does not belong to it', () => {
-      review.mockReturnValueOnce(input);
-      preview.mockReturnValueOnce(new Failure('nope'));
-
-      expect(codec.print('ignored')).toEqual(
-        new Failure(`'${input}' does not belong to this rule`)
-      );
-    });
-  });
-
-  describe('tuple', () => {
-    const a = mockedCodec();
-    const b = mockedCodec();
-
-    const codec = Codec.tuple(a.codec, b.codec);
-
-    const input = 'xy';
-
-    it('must parse its elements in sequence', () => {
-      a.preview.mockReturnValueOnce(new Success('A'));
-      b.preview.mockReturnValueOnce(new Success('B'));
-
-      expect(decode(codec, input)).toEqual(new Success(['A', 'B']));
-    });
-
-    it('must fail at the first element its codec does not accept, without trying the rest', () => {
-      a.preview.mockReturnValueOnce(new Failure('nope'));
-
-      const outcome = decode(codec, input);
-
-      assert(!outcome.ok());
-      expect(outcome.error().value).toBe('nope');
-      expect(b.preview).not.toHaveBeenCalled();
-    });
-
-    it('must print its elements in sequence', () => {
-      a.review.mockReturnValueOnce('A');
-      a.preview.mockReturnValueOnce(new Success('A'));
-      b.review.mockReturnValueOnce('B');
-      b.preview.mockReturnValueOnce(new Success('B'));
-
-      expect(codec.print(['a', 'b'])).toEqual(new Success(['A', 'B']));
-    });
-
-    it('must reject printing the wrong number of elements', () => {
-      expect(
-        codec.print(['a'] as unknown as readonly [string, string]).ok()
-      ).toBe(false);
-    });
-
-    it('must reject printing an element its codec does not accept', () => {
-      a.review.mockReturnValueOnce('A');
-      a.preview.mockReturnValueOnce(new Failure('nope'));
-
-      expect(codec.print(['a', 'b']).ok()).toBe(false);
-    });
-  });
-
-  describe('parse', () => {
-    const error = new Error('Oops!');
-
-    it('must round-trip a whole input', () => {
-      const codec = digit.oneOrMore().refine(joined);
-
-      expect(decode(codec, '123')).toEqual(new Success('123'));
-      expect(codec.print('123')).toEqual(new Success(['1', '2', '3']));
-    });
-
-    it('must reject trailing input, reporting where it starts', () => {
-      const outcome = decode(digit.oneOrMore(), '12a');
-
-      assert(!outcome.ok());
-      expect(outcome.error().rest.peek()).toBe('a');
+      expect(outcome.error().value).toBe("Expected a digit, got 'x'");
     });
 
     it('must propagate an error thrown while previewing a token', () => {
@@ -158,71 +111,110 @@ describe('Codec', () => {
 
       expect(() => decode(codec, 'x')).toThrow(error);
     });
-  });
 
-  describe('print', () => {
-    const { codec, preview, review } = mockedCodec();
+    it('must print a value through review', () => {
+      expect(digit.print(literal('1'))).toEqual(new Success(codePoints('1')));
+    });
 
-    const input = 'x';
+    it('must reject printing a value that does not belong to it', () => {
+      expect(digit.print(literal('x'))).toEqual(
+        new Failure("'x' does not belong to this rule")
+      );
+    });
 
-    const error = new Error('Oops!');
+    it('must report a print mismatch raised by review', () => {
+      const { codec, review } = mockedCodec();
 
-    it('must wrap a successful print in a Success', () => {
-      review.mockReturnValueOnce('reviewed');
-      preview.mockReturnValueOnce(new Success('reviewed'));
+      review.mockImplementationOnce(() => {
+        throw new PrintMismatchError('nope');
+      });
 
-      expect(codec.print(input)).toEqual(new Success(['reviewed']));
+      expect(codec.print(literal('x'))).toEqual(new Failure('nope'));
     });
 
     it('must propagate errors that are not print mismatches', () => {
+      const { codec, review } = mockedCodec();
+
       review.mockImplementationOnce(() => {
         throw error;
       });
 
-      expect(() => codec.print(input)).toThrow(error);
+      expect(() => codec.print(literal('x'))).toThrow(error);
+    });
+  });
+
+  describe('tuple', () => {
+    const codec = Codec.tuple(digit, letter);
+
+    it('must parse its elements in sequence', () => {
+      expect(decode(codec, '1a')).toEqual(
+        new Success(new Sequence([literal('1'), literal('a')]))
+      );
     });
 
-    it('must not fall back to the next alternative on other errors', () => {
-      review.mockImplementationOnce(() => {
-        throw error;
-      });
+    it('must fail at the first element its codec does not accept, without trying the rest', () => {
+      const { codec: rest, preview } = mockedCodec();
 
-      const { codec: alternative } = mockedCodec();
+      const outcome = decode(Codec.tuple(digit, rest), 'xy');
 
-      expect(() => codec.or(alternative).print(input)).toThrow(error);
+      assert(!outcome.ok());
+      expect(outcome.error().value).toBe("Expected a digit, got 'x'");
+      expect(preview).not.toHaveBeenCalled();
     });
 
-    it('must propagate an error thrown while attempting the fallback branch', () => {
-      review.mockReturnValueOnce('reviewed');
-      preview.mockReturnValueOnce(new Failure('nope'));
+    it('must print its elements in sequence', () => {
+      expect(codec.print(new Sequence([literal('1'), literal('a')]))).toEqual(
+        new Success(codePoints('1a'))
+      );
+    });
 
-      const { codec: alternative, review: alternativeReview } = mockedCodec();
+    it('must reject printing the wrong number of elements', () => {
+      expect(
+        codec
+          .print(
+            new Sequence([literal('1')]) as unknown as Sequence<
+              readonly [Literal, Literal]
+            >
+          )
+          .ok()
+      ).toBe(false);
+    });
 
-      alternativeReview.mockImplementationOnce(() => {
-        throw error;
-      });
+    it('must reject printing an element its codec does not accept', () => {
+      expect(codec.print(new Sequence([literal('a'), literal('a')])).ok()).toBe(
+        false
+      );
+    });
+  });
 
-      expect(() => codec.or(alternative).print(input)).toThrow(error);
-      expect(alternativeReview).toHaveBeenCalled();
+  describe('parse', () => {
+    it('must round-trip a whole input', () => {
+      const codec = digit.oneOrMore();
+
+      expect(decode(codec, '123')).toEqual(
+        new Success(new Repetition(literals('123')))
+      );
+      expect(codec.print(new Repetition(literals('123')))).toEqual(
+        new Success(codePoints('123'))
+      );
+    });
+
+    it('must reject trailing input, reporting where it starts', () => {
+      const outcome = decode(digit.oneOrMore(), '12a');
+
+      assert(!outcome.ok());
+      expect(outcome.error().rest.peek()).toEqual(CodePoint.of('a'));
     });
   });
 
   describe('or', () => {
+    const codec = digit.or(letter);
+
     it('must report the alternative that got furthest', () => {
       const bracketed = Codec.tuple(
-        Codec.token(
-          Prism.fromPredicate<string, string>(
-            candidate => candidate === '[',
-            candidate => `Expected '[', got '${candidate}'`
-          )
-        ),
+        character(/^\[$/u, "'['"),
         digit,
-        Codec.token(
-          Prism.fromPredicate<string, string>(
-            candidate => candidate === ']',
-            candidate => `Expected ']', got '${candidate}'`
-          )
-        )
+        character(/^\]$/u, "']'")
       );
       const outcome = decode(bracketed.or(letter), '[1x');
 
@@ -231,106 +223,81 @@ describe('Codec', () => {
     });
 
     it('must report the other alternative when it got at least as far', () => {
-      const a = mockedCodec();
-      const b = mockedCodec();
-
-      a.preview.mockReturnValueOnce(new Failure('a-nope'));
-      b.preview.mockReturnValueOnce(new Failure('b-nope'));
-
-      const outcome = decode(a.codec.or(b.codec), 'x');
+      const outcome = decode(codec, '!');
 
       assert(!outcome.ok());
-      expect(outcome.error().value).toBe('b-nope');
+      expect(outcome.error().value).toBe("Expected a letter, got '!'");
     });
 
     it('must fall back to the next alternative when the first fails', () => {
-      const a = mockedCodec();
-      const b = mockedCodec();
-
-      a.preview.mockReturnValueOnce(new Failure('nope'));
-      b.preview.mockReturnValueOnce(new Success('ok'));
-
-      expect(decode(a.codec.or(b.codec), 'x')).toEqual(new Success('ok'));
+      expect(decode(codec, 'x')).toEqual(new Success(literal('x')));
     });
 
     it('must not try the next alternative when the first succeeds', () => {
-      const a = mockedCodec();
-      const b = mockedCodec();
+      const { codec: next, preview } = mockedCodec();
 
-      a.preview.mockReturnValueOnce(new Success('ok'));
-
-      expect(decode(a.codec.or(b.codec), 'x')).toEqual(new Success('ok'));
-      expect(b.preview).not.toHaveBeenCalled();
+      expect(decode(digit.or(next), '1')).toEqual(new Success(literal('1')));
+      expect(preview).not.toHaveBeenCalled();
     });
 
     it('must print with the branch that accepts the value', () => {
-      const a = mockedCodec();
-      const b = mockedCodec();
-
-      a.review.mockReturnValueOnce('rejected');
-      a.preview.mockReturnValueOnce(new Failure('nope'));
-      b.review.mockReturnValueOnce('accepted');
-      b.preview.mockReturnValueOnce(new Success('accepted'));
-
-      expect(a.codec.or(b.codec).print('value')).toEqual(
-        new Success(['accepted'])
-      );
+      expect(codec.print(literal('x'))).toEqual(new Success(codePoints('x')));
     });
 
     it('must not print the next alternative when the first succeeds', () => {
-      const a = mockedCodec();
-      const b = mockedCodec();
+      const { codec: next, review } = mockedCodec();
 
-      a.review.mockReturnValueOnce('accepted');
-      a.preview.mockReturnValueOnce(new Success('accepted'));
-
-      expect(a.codec.or(b.codec).print('value')).toEqual(
-        new Success(['accepted'])
+      expect(digit.or(next).print(literal('1'))).toEqual(
+        new Success(codePoints('1'))
       );
-      expect(b.review).not.toHaveBeenCalled();
+      expect(review).not.toHaveBeenCalled();
     });
 
     it('must reject a value no branch accepts', () => {
-      const a = mockedCodec();
-      const b = mockedCodec();
+      expect(codec.print(literal('!')).ok()).toBe(false);
+    });
 
-      a.review.mockReturnValueOnce('rejected');
-      a.preview.mockReturnValueOnce(new Failure('nope'));
-      b.review.mockReturnValueOnce('rejected');
-      b.preview.mockReturnValueOnce(new Failure('nope'));
+    it('must not fall back to the next alternative on other errors', () => {
+      const { codec: first, review } = mockedCodec();
 
-      expect(a.codec.or(b.codec).print('value').ok()).toBe(false);
+      review.mockImplementationOnce(() => {
+        throw error;
+      });
+
+      expect(() => first.or(letter).print(literal('x'))).toThrow(error);
+    });
+
+    it('must propagate an error thrown while attempting the fallback branch', () => {
+      const { codec: next, review } = mockedCodec();
+
+      review.mockImplementationOnce(() => {
+        throw error;
+      });
+
+      expect(() => digit.or(next).print(literal('x'))).toThrow(error);
+      expect(review).toHaveBeenCalled();
     });
   });
 
   describe('optional', () => {
+    const codec = digit.optional();
+
     it('must parse the value when the rule matches', () => {
-      const { codec, preview } = mockedCodec();
-
-      preview.mockReturnValueOnce(new Success('ok'));
-
-      expect(decode(codec.optional(), 'x')).toEqual(new Success('ok'));
+      expect(decode(codec, '1')).toEqual(new Success(new Option(literal('1'))));
     });
 
-    it('must parse nothing when the rule does not match', () => {
-      const { codec } = mockedCodec();
-
-      expect(decode(codec.optional(), '')).toEqual(new Success(undefined));
+    it('must parse an absent value when the rule does not match', () => {
+      expect(decode(codec, '')).toEqual(new Success(new Option<Literal>()));
     });
 
-    it('must print nothing for undefined', () => {
-      const { codec } = mockedCodec();
-
-      expect(codec.optional().print(undefined)).toEqual(new Success([]));
+    it('must print nothing for an absent value', () => {
+      expect(codec.print(new Option())).toEqual(new Success([]));
     });
 
     it('must print the value when present', () => {
-      const { codec, review, preview } = mockedCodec();
-
-      review.mockReturnValueOnce('ok');
-      preview.mockReturnValueOnce(new Success('ok'));
-
-      expect(codec.optional().print('value')).toEqual(new Success(['ok']));
+      expect(codec.print(new Option(literal('1')))).toEqual(
+        new Success(codePoints('1'))
+      );
     });
   });
 
@@ -344,23 +311,24 @@ describe('Codec', () => {
     it('must succeed with exactly the minimum when it equals the maximum', () => {
       expect(
         decode(digit.repeat(nonNegativeInteger(2), nonNegativeInteger(2)), '12')
-      ).toEqual(new Success(['1', '2']));
+      ).toEqual(new Success(new Repetition(literals('12'))));
     });
 
     it('must stop on a zero-width match without collecting it', () => {
-      const outcome = digit.optional().many().parse(Point.of('a'));
+      const outcome = parse(digit.optional().many(), 'a');
 
       assert(outcome.ok());
-      expect(outcome.value().value).toEqual([]);
+      expect(outcome.value().value).toEqual(new Repetition([]));
     });
 
     it('must stop at the maximum', () => {
-      const outcome = digit
-        .repeat(nonNegativeInteger(1), nonNegativeInteger(2))
-        .parse(Point.of('123'));
+      const outcome = parse(
+        digit.repeat(nonNegativeInteger(1), nonNegativeInteger(2)),
+        '123'
+      );
 
       assert(outcome.ok());
-      expect(outcome.value().value).toEqual(['1', '2']);
+      expect(outcome.value().value).toEqual(new Repetition(literals('12')));
     });
 
     it('must fail with the first failure when fewer than the minimum match', () => {
@@ -374,32 +342,38 @@ describe('Codec', () => {
     });
 
     it('must collect zero-width matches up to the minimum', () => {
-      const outcome = digit
-        .optional()
-        .repeat(nonNegativeInteger(2), positiveInfinity(Infinity))
-        .parse(Point.of('a'));
+      const outcome = parse(
+        digit
+          .optional()
+          .repeat(nonNegativeInteger(2), positiveInfinity(Infinity)),
+        'a'
+      );
 
       assert(outcome.ok());
-      expect(outcome.value().value).toEqual([undefined, undefined]);
+      expect(outcome.value().value).toEqual(
+        new Repetition([new Option<Literal>(), new Option<Literal>()])
+      );
     });
 
     it('must reject printing a count outside its bounds', () => {
       expect(
         digit
           .repeat(nonNegativeInteger(1), nonNegativeInteger(3))
-          .print(['1', '2', '3', '4'])
+          .print(new Repetition(literals('1234')))
           .ok()
       ).toBe(false);
     });
   });
 
   describe('many', () => {
-    it('must succeed with an empty array when there are no matches', () => {
-      expect(decode(digit.many(), '')).toEqual(new Success([]));
+    it('must succeed with an empty repetition when there are no matches', () => {
+      expect(decode(digit.many(), '')).toEqual(new Success(new Repetition([])));
     });
 
     it('must collect every consecutive match', () => {
-      expect(decode(digit.many(), '123')).toEqual(new Success(['1', '2', '3']));
+      expect(decode(digit.many(), '123')).toEqual(
+        new Success(new Repetition(literals('123')))
+      );
     });
 
     it('must be stack-safe on long input', () => {
@@ -416,7 +390,7 @@ describe('Codec', () => {
 
     it('must collect one or more matches', () => {
       expect(decode(digit.oneOrMore(), '123')).toEqual(
-        new Success(['1', '2', '3'])
+        new Success(new Repetition(literals('123')))
       );
     });
   });
@@ -424,19 +398,18 @@ describe('Codec', () => {
   describe('refine', () => {
     const octet = digit
       .repeat(nonNegativeInteger(1), nonNegativeInteger(3))
-      .refine(joined)
       .refine(
-        Prism.of<string, number, string>(
-          value =>
-            Number(value) <= 255
-              ? new Success(Number(value))
-              : new Failure(`${value} exceeds 255`),
-          value => String(value)
+        Prism.of<Repetition<Literal>, Octet, string>(
+          digits =>
+            Number(digits.toString()) <= 255
+              ? new Success(new Octet(Number(digits.toString())))
+              : new Failure(`${digits.toString()} exceeds 255`),
+          value => new Repetition(literals(value.toString()))
         )
       );
 
     it('must accept a semantically valid value', () => {
-      expect(decode(octet, '255')).toEqual(new Success(255));
+      expect(decode(octet, '255')).toEqual(new Success(new Octet(255)));
     });
 
     it('must reject a semantically invalid value at the start of its span', () => {
@@ -444,11 +417,17 @@ describe('Codec', () => {
 
       assert(!outcome.ok());
       expect(outcome.error().value).toBe('256 exceeds 255');
-      expect(outcome.error().rest.peek()).toBe('2');
+      expect(outcome.error().rest.peek()).toEqual(CodePoint.of('2'));
+    });
+
+    it('must reject printing a value its prism does not accept back', () => {
+      expect(octet.print(new Octet(256))).toEqual(
+        new Failure("'256' does not belong to this rule")
+      );
     });
 
     it('must print through review', () => {
-      expect(octet.print(42)).toEqual(new Success(['4', '2']));
+      expect(octet.print(new Octet(42))).toEqual(new Success(codePoints('42')));
     });
   });
 });

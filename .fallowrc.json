@@ -94,7 +94,8 @@
       {
         "from": "codec",
         "allow": [
-          "error"
+          "error",
+          "tree"
         ]
       },
       {
@@ -123,7 +124,8 @@
       {
         "from": "production",
         "allow": [
-          "codec"
+          "codec",
+          "tree"
         ]
       },
       {
