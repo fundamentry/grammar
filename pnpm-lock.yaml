@@ -34,14 +34,14 @@ catalogs:
       specifier: 1.1.0
       version: 1.1.0
     '@fundamentry/scalar':
-      specifier: 2.0.0
-      version: 2.0.0
+      specifier: 3.0.0
+      version: 3.0.0
     '@fundamentry/stream':
       specifier: 1.3.0
       version: 1.3.0
     '@fundamentry/trait':
-      specifier: 1.1.0
-      version: 1.1.0
+      specifier: 2.0.0
+      version: 2.0.0
     '@fundamentry/typescript-config':
       specifier: 2.0.0
       version: 2.0.0
@@ -136,13 +136,13 @@ importers:
         version: 1.1.0
       '@fundamentry/scalar':
         specifier: 'catalog:'
-        version: 2.0.0
+        version: 3.0.0
       '@fundamentry/stream':
         specifier: 'catalog:'
         version: 1.3.0
       '@fundamentry/trait':
         specifier: 'catalog:'
-        version: 1.1.0
+        version: 2.0.0
     devDependencies:
       '@commitlint/cli':
         specifier: 'catalog:'
@@ -1029,14 +1029,17 @@ packages:
   '@fundamentry/range@1.1.0':
     resolution: {integrity: sha512-4yRW3Zy6Byx4nnZUCRQvGOqpkhgikmrvnP4rV8f/wT9fNeUxDTgxiUTZu3jnzkdLCZY7BoOaspQyAfo8HOguEg==, tarball: https://npm.pkg.github.com/download/@fundamentry/range/1.1.0/1f7b3ac7efb07ce82f6c49a8f7d928ce181111b8}
 
-  '@fundamentry/scalar@2.0.0':
-    resolution: {integrity: sha512-pkfrD7VH60NrnIUHRTRClIovhSGlxSXbbeRaAwO5VsPPB6WZu7/HeQY4Gfrlu9St7K/SsBcEXSKtTWeg8OfHvw==, tarball: https://npm.pkg.github.com/download/@fundamentry/scalar/2.0.0/3d9e7bc3db5dfa002f2dc2b17583cd22b0aad91a}
+  '@fundamentry/scalar@3.0.0':
+    resolution: {integrity: sha512-+mjLgI2bmW/j/ysjCKN57tqJTwk1aL71MX5jd7WV6h87luZqBXia1S8Z+vaGltfrNpvtT4RLCD0/yf5q72xjeg==, tarball: https://npm.pkg.github.com/download/@fundamentry/scalar/3.0.0/65ae23f6e502f28a7a9fd92d1c2600b6abe8caf2}
 
   '@fundamentry/stream@1.3.0':
     resolution: {integrity: sha512-uWAaVrPKOPC1y6Rvn4JC1uROmJSzVD/a2MOP2zCxOdT61PM/bAGkJq7ZHf1+U/2mcsonrSCE3aox+dI795lpIQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/stream/1.3.0/42b2432eb811b95af53fc79c4b5ce13124d007cb}
 
   '@fundamentry/trait@1.1.0':
     resolution: {integrity: sha512-YwsXLvaXyFd2qFQUrhM3z9Vk5khuowlZA/XlIW+QlttKwx6FJoB9N6jtyWv3Ks4pEvK2YssG4LltLxjW9pWc2g==, tarball: https://npm.pkg.github.com/download/@fundamentry/trait/1.1.0/84c1b432516dacba963db346b6b35fee2cffd0d4}
+
+  '@fundamentry/trait@2.0.0':
+    resolution: {integrity: sha512-cC1skiRP4jNunbeTIeuGIah7BsdNXOQ9No49+hTv/daWxHhfgqBQjHg1giQmCis3wewoHPfAbprZMB3YyHluqQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/trait/2.0.0/d028cc623f97ecfbd59487b16a6c01e2aa36cb52}
 
   '@fundamentry/typescript-config@2.0.0':
     resolution: {integrity: sha512-0kN2ZyyV6ZkS0OIp66o+HTVU0JHVZsMQmAh09A6YffpPyPCagUsLLFNtH4SQ8gti5aoxXFvyVXvqHTJKBFLhVw==, tarball: https://npm.pkg.github.com/download/@fundamentry/typescript-config/2.0.0/847fa6d298999c18914fdffafb6ddd2318056ab7}
@@ -4988,9 +4991,9 @@ snapshots:
       '@fundamentry/order': 1.0.0
       '@fundamentry/trait': 1.1.0
 
-  '@fundamentry/scalar@2.0.0':
+  '@fundamentry/scalar@3.0.0':
     dependencies:
-      '@fundamentry/trait': 1.1.0
+      '@fundamentry/trait': 2.0.0
 
   '@fundamentry/stream@1.3.0':
     dependencies:
@@ -4998,6 +5001,8 @@ snapshots:
       '@fundamentry/trait': 1.1.0
 
   '@fundamentry/trait@1.1.0': {}
+
+  '@fundamentry/trait@2.0.0': {}
 
   '@fundamentry/typescript-config@2.0.0(typescript@6.0.3)':
     dependencies:
