@@ -19,7 +19,10 @@
     "maxCyclomatic": 5,
     "maxCognitive": 5,
     "maxUnitSize": 20,
-    "crapRefactorBand": 2
+    "crapRefactorBand": 2,
+    "ignore": [
+      "vitest.setup.ts"
+    ]
   },
   "production": {
     "health": true
