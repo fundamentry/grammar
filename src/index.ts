@@ -7,3 +7,4 @@ export * from '#project/production';
 export * from '#project/recognition';
 export * from '#project/rule';
 export * from '#project/symbol';
+export * from '#project/tree';

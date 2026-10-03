@@ -82,6 +82,12 @@
         "patterns": [
           "src/symbol/**"
         ]
+      },
+      {
+        "name": "tree",
+        "patterns": [
+          "src/tree/**"
+        ]
       }
     ],
     "rules": [
@@ -135,6 +141,10 @@
         "allow": [
           "error"
         ]
+      },
+      {
+        "from": "tree",
+        "allow": []
       }
     ]
   },
