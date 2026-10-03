@@ -9,7 +9,7 @@ import {
 } from '@fundamentry/number';
 import { type Point } from '@fundamentry/stream';
 
-import { PrintMismatchError } from '#project/error/';
+import { PrintMismatchError } from '#project/error';
 import { type Node, Option, Repetition, Sequence } from '#project/tree';
 
 export namespace Codec {
