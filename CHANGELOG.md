@@ -1,3 +1,17 @@
+# 3.0.0
+
+### 🚀 Features
+
+- implement parse tree nodes ([d3bd104](https://github.com/fundamentry/grammar/commit/d3bd104))
+- ⚠️  constrain 'Codec' values to parse tree nodes ([07e9c32](https://github.com/fundamentry/grammar/commit/07e9c32))
+- ⚠️  make 'Symbol' a named rule over a parse tree node ([894952a](https://github.com/fundamentry/grammar/commit/894952a))
+- add 'Production.literal' ([26f9956](https://github.com/fundamentry/grammar/commit/26f9956))
+
+### ⚠️  Breaking Changes
+
+- make 'Symbol' a named rule over a parse tree node  ([894952a](https://github.com/fundamentry/grammar/commit/894952a))
+- constrain 'Codec' values to parse tree nodes  ([07e9c32](https://github.com/fundamentry/grammar/commit/07e9c32))
+
 ## 2.2.0
 
 ### 🚀 Features
