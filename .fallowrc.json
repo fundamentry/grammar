@@ -142,7 +142,8 @@
         "from": "symbol",
         "allow": [
           "error",
-          "tree"
+          "tree",
+          "production"
         ]
       },
       {
