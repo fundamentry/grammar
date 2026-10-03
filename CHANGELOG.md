@@ -1,3 +1,9 @@
+## 3.1.0
+
+### 🚀 Features
+
+- add 'Terminal' ([c99f0e6](https://github.com/fundamentry/grammar/commit/c99f0e6))
+
 ## 3.0.1
 
 ### 🩹 Fixes
