@@ -1,3 +1,11 @@
+## 3.0.1
+
+### 🩹 Fixes
+
+- remove trailing slash in import path ([d9513e2](https://github.com/fundamentry/grammar/commit/d9513e2))
+- make 'instanceof' on a 'Symbol' subclass check that subclass ([0f02587](https://github.com/fundamentry/grammar/commit/0f02587))
+- make 'instanceof' on 'Sequence' and 'Repetition' subclasses check that subclass ([b8b66a0](https://github.com/fundamentry/grammar/commit/b8b66a0))
+
 # 3.0.0
 
 ### 🚀 Features
