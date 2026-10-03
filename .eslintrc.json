@@ -81,7 +81,8 @@
             ],
             "optionalDependencies": false
           }
-        ]
+        ],
+        "max-classes-per-file": "off"
       }
     }
   ]

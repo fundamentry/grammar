@@ -1,17 +1,13 @@
 import { Prism } from '@fundamentry/category';
 import { Failure, Success } from '@fundamentry/coproduct';
-import { type CodePoint } from '@fundamentry/scalar';
-import { type Stringable } from '@fundamentry/trait';
+import { type Equatable, type Stringable } from '@fundamentry/trait';
 
 import { PrintMismatchError, SymbolMismatchError } from '#project/error';
+import { type Node } from '#project/tree';
 
-export namespace Symbol {
-  export type Element = CodePoint | Symbol | undefined | readonly Element[];
-}
-
-export abstract class Symbol<
-  out Elements extends Symbol.Element = Symbol.Element,
-> implements Stringable {
+export abstract class Symbol<out Elements extends Node = Node>
+  implements Equatable<unknown>, Stringable
+{
   readonly #elements: Elements;
 
   constructor(elements: Elements) {
@@ -23,7 +19,11 @@ export abstract class Symbol<
       );
   }
 
-  static prism<Elements extends Symbol.Element, S extends Symbol<Elements>>(
+  static [globalThis.Symbol.hasInstance](value: unknown): value is Symbol {
+    return value instanceof Object && #elements in value;
+  }
+
+  static prism<Elements extends Node, S extends Symbol<Elements>>(
     this: new (elements: Elements) => S
   ): Prism<Elements, S, string> {
     return Prism.of(
@@ -54,7 +54,15 @@ export abstract class Symbol<
     return this.#elements;
   }
 
+  equals(other: unknown): boolean {
+    return (
+      other instanceof Symbol &&
+      this.constructor === other.constructor &&
+      this.#elements.equals(other.#elements)
+    );
+  }
+
   toString(): string {
-    return [this.#elements].flat(Infinity).join('');
+    return this.#elements.toString();
   }
 }
