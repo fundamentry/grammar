@@ -11,10 +11,15 @@ export class Sequence<out T extends readonly Node[]>
     this.#elements = Object.freeze(elements);
   }
 
-  static [Symbol.hasInstance](
+  static [Symbol.hasInstance]<S extends Sequence<readonly Node[]>>(
+    this: abstract new (...args: never) => S,
     value: unknown
-  ): value is Sequence<readonly Node[]> {
-    return value instanceof Object && #elements in value;
+  ): value is S {
+    return (
+      value instanceof Object &&
+      #elements in value &&
+      Function.prototype[Symbol.hasInstance].call(this, value)
+    );
   }
 
   elements(): T {

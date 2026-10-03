@@ -9,7 +9,27 @@ import { Sequence } from './Sequence.js';
 const A = new Literal(CodePoint.of('a'));
 const B = new Literal(CodePoint.of('b'));
 
+class SpecificSequence extends Sequence<readonly Literal[]> {}
+
 describe('Sequence', () => {
+  describe('instanceof', () => {
+    it('must recognise an instance of its own class', () => {
+      expect(new Sequence([A])).toBeInstanceOf(Sequence);
+      expect(new SpecificSequence([A])).toBeInstanceOf(Sequence);
+    });
+
+    it('must not recognise an instance of the base class as a subclass', () => {
+      expect(new Sequence([A])).not.toBeInstanceOf(SpecificSequence);
+    });
+
+    it.each([
+      ['a non-object', 0],
+      ['an object it did not construct', Object.create(Sequence.prototype)],
+    ])('must not recognise %s', (_, value) => {
+      expect(value).not.toBeInstanceOf(Sequence);
+    });
+  });
+
   describe('elements', () => {
     it('must return the elements passed to the constructor', () => {
       const elements = [A, B] as const;

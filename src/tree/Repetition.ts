@@ -12,8 +12,15 @@ export class Repetition<out A extends Node>
     this.#sequence = new Sequence(elements);
   }
 
-  static [Symbol.hasInstance](value: unknown): value is Repetition<Node> {
-    return value instanceof Object && #sequence in value;
+  static [Symbol.hasInstance]<S extends Repetition<Node>>(
+    this: abstract new (...args: never) => S,
+    value: unknown
+  ): value is S {
+    return (
+      value instanceof Object &&
+      #sequence in value &&
+      Function.prototype[Symbol.hasInstance].call(this, value)
+    );
   }
 
   elements(): readonly A[] {

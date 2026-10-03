@@ -9,7 +9,27 @@ import { Sequence } from './Sequence.js';
 const A = new Literal(CodePoint.of('a'));
 const B = new Literal(CodePoint.of('b'));
 
+class SpecificRepetition extends Repetition<Literal> {}
+
 describe('Repetition', () => {
+  describe('instanceof', () => {
+    it('must recognise an instance of its own class', () => {
+      expect(new Repetition([A])).toBeInstanceOf(Repetition);
+      expect(new SpecificRepetition([A])).toBeInstanceOf(Repetition);
+    });
+
+    it('must not recognise an instance of the base class as a subclass', () => {
+      expect(new Repetition([A])).not.toBeInstanceOf(SpecificRepetition);
+    });
+
+    it.each([
+      ['a non-object', 0],
+      ['an object it did not construct', Object.create(Repetition.prototype)],
+    ])('must not recognise %s', (_, value) => {
+      expect(value).not.toBeInstanceOf(Repetition);
+    });
+  });
+
   describe('elements', () => {
     it('must return the elements passed to the constructor', () => {
       const elements = [A, B];
