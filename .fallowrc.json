@@ -42,39 +42,9 @@
         ]
       },
       {
-        "name": "lexer",
-        "patterns": [
-          "src/lexer/**"
-        ]
-      },
-      {
-        "name": "parser",
-        "patterns": [
-          "src/parser/**"
-        ]
-      },
-      {
-        "name": "printer",
-        "patterns": [
-          "src/printer/**"
-        ]
-      },
-      {
         "name": "production",
         "patterns": [
           "src/production/**"
-        ]
-      },
-      {
-        "name": "recognition",
-        "patterns": [
-          "src/recognition/**"
-        ]
-      },
-      {
-        "name": "rule",
-        "patterns": [
-          "src/rule/**"
         ]
       },
       {
@@ -103,39 +73,10 @@
         "allow": []
       },
       {
-        "from": "lexer",
-        "allow": [
-          "error"
-        ]
-      },
-      {
-        "from": "parser",
-        "allow": [
-          "error",
-          "lexer",
-          "recognition",
-          "rule"
-        ]
-      },
-      {
-        "from": "printer",
-        "allow": []
-      },
-      {
         "from": "production",
         "allow": [
           "codec",
           "tree"
-        ]
-      },
-      {
-        "from": "recognition",
-        "allow": []
-      },
-      {
-        "from": "rule",
-        "allow": [
-          "recognition"
         ]
       },
       {
