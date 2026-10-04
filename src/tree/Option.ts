@@ -11,6 +11,17 @@ export class Option<out T extends Node>
     this.#value = value;
   }
 
+  static [Symbol.hasInstance]<S extends Option<Node>>(
+    this: abstract new (...args: never) => S,
+    value: unknown
+  ): value is S {
+    return (
+      value instanceof Object &&
+      #value in value &&
+      Function.prototype[Symbol.hasInstance].call(this, value)
+    );
+  }
+
   value(): T | undefined {
     return this.#value;
   }

@@ -9,7 +9,25 @@ import { Sequence } from './Sequence.js';
 const A = new Literal(CodePoint.of('a'));
 const B = new Literal(CodePoint.of('b'));
 
+class SpecificOption extends Option<Literal> {}
+
 describe('Option', () => {
+  describe('instanceof', () => {
+    it('must recognise an instance of its own class', () => {
+      expect(new Option(A)).toBeInstanceOf(Option);
+      expect(new SpecificOption(A)).toBeInstanceOf(Option);
+    });
+
+    it('must not recognise an instance of the base class as a subclass', () => {
+      expect(new Option(A)).not.toBeInstanceOf(SpecificOption);
+    });
+
+    it('must not recognise other values', () => {
+      expect(new Sequence([A])).not.toBeInstanceOf(Option);
+      expect(undefined).not.toBeInstanceOf(Option);
+    });
+  });
+
   describe('value', () => {
     it('must return the value passed to the constructor', () => {
       expect(new Option(A).value()).toBe(A);
