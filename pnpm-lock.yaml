@@ -13,8 +13,8 @@ catalogs:
       specifier: 21.2.3
       version: 21.2.3
     '@fundamentry/category':
-      specifier: 1.0.0
-      version: 1.0.0
+      specifier: 1.1.0
+      version: 1.1.0
     '@fundamentry/coproduct':
       specifier: 1.1.0
       version: 1.1.0
@@ -124,7 +124,7 @@ importers:
     dependencies:
       '@fundamentry/category':
         specifier: 'catalog:'
-        version: 1.0.0(@fundamentry/coproduct@1.1.0)
+        version: 1.1.0(@fundamentry/coproduct@1.1.0)
       '@fundamentry/coproduct':
         specifier: 'catalog:'
         version: 1.1.0
@@ -972,8 +972,8 @@ packages:
   '@fundamentry/brand@2.0.1':
     resolution: {integrity: sha512-3Mc2rK5/YPTuJYKu5VNYSbrXA9H0cxMRFhRB4y8hPe83pCBrm0jyJtm1WUttQuuxsLTYqScj1vuYpByzxl1gmg==, tarball: https://npm.pkg.github.com/download/@fundamentry/brand/2.0.1/4350c0dc19e5c9051be9de44a56bfabc6502aec0}
 
-  '@fundamentry/category@1.0.0':
-    resolution: {integrity: sha512-J06tQgYhUkkE53V4Y4URsw3dXR6sRsZcInexCtgVLuAHXDzvTzYT3VM0YZDTYcYyE4vxq6V2YFX0xWgQCz4WKw==, tarball: https://npm.pkg.github.com/download/@fundamentry/category/1.0.0/31fe6757f2fe9920a83dc184aa0c658950fe7958}
+  '@fundamentry/category@1.1.0':
+    resolution: {integrity: sha512-5uTRVcrDN0suBnLz50gq0bGJF0FQnee0V2Q8TXAy5kBRTg3pUbqn6P8lYVW8PNt0sZV4Uj+FLqvWmQ9SgvWsZg==, tarball: https://npm.pkg.github.com/download/@fundamentry/category/1.1.0/878c8aaa04d6ed30a393be10f2cdf2a916564834}
     peerDependencies:
       '@fundamentry/coproduct': 1.1.0
 
@@ -4940,7 +4940,7 @@ snapshots:
 
   '@fundamentry/brand@2.0.1': {}
 
-  '@fundamentry/category@1.0.0(@fundamentry/coproduct@1.1.0)':
+  '@fundamentry/category@1.1.0(@fundamentry/coproduct@1.1.0)':
     dependencies:
       '@fundamentry/coproduct': 1.1.0
 
