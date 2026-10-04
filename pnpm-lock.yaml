@@ -34,8 +34,8 @@ catalogs:
       specifier: 1.1.0
       version: 1.1.0
     '@fundamentry/scalar':
-      specifier: 3.0.0
-      version: 3.0.0
+      specifier: 3.1.0
+      version: 3.1.0
     '@fundamentry/stream':
       specifier: 1.3.0
       version: 1.3.0
@@ -136,7 +136,7 @@ importers:
         version: 1.1.0
       '@fundamentry/scalar':
         specifier: 'catalog:'
-        version: 3.0.0
+        version: 3.1.0
       '@fundamentry/stream':
         specifier: 'catalog:'
         version: 1.3.0
@@ -1029,8 +1029,8 @@ packages:
   '@fundamentry/range@1.1.0':
     resolution: {integrity: sha512-4yRW3Zy6Byx4nnZUCRQvGOqpkhgikmrvnP4rV8f/wT9fNeUxDTgxiUTZu3jnzkdLCZY7BoOaspQyAfo8HOguEg==, tarball: https://npm.pkg.github.com/download/@fundamentry/range/1.1.0/1f7b3ac7efb07ce82f6c49a8f7d928ce181111b8}
 
-  '@fundamentry/scalar@3.0.0':
-    resolution: {integrity: sha512-+mjLgI2bmW/j/ysjCKN57tqJTwk1aL71MX5jd7WV6h87luZqBXia1S8Z+vaGltfrNpvtT4RLCD0/yf5q72xjeg==, tarball: https://npm.pkg.github.com/download/@fundamentry/scalar/3.0.0/65ae23f6e502f28a7a9fd92d1c2600b6abe8caf2}
+  '@fundamentry/scalar@3.1.0':
+    resolution: {integrity: sha512-MK+ffQ9BISO8IpcA95nWUc3vhhE5/zZL9P5KuMtSiOuj0dcxVc1GBJcdj3VQGbKROfYHmu037WDI3V8tUf/XyQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/scalar/3.1.0/ae0c1f4b1f9e2a495050a5c0f777860ce474713c}
 
   '@fundamentry/stream@1.3.0':
     resolution: {integrity: sha512-uWAaVrPKOPC1y6Rvn4JC1uROmJSzVD/a2MOP2zCxOdT61PM/bAGkJq7ZHf1+U/2mcsonrSCE3aox+dI795lpIQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/stream/1.3.0/42b2432eb811b95af53fc79c4b5ce13124d007cb}
@@ -4991,7 +4991,7 @@ snapshots:
       '@fundamentry/order': 1.0.0
       '@fundamentry/trait': 1.1.0
 
-  '@fundamentry/scalar@3.0.0':
+  '@fundamentry/scalar@3.1.0':
     dependencies:
       '@fundamentry/trait': 2.0.0
 
