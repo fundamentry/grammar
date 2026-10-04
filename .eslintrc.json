@@ -26,14 +26,14 @@
             "position": "before"
           },
           {
-            "pattern": "#project/*",
+            "pattern": "#project/**",
             "group": "parent",
             "position": "before"
           }
         ],
         "pathGroupsExcludedImportTypes": [
           "@fundamentry/*",
-          "#project/*"
+          "#project/**"
         ],
         "newlines-between": "always",
         "alphabetize": {
