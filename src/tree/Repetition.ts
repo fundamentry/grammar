@@ -1,14 +1,12 @@
-import { type Equatable, type Stringable } from '@fundamentry/trait';
-
-import { type Node } from './Node.js';
+import { Node } from './Node.js';
 import { Sequence } from './Sequence.js';
 
-export class Repetition<out A extends Node>
-  implements Equatable<unknown>, Stringable
-{
+export class Repetition<out A extends Node> extends Node {
   readonly #sequence: Sequence<readonly A[]>;
 
   constructor(elements: readonly A[]) {
+    super();
+
     this.#sequence = new Sequence(elements);
   }
 
@@ -27,13 +25,13 @@ export class Repetition<out A extends Node>
     return this.#sequence.elements();
   }
 
-  equals(other: unknown): boolean {
+  override equals(other: unknown): boolean {
     return (
       other instanceof Repetition && this.#sequence.equals(other.#sequence)
     );
   }
 
-  toString(): string {
+  override toString(): string {
     return this.#sequence.toString();
   }
 }

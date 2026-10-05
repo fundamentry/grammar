@@ -13,6 +13,22 @@
     "private-type-leaks": "error",
     "require-suppression-reason": "error"
   },
+  "usedClassMembers": [
+    {
+      "implements": "Expression.Visitor",
+      "members": [
+        "terminal",
+        "concatenation",
+        "alternation",
+        "optional",
+        "repetition",
+        "refinement",
+        "label",
+        "rule",
+        "reference"
+      ]
+    }
+  ],
   "health": {
     "coverage": "coverage/coverage-final.json",
     "maxCrap": 5,
@@ -30,15 +46,69 @@
   "boundaries": {
     "zones": [
       {
+        "name": "cache",
+        "patterns": [
+          "src/cache/**"
+        ]
+      },
+      {
         "name": "codec",
         "patterns": [
           "src/codec/**"
         ]
       },
       {
+        "name": "data",
+        "patterns": [
+          "src/data/**"
+        ]
+      },
+      {
+        "name": "definition",
+        "patterns": [
+          "src/definition/**"
+        ]
+      },
+      {
         "name": "error",
         "patterns": [
           "src/error/**"
+        ]
+      },
+      {
+        "name": "expectation",
+        "patterns": [
+          "src/expectation/**"
+        ]
+      },
+      {
+        "name": "expression",
+        "patterns": [
+          "src/expression/**"
+        ]
+      },
+      {
+        "name": "mismatch",
+        "patterns": [
+          "src/mismatch/**"
+        ]
+      },
+      {
+        "name": "misprint",
+        "patterns": [
+          "src/misprint/**"
+        ]
+      },
+      {
+        "name": "parser",
+        "patterns": [
+          "src/parser/**"
+        ]
+      },
+      {
+        "name": "printer",
+        "patterns": [
+          "src/printer/**"
         ]
       },
       {
@@ -62,15 +132,85 @@
     ],
     "rules": [
       {
+        "from": "cache",
+        "allow": []
+      },
+      {
         "from": "codec",
         "allow": [
+          "definition",
           "error",
+          "expectation",
+          "expression",
+          "mismatch",
+          "misprint",
+          "parser",
+          "printer",
+          "tree"
+        ]
+      },
+      {
+        "from": "data",
+        "allow": []
+      },
+      {
+        "from": "definition",
+        "allow": [
+          "data",
+          "expectation",
+          "expression",
           "tree"
         ]
       },
       {
         "from": "error",
         "allow": []
+      },
+      {
+        "from": "expectation",
+        "allow": [
+          "data"
+        ]
+      },
+      {
+        "from": "expression",
+        "allow": [
+          "expectation",
+          "tree"
+        ]
+      },
+      {
+        "from": "mismatch",
+        "allow": [
+          "data",
+          "expectation"
+        ]
+      },
+      {
+        "from": "misprint",
+        "allow": [
+          "data"
+        ]
+      },
+      {
+        "from": "parser",
+        "allow": [
+          "cache",
+          "expectation",
+          "expression",
+          "mismatch",
+          "tree"
+        ]
+      },
+      {
+        "from": "printer",
+        "allow": [
+          "cache",
+          "expectation",
+          "expression",
+          "misprint",
+          "tree"
+        ]
       },
       {
         "from": "production",
@@ -82,14 +222,18 @@
       {
         "from": "symbol",
         "allow": [
+          "codec",
           "error",
-          "tree",
-          "production"
+          "misprint",
+          "production",
+          "tree"
         ]
       },
       {
         "from": "tree",
-        "allow": []
+        "allow": [
+          "data"
+        ]
       }
     ]
   },

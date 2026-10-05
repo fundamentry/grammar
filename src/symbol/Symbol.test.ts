@@ -1,8 +1,9 @@
 import { assert, describe, expect, it } from 'vitest';
 
+import { Failure } from '@fundamentry/coproduct';
 import { CodePoint } from '@fundamentry/scalar';
 
-import { PrintMismatchError, SymbolMismatchError } from '#project/error';
+import { SymbolMismatchError } from '#project/error';
 import { Literal, Repetition } from '#project/tree';
 
 import { Symbol } from './Symbol.js';
@@ -46,8 +47,20 @@ describe('Symbol', () => {
       expect(() => stub()).toThrow(SymbolMismatchError);
     });
 
-    it('must mention the value and the class name in the error message', () => {
+    it('must mention the value and the rule in the error message', () => {
       expect(() => stub()).toThrow(`'' does not match ${Stub.name}`);
+    });
+
+    it('must mention a rule its class renames in the error message', () => {
+      class Digits extends Stub {
+        static override rule(): string {
+          return 'digit-list';
+        }
+      }
+
+      expect(() => new Digits(new Repetition([]))).toThrow(
+        "'' does not match digit-list"
+      );
     });
   });
 
@@ -69,48 +82,72 @@ describe('Symbol', () => {
     });
   });
 
-  describe('prism', () => {
-    const prism = Stub.prism();
+  describe('rule', () => {
+    it('must default to the name of the class', () => {
+      expect(Stub.rule()).toBe('Stub');
+    });
 
-    describe('preview', () => {
+    it('must let a subclass name a rule its class name cannot spell', () => {
+      class IpLiteral extends Twin {
+        static override rule(): string {
+          return 'IP-literal';
+        }
+      }
+
+      expect(IpLiteral.rule()).toBe('IP-literal');
+    });
+  });
+
+  describe('conversion', () => {
+    const conversion = Stub.conversion();
+
+    describe('to', () => {
       it('must succeed for a semantically valid value', () => {
-        const result = prism.preview(new Repetition([ZERO]));
+        const result = conversion.to(new Repetition([ZERO]));
 
         assert(result.ok());
         expect(result.value()).toEqual(stub(ZERO));
       });
 
       it('must fail for a semantically invalid value', () => {
-        expect(prism.preview(new Repetition([])).ok()).toBe(false);
+        expect(conversion.to(new Repetition([])).ok()).toBe(false);
       });
 
       it('must propagate errors that are not symbol mismatches', () => {
-        expect(() => prism.preview(broken)).toThrow(error);
+        expect(() => conversion.to(broken)).toThrow(error);
       });
     });
 
-    describe('review', () => {
+    describe('from', () => {
       it('must return the elements of a valid instance', () => {
         const elements = new Repetition([ZERO]);
+        const result = conversion.from(new Stub(elements));
 
-        expect(prism.review(new Stub(elements))).toBe(elements);
+        assert(result.ok());
+        expect(result.value()).toBe(elements);
       });
 
-      it('must throw for a value that is not an instance of this symbol', () => {
-        expect(() => prism.review({} as unknown as Stub)).toThrow(
-          PrintMismatchError
+      it('must reject a value that is not an instance of this symbol, naming the value and the class', () => {
+        expect(conversion.from({} as unknown as Stub)).toEqual(
+          new Failure(`'[object Object]' is not ${Stub.name}`)
         );
       });
 
-      it('must throw for an instance of a different symbol class', () => {
-        expect(() =>
-          prism.review(new Twin(new Repetition([ZERO])) as unknown as Stub)
-        ).toThrow(PrintMismatchError);
+      it('must reject an instance of a different symbol class', () => {
+        expect(
+          conversion.from(new Twin(new Repetition([ZERO])) as unknown as Stub)
+        ).toEqual(new Failure(`'0' is not ${Stub.name}`));
       });
 
-      it('must mention the value and the class name in the error message', () => {
-        expect(() => prism.review({} as unknown as Stub)).toThrow(
-          `'[object Object]' is not ${Stub.name}`
+      it('must name a rule its class renames', () => {
+        class Digits extends Stub {
+          static override rule(): string {
+            return 'digit-list';
+          }
+        }
+
+        expect(Digits.conversion().from(stub(ZERO))).toEqual(
+          new Failure("'0' is not digit-list")
         );
       });
     });

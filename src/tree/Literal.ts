@@ -1,10 +1,13 @@
 import { type CodePoint } from '@fundamentry/scalar';
-import { type Equatable, type Stringable } from '@fundamentry/trait';
 
-export class Literal implements Equatable<unknown>, Stringable {
+import { Node } from './Node.js';
+
+export class Literal extends Node {
   readonly #codePoint: CodePoint;
 
   constructor(codePoint: CodePoint) {
+    super();
+
     this.#codePoint = codePoint;
   }
 
@@ -12,11 +15,11 @@ export class Literal implements Equatable<unknown>, Stringable {
     return this.#codePoint;
   }
 
-  equals(other: unknown): boolean {
+  override equals(other: unknown): boolean {
     return other instanceof Literal && this.#codePoint.equals(other.#codePoint);
   }
 
-  toString(): string {
+  override toString(): string {
     return this.#codePoint.toString();
   }
 }

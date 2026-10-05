@@ -56,7 +56,8 @@
         "@typescript-eslint/class-methods-use-this": [
           "error",
           {
-            "ignoreOverrideMethods": true
+            "ignoreOverrideMethods": true,
+            "ignoreClassesThatImplementAnInterface": "public-fields"
           }
         ],
         "class-methods-use-this": "off",

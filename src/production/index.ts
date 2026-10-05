@@ -1,1 +1,1 @@
-export * from './Production.js';
+export { type Production } from './Production.js';

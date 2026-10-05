@@ -1,21 +1,21 @@
-import { Prism } from '@fundamentry/category';
+import { PartialIso } from '@fundamentry/category';
 import { Failure, Success } from '@fundamentry/coproduct';
-import { type Equatable, type Stringable } from '@fundamentry/trait';
 
-import { PrintMismatchError, SymbolMismatchError } from '#project/error';
-import { type Node } from '#project/tree';
+import { type Codec } from '#project/codec';
+import { SymbolMismatchError } from '#project/error';
+import { Node } from '#project/tree';
 
-export abstract class Symbol<out Elements extends Node = Node>
-  implements Equatable<unknown>, Stringable
-{
+export abstract class Symbol<out Elements extends Node = Node> extends Node {
   readonly #elements: Elements;
 
   constructor(elements: Elements) {
+    super();
+
     this.#elements = elements;
 
     if (!this.isValid(elements))
       throw new SymbolMismatchError(
-        `'${this.toString()}' does not match ${this.constructor.name}`
+        `'${this.toString()}' does not match ${new.target.rule()}`
       );
   }
 
@@ -30,10 +30,14 @@ export abstract class Symbol<out Elements extends Node = Node>
     );
   }
 
-  static prism<Elements extends Node, S extends Symbol<Elements>>(
-    this: new (elements: Elements) => S
-  ): Prism<Elements, S, string> {
-    return Prism.of(
+  static rule(): string {
+    return this.name;
+  }
+
+  static conversion<Elements extends Node, S extends Symbol<Elements>>(
+    this: Codec.Constructor<Elements, S>
+  ): PartialIso<Elements, S, string, string> {
+    return PartialIso.of(
       elements => {
         try {
           return new Success(new this(elements));
@@ -44,14 +48,10 @@ export abstract class Symbol<out Elements extends Node = Node>
           throw error;
         }
       },
-      symbol => {
-        if (!(symbol instanceof this))
-          throw new PrintMismatchError(
-            `'${String(symbol)}' is not ${this.name}`
-          );
-
-        return symbol.#elements;
-      }
+      symbol =>
+        symbol instanceof this
+          ? new Success(symbol.#elements)
+          : new Failure(`'${String(symbol)}' is not ${this.rule()}`)
     );
   }
 
@@ -61,7 +61,7 @@ export abstract class Symbol<out Elements extends Node = Node>
     return this.#elements;
   }
 
-  equals(other: unknown): boolean {
+  override equals(other: unknown): boolean {
     return (
       other instanceof Symbol &&
       this.constructor === other.constructor &&
@@ -69,7 +69,7 @@ export abstract class Symbol<out Elements extends Node = Node>
     );
   }
 
-  toString(): string {
-    return this.#elements.toString();
+  override toString(): string {
+    return String(this.#elements);
   }
 }

@@ -3,9 +3,9 @@ import { assert, describe, expect, it } from 'vitest';
 import { Failure, Success } from '@fundamentry/coproduct';
 import { Range, RangeSet } from '@fundamentry/range';
 import { CodePoint } from '@fundamentry/scalar';
-import { Point } from '@fundamentry/stream';
 
 import { SymbolMismatchError } from '#project/error';
+import { Misprint } from '#project/misprint';
 import { Literal } from '#project/tree';
 
 import { Symbol } from './Symbol.js';
@@ -54,30 +54,34 @@ describe('Terminal', () => {
     const production = Digit.production();
 
     it('must parse a code point within its domain into the terminal', () => {
-      const outcome = production.parse(Point.of([CodePoint.of('5')]));
-
-      assert(outcome.ok());
-      expect(outcome.value().value).toEqual(new Digit(FIVE));
+      expect(production.parse([CodePoint.of('5')])).toEqual(
+        new Success(new Digit(FIVE))
+      );
     });
 
     it('must reject a code point outside its domain, naming the domain', () => {
-      const outcome = production.parse(Point.of([CodePoint.of('a')]));
+      const outcome = production.parse([CodePoint.of('a')]);
 
       assert(!outcome.ok());
-      expect(outcome.error().value).toBe(
-        `Expected a code point in ${DIGITS.toString()}, got 'a'`
+      expect(String(outcome.error())).toBe(
+        `Expected one of ${DIGITS.toString()}, got 'a'`
       );
     });
 
     it('must print the terminal back to its code point', () => {
-      expect(production.print(new Digit(FIVE))).toEqual(
-        new Success([CodePoint.of('5')])
-      );
+      expect(
+        production.print(new Digit(FIVE)).map(tokens => [...tokens])
+      ).toEqual(new Success([CodePoint.of('5')]));
     });
 
     it('must reject printing a terminal of a different class', () => {
       expect(production.print(new Twin(FIVE))).toEqual(
-        new Failure(`'5' is not ${Digit.name}`)
+        new Failure(
+          Misprint.of(`'5' is not ${Digit.name}`).within({
+            node: 'rule',
+            name: Digit.name,
+          })
+        )
       );
     });
   });

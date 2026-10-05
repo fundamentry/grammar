@@ -13,11 +13,11 @@ catalogs:
       specifier: 21.2.3
       version: 21.2.3
     '@fundamentry/category':
-      specifier: 1.1.0
-      version: 1.1.0
+      specifier: 1.1.2
+      version: 1.1.2
     '@fundamentry/coproduct':
-      specifier: 1.1.0
-      version: 1.1.0
+      specifier: 1.2.1
+      version: 1.2.1
     '@fundamentry/eslint-config-json':
       specifier: 1.4.7
       version: 1.4.7
@@ -27,21 +27,18 @@ catalogs:
     '@fundamentry/eslint-config-typescript':
       specifier: 1.1.11
       version: 1.1.11
-    '@fundamentry/number':
-      specifier: 1.2.0
-      version: 1.2.0
     '@fundamentry/range':
-      specifier: 1.1.0
-      version: 1.1.0
+      specifier: 2.1.0
+      version: 2.1.0
     '@fundamentry/scalar':
+      specifier: 4.1.0
+      version: 4.1.0
+    '@fundamentry/stream':
+      specifier: 2.0.1
+      version: 2.0.1
+    '@fundamentry/trait':
       specifier: 3.1.0
       version: 3.1.0
-    '@fundamentry/stream':
-      specifier: 1.3.0
-      version: 1.3.0
-    '@fundamentry/trait':
-      specifier: 2.0.0
-      version: 2.0.0
     '@fundamentry/typescript-config':
       specifier: 2.0.0
       version: 2.0.0
@@ -124,25 +121,22 @@ importers:
     dependencies:
       '@fundamentry/category':
         specifier: 'catalog:'
-        version: 1.1.0(@fundamentry/coproduct@1.1.0)
+        version: 1.1.2(@fundamentry/coproduct@1.2.1)
       '@fundamentry/coproduct':
         specifier: 'catalog:'
-        version: 1.1.0
-      '@fundamentry/number':
-        specifier: 'catalog:'
-        version: 1.2.0
+        version: 1.2.1
       '@fundamentry/range':
         specifier: 'catalog:'
-        version: 1.1.0
+        version: 2.1.0
       '@fundamentry/scalar':
         specifier: 'catalog:'
-        version: 3.1.0
+        version: 4.1.0
       '@fundamentry/stream':
         specifier: 'catalog:'
-        version: 1.3.0
+        version: 2.0.1
       '@fundamentry/trait':
         specifier: 'catalog:'
-        version: 2.0.0
+        version: 3.1.0
     devDependencies:
       '@commitlint/cli':
         specifier: 'catalog:'
@@ -972,13 +966,13 @@ packages:
   '@fundamentry/brand@2.0.1':
     resolution: {integrity: sha512-3Mc2rK5/YPTuJYKu5VNYSbrXA9H0cxMRFhRB4y8hPe83pCBrm0jyJtm1WUttQuuxsLTYqScj1vuYpByzxl1gmg==, tarball: https://npm.pkg.github.com/download/@fundamentry/brand/2.0.1/4350c0dc19e5c9051be9de44a56bfabc6502aec0}
 
-  '@fundamentry/category@1.1.0':
-    resolution: {integrity: sha512-5uTRVcrDN0suBnLz50gq0bGJF0FQnee0V2Q8TXAy5kBRTg3pUbqn6P8lYVW8PNt0sZV4Uj+FLqvWmQ9SgvWsZg==, tarball: https://npm.pkg.github.com/download/@fundamentry/category/1.1.0/878c8aaa04d6ed30a393be10f2cdf2a916564834}
+  '@fundamentry/category@1.1.2':
+    resolution: {integrity: sha512-LBoRthNjybFoLbXCLGcuv2pLr4vy2hyHDsCpWHJg4lypNDlxttmvEOYNGiEPAw3MS+AMvLkVBbNVyxAEiFghuQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/category/1.1.2/3276a76d7fba1b61cd6a7e066ec971c71c7f7285}
     peerDependencies:
-      '@fundamentry/coproduct': 1.1.0
+      '@fundamentry/coproduct': 1.2.1
 
-  '@fundamentry/coproduct@1.1.0':
-    resolution: {integrity: sha512-bJTXKdyasJMDnxNFo7fe5ejfDopc53cSlAGlLXa9G2bebbnKDMFY2A/YmfyL55SUcvLH6TNZ6lx314k9zbH+7A==, tarball: https://npm.pkg.github.com/download/@fundamentry/coproduct/1.1.0/d2aa52533013329a1ed054b5aab283b1ffb5cf0c}
+  '@fundamentry/coproduct@1.2.1':
+    resolution: {integrity: sha512-edhmrf1L7GoEInLjATnWs/w9tzZDKOw3pG66mYfMTJt55sC17xKef0RisFrqYw9jiRCLqnEsoiD0bH+sqbPivQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/coproduct/1.2.1/6f6c88f883bef72a6cd29a39c375c86e21286b40}
 
   '@fundamentry/eslint-config-base@1.1.8':
     resolution: {integrity: sha512-frbTHjKHozhwjSkiwHLemqaceu1u4MIR9H7SfBKa0Gm8v2+dYwB9sDMltFM7KUiG0FWH3Ywq9clRtRXG5o6XyA==, tarball: https://npm.pkg.github.com/download/@fundamentry/eslint-config-base/1.1.8/c67dfda7e64fc84edf5e0bcd518f3002e3699c39}
@@ -1017,29 +1011,23 @@ packages:
       eslint-plugin-import: 2.32.0
       typescript: 6.0.3
 
-  '@fundamentry/number@1.0.3':
-    resolution: {integrity: sha512-OFKlNmBi7jozJMXYu+uMA0Ak06viHfXyjkmT/x2O9op5kmkkMiCW44bPXgzs/NKLaCtqsbv/A12nxn1y9CF+MQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/number/1.0.3/d378cb7442a8b017ddafb11f20825e3b558bca34}
-
   '@fundamentry/number@1.2.0':
     resolution: {integrity: sha512-mQB00tDRzZ+WfhAgHZ6Z/vy0AvYaE4KiF1ot/OT3L59rnk1RFezcn2FtqeC2AC7v8kYegKCplO2AtrXukCSIdw==, tarball: https://npm.pkg.github.com/download/@fundamentry/number/1.2.0/c8fc874044211116457cc624470c0c658bfd6df0}
 
-  '@fundamentry/order@1.0.0':
-    resolution: {integrity: sha512-is0ki1GNqZPYhJyWGyOGzkQRRuwytQlxvMFh5QqxSalD6BMh53B39Y5B40hsrkkjTjZB+1oiHbuKrP3wa+YoSQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/order/1.0.0/b5d3ab2bea4655c17aecb16edbafcf701f0db797}
+  '@fundamentry/order@1.0.2':
+    resolution: {integrity: sha512-TLDG/EWFDzJ0lYXKlcGRy12asoJmx5oW5OTkxiLvTbi8S5KKiWtz+8Od+BK/+lygcFd+/1Yws18NYtqxjPKuGw==, tarball: https://npm.pkg.github.com/download/@fundamentry/order/1.0.2/81af19d319ea9a99d78678c2722e102148373cd8}
 
-  '@fundamentry/range@1.1.0':
-    resolution: {integrity: sha512-4yRW3Zy6Byx4nnZUCRQvGOqpkhgikmrvnP4rV8f/wT9fNeUxDTgxiUTZu3jnzkdLCZY7BoOaspQyAfo8HOguEg==, tarball: https://npm.pkg.github.com/download/@fundamentry/range/1.1.0/1f7b3ac7efb07ce82f6c49a8f7d928ce181111b8}
+  '@fundamentry/range@2.1.0':
+    resolution: {integrity: sha512-kFBz91yo9iHczw+iRA1H8TWxgTOfyGAC225TwbA78AcliZRjsjNp97GianODVgRgIQ6SBKqckD1EtPLrcyzfBw==, tarball: https://npm.pkg.github.com/download/@fundamentry/range/2.1.0/04ec5121d91e6db2d436dbebf4ee9f9acfdf5cc4}
 
-  '@fundamentry/scalar@3.1.0':
-    resolution: {integrity: sha512-MK+ffQ9BISO8IpcA95nWUc3vhhE5/zZL9P5KuMtSiOuj0dcxVc1GBJcdj3VQGbKROfYHmu037WDI3V8tUf/XyQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/scalar/3.1.0/ae0c1f4b1f9e2a495050a5c0f777860ce474713c}
+  '@fundamentry/scalar@4.1.0':
+    resolution: {integrity: sha512-k0KIKSI1WcvfpxLisriUssEoSLGlFDp+RDe8SSwgHGA9Pk3QdYBhco+nXQoR6/sBpBwu/Zo3XAIcZ9rbj8xG9w==, tarball: https://npm.pkg.github.com/download/@fundamentry/scalar/4.1.0/50adbb7b3afa1f6f74b5ca5024789546d8367390}
 
-  '@fundamentry/stream@1.3.0':
-    resolution: {integrity: sha512-uWAaVrPKOPC1y6Rvn4JC1uROmJSzVD/a2MOP2zCxOdT61PM/bAGkJq7ZHf1+U/2mcsonrSCE3aox+dI795lpIQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/stream/1.3.0/42b2432eb811b95af53fc79c4b5ce13124d007cb}
+  '@fundamentry/stream@2.0.1':
+    resolution: {integrity: sha512-1ZZOs1MN/dkOia3XkWz5WrgA+Lh6oQDATA9pWBqh4FuyU+2utvCpKaP2P0LNRBDHhqD1ckoLpsKjf6q18P2M5Q==, tarball: https://npm.pkg.github.com/download/@fundamentry/stream/2.0.1/ecec1aec5462d3cb33fe813f798b68495e864d5a}
 
-  '@fundamentry/trait@1.1.0':
-    resolution: {integrity: sha512-YwsXLvaXyFd2qFQUrhM3z9Vk5khuowlZA/XlIW+QlttKwx6FJoB9N6jtyWv3Ks4pEvK2YssG4LltLxjW9pWc2g==, tarball: https://npm.pkg.github.com/download/@fundamentry/trait/1.1.0/84c1b432516dacba963db346b6b35fee2cffd0d4}
-
-  '@fundamentry/trait@2.0.0':
-    resolution: {integrity: sha512-cC1skiRP4jNunbeTIeuGIah7BsdNXOQ9No49+hTv/daWxHhfgqBQjHg1giQmCis3wewoHPfAbprZMB3YyHluqQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/trait/2.0.0/d028cc623f97ecfbd59487b16a6c01e2aa36cb52}
+  '@fundamentry/trait@3.1.0':
+    resolution: {integrity: sha512-grCjb9syAqMGLtqBw+MbF8sipOXT68mCeb3UQHeauJytnasNXaBWajdqgQz8Z8q4h6JOwi9zEpNoPmDB+x4hPQ==, tarball: https://npm.pkg.github.com/download/@fundamentry/trait/3.1.0/ebe7048aca80d5899267a865a98bc2ba2c281923}
 
   '@fundamentry/typescript-config@2.0.0':
     resolution: {integrity: sha512-0kN2ZyyV6ZkS0OIp66o+HTVU0JHVZsMQmAh09A6YffpPyPCagUsLLFNtH4SQ8gti5aoxXFvyVXvqHTJKBFLhVw==, tarball: https://npm.pkg.github.com/download/@fundamentry/typescript-config/2.0.0/847fa6d298999c18914fdffafb6ddd2318056ab7}
@@ -4940,11 +4928,13 @@ snapshots:
 
   '@fundamentry/brand@2.0.1': {}
 
-  '@fundamentry/category@1.1.0(@fundamentry/coproduct@1.1.0)':
+  '@fundamentry/category@1.1.2(@fundamentry/coproduct@1.2.1)':
     dependencies:
-      '@fundamentry/coproduct': 1.1.0
+      '@fundamentry/coproduct': 1.2.1
 
-  '@fundamentry/coproduct@1.1.0': {}
+  '@fundamentry/coproduct@1.2.1':
+    dependencies:
+      '@fundamentry/trait': 3.1.0
 
   '@fundamentry/eslint-config-base@1.1.8(eslint-config-airbnb-base@15.0.0(eslint-plugin-import@2.32.0)(eslint@8.57.1(supports-color@7.2.0)))(eslint-plugin-import@2.32.0)(eslint@8.57.1(supports-color@7.2.0))':
     dependencies:
@@ -4976,33 +4966,29 @@ snapshots:
       eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.71.0(eslint@8.57.1(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint-import-resolver-typescript@4.4.5)(eslint@8.57.1(supports-color@7.2.0))
       typescript: 6.0.3
 
-  '@fundamentry/number@1.0.3': {}
-
   '@fundamentry/number@1.2.0':
     dependencies:
       '@fundamentry/brand': 2.0.1
 
-  '@fundamentry/order@1.0.0':
+  '@fundamentry/order@1.0.2':
     dependencies:
-      '@fundamentry/trait': 1.1.0
+      '@fundamentry/trait': 3.1.0
 
-  '@fundamentry/range@1.1.0':
+  '@fundamentry/range@2.1.0':
     dependencies:
-      '@fundamentry/order': 1.0.0
-      '@fundamentry/trait': 1.1.0
+      '@fundamentry/order': 1.0.2
+      '@fundamentry/trait': 3.1.0
 
-  '@fundamentry/scalar@3.1.0':
+  '@fundamentry/scalar@4.1.0':
     dependencies:
-      '@fundamentry/trait': 2.0.0
+      '@fundamentry/trait': 3.1.0
 
-  '@fundamentry/stream@1.3.0':
+  '@fundamentry/stream@2.0.1':
     dependencies:
-      '@fundamentry/number': 1.0.3
-      '@fundamentry/trait': 1.1.0
+      '@fundamentry/number': 1.2.0
+      '@fundamentry/trait': 3.1.0
 
-  '@fundamentry/trait@1.1.0': {}
-
-  '@fundamentry/trait@2.0.0': {}
+  '@fundamentry/trait@3.1.0': {}
 
   '@fundamentry/typescript-config@2.0.0(typescript@6.0.3)':
     dependencies:

@@ -1,13 +1,13 @@
-import { type Equatable, type Stringable } from '@fundamentry/trait';
+import { Equatable } from '@fundamentry/trait';
 
-import { type Node } from './Node.js';
+import { Node } from './Node.js';
 
-export class Option<out T extends Node>
-  implements Equatable<unknown>, Stringable
-{
+export class Option<out T extends Node> extends Node {
   readonly #value?: T;
 
   constructor(value?: T) {
+    super();
+
     this.#value = value;
   }
 
@@ -30,15 +30,14 @@ export class Option<out T extends Node>
     return Object.freeze(this.#value === undefined ? [] : [this.#value]);
   }
 
-  equals(other: unknown): boolean {
-    if (!(other instanceof Option)) return false;
-
-    return this.#value === undefined
-      ? other.#value === undefined
-      : this.#value.equals(other.#value);
+  override equals(other: unknown): boolean {
+    return (
+      other instanceof Option &&
+      Equatable.equals<unknown>(this.#value, other.#value)
+    );
   }
 
-  toString(): string {
-    return this.#value?.toString() ?? '';
+  override toString(): string {
+    return this.#value === undefined ? '' : String(this.#value);
   }
 }

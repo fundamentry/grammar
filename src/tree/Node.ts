@@ -1,3 +1,3 @@
-import { type Equatable, type Stringable } from '@fundamentry/trait';
+import { Data } from '#project/data';
 
-export type Node = Equatable<unknown> & Stringable;
+export abstract class Node extends Data {}
