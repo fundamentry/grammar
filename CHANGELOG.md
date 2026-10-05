@@ -1,3 +1,19 @@
+# 4.0.0
+
+### 🚀 Features
+
+- ⚠️  remove the 'Rule' API ([87fb086](https://github.com/fundamentry/grammar/commit/87fb086))
+- ⚠️  rebuild 'Codec' as a backtracking grammar ([979a7c3](https://github.com/fundamentry/grammar/commit/979a7c3))
+
+### 🩹 Fixes
+
+- make 'instanceof' on an 'Option' subclass check that subclass ([9ec0c14](https://github.com/fundamentry/grammar/commit/9ec0c14))
+
+### ⚠️  Breaking Changes
+
+- rebuild 'Codec' as a backtracking grammar  ([979a7c3](https://github.com/fundamentry/grammar/commit/979a7c3))
+- remove the 'Rule' API  ([87fb086](https://github.com/fundamentry/grammar/commit/87fb086))
+
 ## 3.1.0
 
 ### 🚀 Features
