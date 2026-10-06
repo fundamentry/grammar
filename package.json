@@ -13,6 +13,9 @@
     "email": "alexander.zakharov@fundamentry.org"
   },
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
   "devEngines": {
     "runtime": {
       "name": "node",

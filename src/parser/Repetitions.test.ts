@@ -4,11 +4,12 @@ import { Range } from '@fundamentry/range';
 import { Integer } from '@fundamentry/scalar';
 import { Point } from '@fundamentry/stream';
 
-import { Mismatch } from '#project/mismatch';
+import { Named } from '#project/expectation';
 import { type Node, Option } from '#project/tree';
 
 import { Context } from './Context.js';
 import { Continuation } from './Continuation.js';
+import { Frontier } from './Frontier.js';
 import { type Parser } from './Parser.js';
 import { Repetitions } from './Repetitions.js';
 
@@ -81,14 +82,16 @@ describe('Repetitions', () => {
 
     it('must report the failures of its iterations', () => {
       const failing: Parser.Parse<string> = (point, context, continuation) => {
-        context.fail(continuation.relabel(Mismatch.message(point, 'nope')));
+        context.fail(
+          continuation.relabel(Frontier.expected(point, new Named('a letter')))
+        );
         letters(point, context, continuation);
       };
 
       const { mismatch } = repeat(Range.atLeast(Integer.of(0)), 'a', failing);
 
-      expect(String(mismatch)).toBe('nope');
-      expect(mismatch.at().isAtEnd()).toBe(true);
+      expect(String(mismatch)).toBe('Expected a letter, got end of input');
+      expect(mismatch.offset()).toBe(1);
     });
   });
 });

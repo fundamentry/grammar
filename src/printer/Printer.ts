@@ -7,7 +7,14 @@ import { Point } from '@fundamentry/stream';
 import { Cache } from '#project/cache';
 import { type Expression } from '#project/expression';
 import { Misprint } from '#project/misprint';
-import { Choice, type Node, Option, Repetition, Sequence } from '#project/tree';
+import {
+  Choice,
+  type Node,
+  Nonterminal,
+  Option,
+  Repetition,
+  Sequence,
+} from '#project/tree';
 
 import { Rope } from './Rope.js';
 
@@ -40,7 +47,7 @@ export class Printer<Token> implements Expression.Visitor<
     return value =>
       conversion.from(value as Value).match<Printer.Printed<Token>>({
         onSuccess: token => new Success(Rope.of(token)),
-        onFailure: reason => new Failure(Misprint.of(reason)),
+        onFailure: reason => new Failure(new Misprint([], reason)),
       });
   }
 
@@ -55,7 +62,8 @@ export class Printer<Token> implements Expression.Visitor<
 
       const values = value.elements();
       const arity = new Failure(
-        Misprint.of(
+        new Misprint(
+          [],
           `Expected a ${String(prints.length)}-tuple, got ${String(values.length)} items`
         )
       );
@@ -81,23 +89,17 @@ export class Printer<Token> implements Expression.Visitor<
     };
   }
 
-  alternation([left, right]: readonly [
-    Expression<Token>,
-    Expression<Token>,
-  ]): Printer.Print<Token> {
-    const printLeft = Printer.#within(this.#compile(left), { node: 'left' });
-    const printRight = Printer.#within(this.#compile(right), { node: 'right' });
+  alternation(
+    alternatives: Expression.Alternatives<Token>
+  ): Printer.Print<Token> {
+    const prints = alternatives.map((alternative, index) =>
+      Printer.#within(this.#compile(alternative), { node: 'choice', index })
+    );
 
-    return value => {
-      if (!(value instanceof Choice))
-        return Printer.#unexpected('a choice', value);
-
-      const either = value.either();
-
-      return either.isLeft()
-        ? printLeft(either.left())
-        : printRight(either.right());
-    };
+    return value =>
+      value instanceof Choice
+        ? value.match(prints)
+        : Printer.#unexpected('a choice', value);
   }
 
   optional(element: Expression<Token>): Printer.Print<Token> {
@@ -128,7 +130,8 @@ export class Printer<Token> implements Expression.Visitor<
 
       if (!bounds.contains(count))
         return new Failure(
-          Misprint.of(
+          new Misprint(
+            [],
             `Expected a count in ${String(bounds)}, got ${String(count)}`
           )
         );
@@ -145,27 +148,25 @@ export class Printer<Token> implements Expression.Visitor<
     };
   }
 
-  refinement<Value extends Node, Refined extends Node>(
-    element: Expression<Token>,
-    conversion: PartialIso<Value, Refined, string, string>
-  ): Printer.Print<Token> {
-    const print = Printer.#within(this.#compile(element), {
-      node: 'refinement',
-    });
-
-    return value =>
-      conversion.from(value as Refined).match({
-        onSuccess: original => print(original),
-        onFailure: reason => new Failure(Misprint.of(reason)),
-      });
-  }
-
   label(element: Expression<Token>): Printer.Print<Token> {
     return Printer.#within(this.#compile(element), { node: 'label' });
   }
 
-  rule(element: Expression<Token>, name: string): Printer.Print<Token> {
-    return Printer.#within(this.#compile(element), { node: 'rule', name });
+  rule(
+    element: Expression<Token>,
+    rule: Nonterminal.Rule<string>
+  ): Printer.Print<Token> {
+    const print = this.#compile(element);
+
+    return Printer.#within(
+      value =>
+        value instanceof Nonterminal && value.rule() === rule
+          ? print(value.elements())
+          : new Failure(
+              new Misprint([], `'${String(value)}' is not ${rule.name()}`)
+            ),
+      { node: 'rule', name: rule.name() }
+    );
   }
 
   reference(target: () => Expression<Token>): Printer.Print<Token> {
@@ -183,10 +184,17 @@ export class Printer<Token> implements Expression.Visitor<
     step: Misprint.Step
   ): Printer.Print<Token> {
     return value =>
-      print(value).orElse(misprint => new Failure(misprint.within(step)));
+      print(value).orElse(
+        misprint =>
+          new Failure(
+            new Misprint([step, ...misprint.path()], misprint.message())
+          )
+      );
   }
 
   static #unexpected(kind: string, value: Node): Failure<Misprint> {
-    return new Failure(Misprint.of(`Expected ${kind}, got '${String(value)}'`));
+    return new Failure(
+      new Misprint([], `Expected ${kind}, got '${String(value)}'`)
+    );
   }
 }

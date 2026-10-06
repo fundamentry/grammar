@@ -2,7 +2,7 @@ import { Equatable } from '@fundamentry/trait';
 
 import { Node } from './Node.js';
 
-export class Option<out T extends Node> extends Node {
+export class Option<out T extends Node = never> extends Node {
   readonly #value?: T;
 
   constructor(value?: T) {

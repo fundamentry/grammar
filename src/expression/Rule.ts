@@ -1,19 +1,24 @@
+import { type Nonterminal } from '#project/tree';
+
 import { type Expression } from './Expression.js';
 
 export class Rule<Token> implements Expression<Token> {
   readonly #element: Expression<Token>;
 
-  readonly #name: string;
+  readonly #rule: () => Nonterminal.Rule<string>;
 
-  constructor(element: Expression<Token>, name: string) {
+  constructor(
+    element: Expression<Token>,
+    rule: () => Nonterminal.Rule<string>
+  ) {
     this.#element = element;
-    this.#name = name;
+    this.#rule = rule;
   }
 
   accept<Input, Output>(
     visitor: Expression.Visitor<Token, Input, Output>,
     input: Input
   ): Output {
-    return visitor.rule(this.#element, this.#name, input);
+    return visitor.rule(this.#element, this.#rule(), input);
   }
 }

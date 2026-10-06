@@ -61,16 +61,14 @@ export class LeftCorners<in out Token> implements Expression.Visitor<
     };
   }
 
-  alternation([left, right]: readonly [
-    Expression<Token>,
-    Expression<Token>,
-  ]): LeftCorners.Facts<Token> {
-    const first = this.of(left);
-    const second = this.of(right);
+  alternation(
+    alternatives: Expression.Alternatives<Token>
+  ): LeftCorners.Facts<Token> {
+    const facts = alternatives.map(alternative => this.of(alternative));
 
     return {
-      nullable: first.nullable || second.nullable,
-      corners: new Set([...first.corners, ...second.corners]),
+      nullable: facts.some(({ nullable }) => nullable),
+      corners: new Set(facts.flatMap(({ corners }) => [...corners])),
     };
   }
 
@@ -90,10 +88,6 @@ export class LeftCorners<in out Token> implements Expression.Visitor<
       nullable: bounds.contains(Integer.of(0)) || nullable,
       corners: iterates ? corners : new Set(),
     };
-  }
-
-  refinement(element: Expression<Token>): LeftCorners.Facts<Token> {
-    return this.of(element);
   }
 
   label(element: Expression<Token>): LeftCorners.Facts<Token> {

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PartialIso } from '@fundamentry/category';
 
 import { Named } from '#project/expectation';
-import { type Literal } from '#project/tree';
+import { type Character } from '#project/tree';
 
 import { type Expression } from './Expression.js';
 import { Reference } from './Reference.js';
@@ -11,7 +11,7 @@ import { Terminal } from './Terminal.js';
 
 describe('Reference', () => {
   describe('target', () => {
-    const element = new Terminal(PartialIso.id<Literal>(), new Named('a'));
+    const element = new Terminal(PartialIso.id<Character>(), new Named('a'));
 
     it('must define its target once, however often it is asked for it', () => {
       const define = vi.fn(() => element);
@@ -25,7 +25,7 @@ describe('Reference', () => {
 
   describe('accept', () => {
     const visitor = new Proxy(
-      {} as Expression.Visitor<Literal, string, readonly unknown[]>,
+      {} as Expression.Visitor<Character, string, readonly unknown[]>,
       {
         get:
           (_, method) =>
@@ -34,10 +34,11 @@ describe('Reference', () => {
     );
 
     const resolving = new Proxy(
-      {} as Expression.Visitor<Literal, string, readonly unknown[]>,
+      {} as Expression.Visitor<Character, string, readonly unknown[]>,
       {
         get:
-          (_, method) => (target: () => Expression<Literal>, input: string) => [
+          (_, method) =>
+          (target: () => Expression<Character>, input: string) => [
             method,
             target(),
             input,
@@ -45,7 +46,7 @@ describe('Reference', () => {
       }
     );
 
-    const element = new Terminal(PartialIso.id<Literal>(), new Named('a'));
+    const element = new Terminal(PartialIso.id<Character>(), new Named('a'));
 
     it('must visit as a reference with a way to its target and the input', () => {
       const input = 'input';

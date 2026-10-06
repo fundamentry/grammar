@@ -5,13 +5,13 @@ import { Point } from '@fundamentry/stream';
 
 import { Named } from '#project/expectation';
 import { Concatenation } from '#project/expression';
-import { Mismatch } from '#project/mismatch';
 import { type Node, Option, Repetition } from '#project/tree';
 
 import { type Column } from './Column.js';
 import { Context } from './Context.js';
 import { Continuation } from './Continuation.js';
 import { Failures } from './Failures.js';
+import { Frontier } from './Frontier.js';
 import { type Parser } from './Parser.js';
 
 const start = Point.of('ab');
@@ -133,12 +133,14 @@ describe('Context', () => {
   describe('fail', () => {
     it('must report the furthest failure', () => {
       const parsed = Context.run(start, (_, context) => {
-        context.fail(Mismatch.expected(second, new Named('b')));
-        context.fail(Mismatch.expected(start, new Named('a')));
+        context.fail(Frontier.expected(second, new Named('b')));
+        context.fail(Frontier.expected(start, new Named('a')));
       });
 
       assert(!parsed.ok());
-      expect(parsed.error()).toEqual(Mismatch.expected(second, new Named('b')));
+      expect(parsed.error()).toEqual(
+        Frontier.expected(second, new Named('b')).mismatch(start)
+      );
     });
   });
 
@@ -182,15 +184,15 @@ describe('Context', () => {
       const failures = new Failures(start);
       const parsed = Context.run(start, (_, context) =>
         context.within(failures, () =>
-          context.fail(Mismatch.expected(second, new Named('a')))
+          context.fail(Frontier.expected(second, new Named('a')))
         )
       );
 
       assert(!parsed.ok());
-      expect(failures.mismatch()).toEqual(
-        Mismatch.expected(second, new Named('a'))
+      expect(failures.frontier()).toEqual(
+        Frontier.expected(second, new Named('a'))
       );
-      expect(parsed.error()).toEqual(Mismatch.empty(start));
+      expect(parsed.error()).toEqual(Frontier.empty(start).mismatch(start));
     });
   });
 
@@ -279,7 +281,7 @@ describe('Context', () => {
       const parsed = Context.run(start, (_, context) =>
         context.recall(
           rule((point, inner) =>
-            inner.fail(Mismatch.expected(point, new Named('a')))
+            inner.fail(Frontier.expected(point, new Named('a')))
           ),
           start,
           Continuation.of<string>(() => undefined).labelled(
@@ -291,13 +293,13 @@ describe('Context', () => {
 
       assert(!parsed.ok());
       expect(parsed.error()).toEqual(
-        Mismatch.expected(start, new Named('a label'))
+        Frontier.expected(start, new Named('a label')).mismatch(start)
       );
     });
 
     it('must hand on what a rule failed with to a caller that comes after it finished', () => {
       const recall = rule((point, inner) =>
-        inner.fail(Mismatch.expected(point, new Named('a')))
+        inner.fail(Frontier.expected(point, new Named('a')))
       );
       const parsed = Context.run(start, (_, context) => {
         context.schedule(() =>
@@ -322,11 +324,11 @@ describe('Context', () => {
 
       assert(!parsed.ok());
       expect(parsed.error()).toEqual(
-        Mismatch.expected(
+        Frontier.expected(
           start,
           new Named('a label'),
           new Named('another label')
-        )
+        ).mismatch(start)
       );
     });
 
@@ -341,19 +343,21 @@ describe('Context', () => {
           )
         );
         context.schedule(() =>
-          context.fail(Mismatch.expected(start, new Named('b')))
+          context.fail(Frontier.expected(start, new Named('b')))
         );
       });
 
       assert(!parsed.ok());
-      expect(parsed.error()).toEqual(Mismatch.expected(start, new Named('b')));
+      expect(parsed.error()).toEqual(
+        Frontier.expected(start, new Named('b')).mismatch(start)
+      );
     });
 
     it('must not relabel what a rule failed with away from where the label starts', () => {
       const parsed = Context.run(start, (_, context) =>
         context.recall(
           rule((_point, inner) =>
-            inner.fail(Mismatch.expected(second, new Named('a')))
+            inner.fail(Frontier.expected(second, new Named('a')))
           ),
           start,
           Continuation.of<string>(() => undefined).labelled(
@@ -364,7 +368,9 @@ describe('Context', () => {
       );
 
       assert(!parsed.ok());
-      expect(parsed.error()).toEqual(Mismatch.expected(second, new Named('a')));
+      expect(parsed.error()).toEqual(
+        Frontier.expected(second, new Named('a')).mismatch(start)
+      );
     });
   });
 });

@@ -1,15 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
-import { Literal } from './Literal.js';
+import { Character } from './Character.js';
 import { Option } from './Option.js';
 import { Sequence } from './Sequence.js';
 
-const A = new Literal(CodePoint.of('a'));
-const B = new Literal(CodePoint.of('b'));
+const A = new Character(CodePoint.of('a'));
+const B = new Character(CodePoint.of('b'));
 
-class SpecificOption extends Option<Literal> {}
+class SpecificOption extends Option<Character> {}
 
 describe('Option', () => {
   describe('instanceof', () => {
@@ -35,6 +35,12 @@ describe('Option', () => {
 
     it('must return undefined when absent', () => {
       expect(new Option().value()).toBeUndefined();
+    });
+
+    it('must fit an option of any node when absent', () => {
+      expectTypeOf(new Option()).toExtend<
+        Option<Sequence<readonly [Character]>>
+      >();
     });
   });
 
@@ -68,7 +74,7 @@ describe('Option', () => {
 
     it('must not equal a different kind of node', () => {
       expect(
-        new Option(A).equals(new Sequence([A]) as unknown as Option<Literal>)
+        new Option(A).equals(new Sequence([A]) as unknown as Option<Character>)
       ).toBe(false);
     });
   });

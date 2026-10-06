@@ -61,6 +61,12 @@
           }
         ],
         "class-methods-use-this": "off",
+        "@typescript-eslint/no-invalid-void-type": [
+          "error",
+          {
+            "allowAsThisParameter": true
+          }
+        ],
         "no-plusplus": "off",
         "no-restricted-syntax": "off"
       }
@@ -72,6 +78,12 @@
         "vitest.setup.ts"
       ],
       "rules": {
+        "@typescript-eslint/no-use-before-define": [
+          "error",
+          {
+            "variables": false
+          }
+        ],
         "import/no-extraneous-dependencies": [
           "error",
           {

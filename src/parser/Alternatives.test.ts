@@ -1,16 +1,15 @@
 import { assert, describe, expect, it, vi } from 'vitest';
 
-import { Left, Right } from '@fundamentry/coproduct';
 import { CodePoint } from '@fundamentry/scalar';
 import { Point } from '@fundamentry/stream';
 
 import { Named } from '#project/expectation';
-import { Mismatch } from '#project/mismatch';
-import { Choice, Literal, type Node } from '#project/tree';
+import { Choice, Character, type Node } from '#project/tree';
 
 import { Alternatives } from './Alternatives.js';
 import { Context } from './Context.js';
 import { Continuation } from './Continuation.js';
+import { Frontier } from './Frontier.js';
 import { type Parser } from './Parser.js';
 
 const input = (text: string) => Point.of(Array.from(text, CodePoint.of));
@@ -33,7 +32,7 @@ const explore = (
   return { steps, mismatch: parsed.error() };
 };
 
-const character = (text: string): Parser.Compiled<CodePoint> => {
+const terminal = (text: string): Parser.Compiled<CodePoint> => {
   const expected = new Named(`'${text}'`);
 
   return {
@@ -43,12 +42,12 @@ const character = (text: string): Parser.Compiled<CodePoint> => {
       if (step?.value.equals(CodePoint.of(text)))
         context.succeed(continuation, [
           {
-            value: new Literal(step.value),
+            value: new Character(step.value),
             rest: step.rest,
           },
         ]);
       else
-        context.fail(continuation.relabel(Mismatch.expected(point, expected)));
+        context.fail(continuation.relabel(Frontier.expected(point, expected)));
     },
     starts: token => token?.equals(CodePoint.of(text)) ?? false,
     nullable: false,
@@ -60,7 +59,7 @@ const empty: Parser.Compiled<CodePoint> = {
   parse: (point, context, continuation) =>
     context.succeed(continuation, [
       {
-        value: new Literal(CodePoint.of('_')),
+        value: new Character(CodePoint.of('_')),
         rest: point,
       },
     ]),
@@ -69,36 +68,40 @@ const empty: Parser.Compiled<CodePoint> = {
   expected: [],
 };
 
-const literal = (text: string) => new Literal(CodePoint.of(text));
+const character = (text: string) => new Character(CodePoint.of(text));
 
 describe('Alternatives', () => {
   describe('of', () => {
-    it('must wrap a value from the left in a left choice and from the right in a right choice', () => {
-      const alternatives = Alternatives.of(character('a'), character('b'));
+    it('must wrap a value in a choice of the alternative it came from', () => {
+      const alternatives = Alternatives.of([
+        terminal('a'),
+        terminal('b'),
+        terminal('c'),
+      ]);
 
       const a = input('a');
-      const b = input('b');
+      const c = input('c');
 
       expect(explore(alternatives, a).steps).toEqual([
-        { value: new Choice(new Left(literal('a'))), rest: a.step()?.rest },
+        { value: new Choice(0, character('a')), rest: a.step()?.rest },
       ]);
-      expect(explore(alternatives, b).steps).toEqual([
-        { value: new Choice(new Right(literal('b'))), rest: b.step()?.rest },
+      expect(explore(alternatives, c).steps).toEqual([
+        { value: new Choice(2, character('c')), rest: c.step()?.rest },
       ]);
     });
 
     it('must flatten a nested alternation, keeping the nesting of its values', () => {
-      const inner = Alternatives.of(character('a'), character('b'));
-      const outer = Alternatives.of(
-        { ...character('a'), alternatives: inner },
-        character('c')
-      );
+      const inner = Alternatives.of([terminal('a'), terminal('b')]);
+      const outer = Alternatives.of([
+        { ...terminal('a'), alternatives: inner },
+        terminal('c'),
+      ]);
 
       const point = input('b');
 
       expect(explore(outer, point).steps).toEqual([
         {
-          value: new Choice(new Left(new Choice(new Right(literal('b'))))),
+          value: new Choice(0, new Choice(1, character('b'))),
           rest: point.step()?.rest,
         },
       ]);
@@ -107,7 +110,7 @@ describe('Alternatives', () => {
 
   describe('starts', () => {
     it('must start with a token any alternative starts with', () => {
-      const alternatives = Alternatives.of(character('a'), character('b'));
+      const alternatives = Alternatives.of([terminal('a'), terminal('b')]);
 
       expect(alternatives.starts(CodePoint.of('b'))).toBe(true);
       expect(alternatives.starts(CodePoint.of('c'))).toBe(false);
@@ -118,40 +121,42 @@ describe('Alternatives', () => {
   describe('expected', () => {
     it('must expect what every alternative expects, in order', () => {
       expect(
-        Alternatives.of(character('a'), character('b')).expected()
+        Alternatives.of([terminal('a'), terminal('b')]).expected()
       ).toEqual([new Named("'a'"), new Named("'b'")]);
     });
   });
 
   describe('from', () => {
     it('must report consecutive alternatives that cannot start with the token as one failure, in order', () => {
-      const alternatives = Alternatives.of(
+      const alternatives = Alternatives.of([
         {
-          ...character('a'),
-          alternatives: Alternatives.of(character('a'), character('b')),
+          ...terminal('a'),
+          alternatives: Alternatives.of([terminal('a'), terminal('b')]),
         },
-        character('c')
-      );
+        terminal('c'),
+      ]);
 
       const point = input('c');
       const { steps, mismatch } = explore(alternatives, point);
 
       expect(steps).toEqual([
         {
-          value: new Choice(new Right(literal('c'))),
+          value: new Choice(1, character('c')),
           rest: point.step()?.rest,
         },
       ]);
       expect(mismatch).toEqual(
-        Mismatch.expected(point, new Named("'a'"), new Named("'b'"))
+        Frontier.expected(point, new Named("'a'"), new Named("'b'")).mismatch(
+          point
+        )
       );
     });
 
     it('must not parse an alternative that cannot start with the token', () => {
-      const parse = vi.fn(character('a').parse);
+      const parse = vi.fn(terminal('a').parse);
 
       explore(
-        Alternatives.of({ ...character('a'), parse }, character('b')),
+        Alternatives.of([{ ...terminal('a'), parse }, terminal('b')]),
         input('b')
       );
 
@@ -160,7 +165,7 @@ describe('Alternatives', () => {
 
     it('must parse an alternative that can match empty input whatever the token', () => {
       expect(
-        explore(Alternatives.of(character('a'), empty), input('z')).steps
+        explore(Alternatives.of([terminal('a'), empty]), input('z')).steps
       ).toHaveLength(1);
     });
 
@@ -169,13 +174,13 @@ describe('Alternatives', () => {
       const starts = vi.fn((token?: CodePoint) => {
         events.push('looked at b');
 
-        return character('b').starts(token);
+        return terminal('b').starts(token);
       });
       const point = input('a');
-      const alternatives = Alternatives.of(character('a'), {
-        ...character('b'),
-        starts,
-      });
+      const alternatives = Alternatives.of([
+        terminal('a'),
+        { ...terminal('b'), starts },
+      ]);
 
       Context.run(point, (start, context) =>
         alternatives.from(

@@ -3,11 +3,11 @@ import { assert, describe, expect, it } from 'vitest';
 import { Point } from '@fundamentry/stream';
 
 import { Named } from '#project/expectation';
-import { Mismatch } from '#project/mismatch';
 import { type Node, Option } from '#project/tree';
 
 import { Context } from './Context.js';
 import { Continuation } from './Continuation.js';
+import { Frontier } from './Frontier.js';
 import { Memo } from './Memo.js';
 
 const start = Point.of('ab');
@@ -52,7 +52,7 @@ describe('Memo', () => {
     });
 
     const failure = (
-      mismatches: readonly Mismatch<string>[],
+      mismatches: readonly Frontier<string>[],
       caller = Continuation.of<string>(() => undefined)
     ) => {
       const parsed = Context.run(start, (_, context) => {
@@ -68,8 +68,8 @@ describe('Memo', () => {
     };
 
     it('must hand on what failed while filling', () => {
-      expect(failure([Mismatch.expected(second, new Named('b'))])).toEqual(
-        Mismatch.expected(second, new Named('b'))
+      expect(failure([Frontier.expected(second, new Named('b'))])).toEqual(
+        Frontier.expected(second, new Named('b')).mismatch(start)
       );
     });
 
@@ -82,19 +82,19 @@ describe('Memo', () => {
             new Named('a label')
           )
         )
-      ).toEqual(Mismatch.empty(start));
+      ).toEqual(Frontier.empty(start).mismatch(start));
     });
 
     it('must relabel a failure where the label of its caller starts', () => {
       expect(
         failure(
-          [Mismatch.expected(start, new Named('a'))],
+          [Frontier.expected(start, new Named('a'))],
           Continuation.of<string>(() => undefined).labelled(
             start,
             new Named('a label')
           )
         )
-      ).toEqual(Mismatch.expected(start, new Named('a label')));
+      ).toEqual(Frontier.expected(start, new Named('a label')).mismatch(start));
     });
   });
 });

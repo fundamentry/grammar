@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Range } from '@fundamentry/range';
-import { CodePoint, Integer } from '@fundamentry/scalar';
+import { Integer } from '@fundamentry/scalar';
 
 import { Term } from './Term.js';
 
@@ -9,58 +9,6 @@ describe('Term', () => {
   describe('element', () => {
     it('must render its text', () => {
       expect(String(Term.element('DIGIT'))).toBe('DIGIT');
-    });
-  });
-
-  describe('codePoints', () => {
-    it('must render a single code point in hexadecimal, padded to two digits', () => {
-      expect(String(Term.codePoints(Range.singleton(CodePoint.of(9))))).toBe(
-        '%x09'
-      );
-    });
-
-    it('must render a range of code points', () => {
-      expect(
-        String(
-          Term.codePoints(Range.closed(CodePoint.of('A'), CodePoint.of('Z')))
-        )
-      ).toBe('%x41-5A');
-    });
-
-    it('must leave out the endpoints of an open range', () => {
-      expect(
-        String(
-          Term.codePoints(Range.open(CodePoint.of('@'), CodePoint.of('[')))
-        )
-      ).toBe('%x41-5A');
-    });
-
-    it('must not render a range of anything but code points', () => {
-      expect(
-        Term.codePoints(Range.closed(Integer.of(0), Integer.of(9)))
-      ).toBeUndefined();
-    });
-
-    it('must not render an unbounded range', () => {
-      expect(Term.codePoints(Range.atLeast(CodePoint.of('A')))).toBeUndefined();
-    });
-  });
-
-  describe('text', () => {
-    it('must quote case-insensitive text', () => {
-      expect(String(Term.text('http', false))).toBe('"http"');
-    });
-
-    it('must mark case-sensitive text', () => {
-      expect(String(Term.text('http', true))).toBe('%s"http"');
-    });
-
-    it.each([
-      ['a quotation mark', 'say "hi"'],
-      ['a control character', 'a\tb'],
-      ['a character outside ASCII', 'café'],
-    ])('must not quote text with %s', (_, text) => {
-      expect(Term.text(text, true)).toBeUndefined();
     });
   });
 

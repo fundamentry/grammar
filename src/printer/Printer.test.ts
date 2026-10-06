@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { FallibleMorphism, PartialIso } from '@fundamentry/category';
-import { Failure, Left, Right, Success } from '@fundamentry/coproduct';
+import { Failure, Success } from '@fundamentry/coproduct';
 import { Range } from '@fundamentry/range';
 import { CodePoint, Integer } from '@fundamentry/scalar';
 
@@ -13,7 +13,6 @@ import {
   Label,
   Optional,
   Reference,
-  Refinement,
   Repetition as Repeated,
   Rule,
   Terminal,
@@ -21,8 +20,9 @@ import {
 import { Misprint } from '#project/misprint';
 import {
   Choice,
-  Literal,
+  Character,
   type Node,
+  Nonterminal,
   Option,
   Repetition,
   Sequence,
@@ -36,10 +36,10 @@ const digit = new Terminal(
   PartialIso.of(
     FallibleMorphism.of((token: CodePoint) =>
       isDigit(token)
-        ? new Success(new Literal(token))
+        ? new Success(new Character(token))
         : new Failure(`'${token.toString()}' is not a digit`)
     ),
-    FallibleMorphism.of((value: Literal) =>
+    FallibleMorphism.of((value: Character) =>
       isDigit(value.codePoint())
         ? new Success(value.codePoint())
         : new Failure(`'${value.toString()}' is not a digit`)
@@ -48,9 +48,9 @@ const digit = new Terminal(
   new Named('a digit')
 );
 
-const literal = (text: string) => new Literal(CodePoint.of(text));
+const character = (text: string) => new Character(CodePoint.of(text));
 
-const literals = (text: string) => Array.from(text, literal);
+const characters = (text: string) => Array.from(text, character);
 
 const print = (expression: Expression<CodePoint>, value: Node) =>
   new Printer(expression).print(value).map(rope => [...rope]);
@@ -58,12 +58,7 @@ const print = (expression: Expression<CodePoint>, value: Node) =>
 const printed = (text: string) => new Success(Array.from(text, CodePoint.of));
 
 const misprint = (message: string, ...path: readonly Misprint.Step[]) =>
-  new Failure(
-    path.reduceRight(
-      (nested, step) => nested.within(step),
-      Misprint.of(message)
-    )
-  );
+  new Failure(new Misprint(path, message));
 
 describe('Printer', () => {
   describe('constructor', () => {
@@ -79,8 +74,8 @@ describe('Printer', () => {
 
       const printer = new Printer(new Concatenation([shared, shared]));
 
-      printer.print(new Sequence(literals('12')));
-      printer.print(new Sequence(literals('34')));
+      printer.print(new Sequence(characters('12')));
+      printer.print(new Sequence(characters('34')));
 
       expect(compilations).toHaveBeenCalledOnce();
     });
@@ -88,11 +83,11 @@ describe('Printer', () => {
 
   describe('terminal', () => {
     it('must print the token its value converts back to', () => {
-      expect(print(digit, literal('1'))).toEqual(printed('1'));
+      expect(print(digit, character('1'))).toEqual(printed('1'));
     });
 
     it('must report why its value does not convert back', () => {
-      expect(print(digit, literal('x'))).toEqual(
+      expect(print(digit, character('x'))).toEqual(
         misprint("'x' is not a digit")
       );
     });
@@ -102,29 +97,31 @@ describe('Printer', () => {
     const pair = new Concatenation([digit, digit]);
 
     it('must print its elements in order', () => {
-      expect(print(pair, new Sequence(literals('12')))).toEqual(printed('12'));
+      expect(print(pair, new Sequence(characters('12')))).toEqual(
+        printed('12')
+      );
     });
 
     it('must place a misprint of an element under its index', () => {
-      expect(print(pair, new Sequence(literals('1x')))).toEqual(
+      expect(print(pair, new Sequence(characters('1x')))).toEqual(
         misprint("'x' is not a digit", { node: 'sequence', index: 1 })
       );
     });
 
     it('must reject too few elements', () => {
-      expect(print(pair, new Sequence(literals('1')))).toEqual(
+      expect(print(pair, new Sequence(characters('1')))).toEqual(
         misprint('Expected a 2-tuple, got 1 items')
       );
     });
 
     it('must reject too many elements', () => {
-      expect(print(pair, new Sequence(literals('123')))).toEqual(
+      expect(print(pair, new Sequence(characters('123')))).toEqual(
         misprint('Expected a 2-tuple, got 3 items')
       );
     });
 
     it('must reject a value that is not a sequence', () => {
-      expect(print(pair, literal('1'))).toEqual(
+      expect(print(pair, character('1'))).toEqual(
         misprint("Expected a sequence, got '1'")
       );
     });
@@ -134,43 +131,42 @@ describe('Printer', () => {
     const letter = new Terminal(
       PartialIso.of(
         FallibleMorphism.of(
-          (token: CodePoint) => new Success(new Literal(token))
+          (token: CodePoint) => new Success(new Character(token))
         ),
-        FallibleMorphism.of((value: Literal) => new Success(value.codePoint()))
+        FallibleMorphism.of(
+          (value: Character) => new Success(value.codePoint())
+        )
       ),
       new Named('a letter')
     );
     const either = new Alternation([digit, letter]);
 
-    it('must print a left choice with the left alternative', () => {
-      expect(print(either, new Choice(new Left(literal('1'))))).toEqual(
-        printed('1')
+    it.each([
+      [0, '1'],
+      [1, 'x'],
+    ])('must print the alternative a choice took at %d', (index, text) => {
+      expect(print(either, new Choice(index, character(text)))).toEqual(
+        printed(text)
       );
     });
 
-    it('must print a right choice with the right alternative', () => {
-      expect(print(either, new Choice(new Right(literal('x'))))).toEqual(
-        printed('x')
-      );
-    });
-
-    it('must place a misprint of the left alternative under the left side', () => {
-      expect(print(either, new Choice(new Left(literal('x'))))).toEqual(
-        misprint("'x' is not a digit", { node: 'left' })
-      );
-    });
-
-    it('must place a misprint of the right alternative under the right side', () => {
+    it('must place a misprint of an alternative under its index', () => {
       expect(
         print(
-          new Alternation([letter, digit]),
-          new Choice(new Right(literal('x')))
+          new Alternation([letter, letter, digit]),
+          new Choice(2, character('x'))
         )
-      ).toEqual(misprint("'x' is not a digit", { node: 'right' }));
+      ).toEqual(misprint("'x' is not a digit", { node: 'choice', index: 2 }));
+    });
+
+    it('must throw for a choice of an alternative it does not have', () => {
+      expect(() => print(either, new Choice(2, character('x')))).toThrow(
+        new RangeError('No case for alternative 2 of 2')
+      );
     });
 
     it('must reject a value that is not a choice', () => {
-      expect(print(either, literal('x'))).toEqual(
+      expect(print(either, character('x'))).toEqual(
         misprint("Expected a choice, got 'x'")
       );
     });
@@ -184,17 +180,17 @@ describe('Printer', () => {
     });
 
     it('must print a present value with its element', () => {
-      expect(print(maybe, new Option(literal('1')))).toEqual(printed('1'));
+      expect(print(maybe, new Option(character('1')))).toEqual(printed('1'));
     });
 
     it('must place a misprint of its element under the option', () => {
-      expect(print(maybe, new Option(literal('x')))).toEqual(
+      expect(print(maybe, new Option(character('x')))).toEqual(
         misprint("'x' is not a digit", { node: 'option' })
       );
     });
 
     it('must reject a value that is not an option', () => {
-      expect(print(maybe, literal('1'))).toEqual(
+      expect(print(maybe, character('1'))).toEqual(
         misprint("Expected an option, got '1'")
       );
     });
@@ -207,57 +203,26 @@ describe('Printer', () => {
     );
 
     it('must print each of its values in order', () => {
-      expect(print(digits, new Repetition(literals('12')))).toEqual(
+      expect(print(digits, new Repetition(characters('12')))).toEqual(
         printed('12')
       );
     });
 
     it('must place a misprint of a value under its index', () => {
-      expect(print(digits, new Repetition(literals('1x')))).toEqual(
+      expect(print(digits, new Repetition(characters('1x')))).toEqual(
         misprint("'x' is not a digit", { node: 'repetition', index: 1 })
       );
     });
 
     it('must reject a count outside its bounds', () => {
-      expect(print(digits, new Repetition(literals('123')))).toEqual(
+      expect(print(digits, new Repetition(characters('123')))).toEqual(
         misprint('Expected a count in (0..3), got 3')
       );
     });
 
     it('must reject a value that is not a repetition', () => {
-      expect(print(digits, literal('1'))).toEqual(
+      expect(print(digits, character('1'))).toEqual(
         misprint("Expected a repetition, got '1'")
-      );
-    });
-  });
-
-  describe('refinement', () => {
-    const isOdd = (value: Literal) => value.codePoint().value() % 2 === 1;
-    const odd = new Refinement(
-      digit,
-      PartialIso.of(
-        FallibleMorphism.fromPredicate(
-          isOdd,
-          (value: Literal) => `'${value.toString()}' is even`
-        ),
-        FallibleMorphism.fromPredicate(
-          isOdd,
-          (value: Literal) => `'${value.toString()}' is even`
-        )
-      )
-    );
-
-    it('must print the value its refinement converts back to', () => {
-      expect(print(odd, literal('1'))).toEqual(printed('1'));
-    });
-
-    it('must report why its value does not convert back', () => {
-      expect(print(odd, literal('2'))).toEqual(misprint("'2' is even"));
-    });
-
-    it('must place a misprint of its element under the refinement', () => {
-      expect(print(odd, literal('a'))).toEqual(
-        misprint("'a' is not a digit", { node: 'refinement' })
       );
     });
   });
@@ -266,25 +231,42 @@ describe('Printer', () => {
     const number = new Label(digit, new Named('a number'));
 
     it('must print through its element', () => {
-      expect(print(number, literal('1'))).toEqual(printed('1'));
+      expect(print(number, character('1'))).toEqual(printed('1'));
     });
 
     it('must place a misprint of its element under the label', () => {
-      expect(print(number, literal('x'))).toEqual(
+      expect(print(number, character('x'))).toEqual(
         misprint("'x' is not a digit", { node: 'label' })
       );
     });
   });
 
   describe('rule', () => {
-    it('must print through its element', () => {
-      expect(print(new Rule(digit, 'DIGIT'), literal('1'))).toEqual(
+    const rule = { name: () => 'DIGIT' };
+    const DIGIT = new Rule(digit, () => rule);
+
+    it('must print the elements of a nonterminal of the rule', () => {
+      expect(print(DIGIT, new Nonterminal(rule, character('1')))).toEqual(
         printed('1')
       );
     });
 
-    it('must place a misprint of its element under the rule, by name', () => {
-      expect(print(new Rule(digit, 'DIGIT'), literal('x'))).toEqual(
+    it('must refuse a nonterminal of another rule of the same name', () => {
+      const other = { name: () => 'DIGIT' };
+
+      expect(print(DIGIT, new Nonterminal(other, character('1')))).toEqual(
+        misprint("'1' is not DIGIT", { node: 'rule', name: 'DIGIT' })
+      );
+    });
+
+    it('must refuse a value that is not a nonterminal', () => {
+      expect(print(DIGIT, character('1'))).toEqual(
+        misprint("'1' is not DIGIT", { node: 'rule', name: 'DIGIT' })
+      );
+    });
+
+    it('must place a misprint of its elements under the rule, by name', () => {
+      expect(print(DIGIT, new Nonterminal(rule, character('x')))).toEqual(
         misprint("'x' is not a digit", { node: 'rule', name: 'DIGIT' })
       );
     });
@@ -292,7 +274,7 @@ describe('Printer', () => {
 
   describe('reference', () => {
     it('must print through the expression it refers to', () => {
-      expect(print(new Reference(() => digit), literal('1'))).toEqual(
+      expect(print(new Reference(() => digit), character('1'))).toEqual(
         printed('1')
       );
     });
@@ -307,8 +289,8 @@ describe('Printer', () => {
           digits,
           new Option(
             new Sequence([
-              literal('1'),
-              new Option(new Sequence([literal('2'), new Option()])),
+              character('1'),
+              new Option(new Sequence([character('2'), new Option()])),
             ])
           )
         )
@@ -326,7 +308,7 @@ describe('Printer', () => {
       expect(
         print(
           expression,
-          new Sequence([literal('1'), new Repetition(literals('12x'))])
+          new Sequence([character('1'), new Repetition(characters('12x'))])
         )
       ).toEqual(
         misprint(

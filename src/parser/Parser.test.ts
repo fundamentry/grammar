@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest';
 
 import { PartialIso } from '@fundamentry/category';
-import { Failure, Left, Success } from '@fundamentry/coproduct';
+import { Failure, Success } from '@fundamentry/coproduct';
 import { CodePoint } from '@fundamentry/scalar';
 import { Point } from '@fundamentry/stream';
 
@@ -15,16 +15,16 @@ import {
   Rule,
   Terminal,
 } from '#project/expression';
-import { Choice, Literal } from '#project/tree';
+import { Choice, Character, Nonterminal, Sequence } from '#project/tree';
 
 import { Parser } from './Parser.js';
 
 const character = (name: string, accepts: (codePoint: CodePoint) => boolean) =>
   new Terminal(
-    PartialIso.of<CodePoint, Literal, string, string>(
+    PartialIso.of<CodePoint, Character, string, string>(
       token =>
         accepts(token)
-          ? new Success(new Literal(token))
+          ? new Success(new Character(token))
           : new Failure(`Expected ${name}`),
       value => new Success(value.codePoint())
     ),
@@ -44,9 +44,7 @@ describe('Parser', () => {
         new Parser(new Alternation([digit, new Concatenation([digit])])).parse(
           input('1')
         )
-      ).toEqual(
-        new Success(new Choice(new Left(new Literal(CodePoint.of('1')))))
-      );
+      ).toEqual(new Success(new Choice(0, new Character(CodePoint.of('1')))));
     });
 
     it('must explore no further once a candidate consumes the whole input', () => {
@@ -67,10 +65,35 @@ describe('Parser', () => {
       expect(new Parser(digits).parse(input('12')).ok()).toBe(true);
     });
 
-    it('must parse through a rule', () => {
-      expect(new Parser(new Rule(digit, 'DIGIT')).parse(input('1'))).toEqual(
-        new Success(new Literal(CodePoint.of('1')))
+    it('must parse through a rule into a nonterminal of it', () => {
+      const rule = { name: () => 'DIGIT' };
+
+      expect(new Parser(new Rule(digit, () => rule)).parse(input('1'))).toEqual(
+        new Success(new Nonterminal(rule, new Character(CodePoint.of('1'))))
       );
+    });
+
+    it('must report a rule that fails where it starts by its name', () => {
+      const parsed = new Parser(
+        new Concatenation([
+          letter,
+          new Rule(digit, () => ({ name: () => 'DIGIT' })),
+        ])
+      ).parse(input('ax'));
+
+      assert(!parsed.ok());
+      expect(String(parsed.error())).toBe("Expected DIGIT, got 'x'");
+    });
+
+    it('must report what a rule expects once it has started', () => {
+      const parsed = new Parser(
+        new Rule(new Concatenation([letter, digit]), () => ({
+          name: () => 'PAIR',
+        }))
+      ).parse(input('ax'));
+
+      assert(!parsed.ok());
+      expect(String(parsed.error())).toBe("Expected a digit, got 'x'");
     });
 
     it('must not prune an alternative that starts with a reference', () => {
@@ -125,6 +148,24 @@ describe('Parser', () => {
       expect(twice).toBe(once);
     });
 
+    it('must explore a candidate that starts with an alternation', () => {
+      expect(
+        new Parser(
+          new Alternation([
+            new Concatenation([new Alternation([letter, digit])]),
+            digit,
+          ])
+        ).parse(input('1'))
+      ).toEqual(
+        new Success(
+          new Choice(
+            0,
+            new Sequence([new Choice(1, new Character(CodePoint.of('1')))])
+          )
+        )
+      );
+    });
+
     it('must expect the end of input where a candidate stops short of it', () => {
       const parsed = new Parser(digit).parse(input('12'));
 
@@ -133,14 +174,13 @@ describe('Parser', () => {
     });
 
     it('must report the candidate that got furthest when none succeeds', () => {
-      const start = input('1x');
       const parsed = new Parser(
         new Alternation([new Concatenation([digit, digit]), letter])
-      ).parse(start);
+      ).parse(input('1x'));
 
       assert(!parsed.ok());
       expect(String(parsed.error())).toBe("Expected a digit, got 'x'");
-      expect(parsed.error().at().distanceFrom(start)).toBe(1);
+      expect(parsed.error().offset()).toBe(1);
     });
   });
 });

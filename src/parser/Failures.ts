@@ -1,19 +1,19 @@
 import { type Point } from '@fundamentry/stream';
 
-import { Mismatch } from '#project/mismatch';
+import { Frontier } from './Frontier.js';
 
 export class Failures<in out Token> {
-  #mismatch: Mismatch<Token>;
+  #frontier: Frontier<Token>;
 
   constructor(origin: Point<Token>) {
-    this.#mismatch = Mismatch.empty(origin);
+    this.#frontier = Frontier.empty(origin);
   }
 
-  fail(mismatch: Mismatch<Token>): void {
-    this.#mismatch = this.#mismatch.merge(mismatch);
+  fail(frontier: Frontier<Token>): void {
+    this.#frontier = this.#frontier.merge(frontier);
   }
 
-  mismatch(): Mismatch<Token> {
-    return this.#mismatch;
+  frontier(): Frontier<Token> {
+    return this.#frontier;
   }
 }

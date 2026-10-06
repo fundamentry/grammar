@@ -3,7 +3,7 @@ import { type Range } from '@fundamentry/range';
 import { type Integer } from '@fundamentry/scalar';
 
 import { type Expectation } from '#project/expectation';
-import { type Node } from '#project/tree';
+import { type Node, type Nonterminal } from '#project/tree';
 
 export interface Expression<Token> {
   accept<Input, Output>(
@@ -13,6 +13,11 @@ export interface Expression<Token> {
 }
 
 export namespace Expression {
+  export type Alternatives<Token> = readonly [
+    Expression<Token>,
+    ...Expression<Token>[],
+  ];
+
   export interface Visitor<Token, Input, Output> {
     terminal<Value extends Node>(
       conversion: PartialIso<Token, Value, unknown, string>,
@@ -22,10 +27,7 @@ export namespace Expression {
 
     concatenation(elements: readonly Expression<Token>[], input: Input): Output;
 
-    alternation(
-      alternatives: readonly [Expression<Token>, Expression<Token>],
-      input: Input
-    ): Output;
+    alternation(alternatives: Alternatives<Token>, input: Input): Output;
 
     optional(element: Expression<Token>, input: Input): Output;
 
@@ -35,19 +37,17 @@ export namespace Expression {
       input: Input
     ): Output;
 
-    refinement<Value extends Node, Refined extends Node>(
-      element: Expression<Token>,
-      conversion: PartialIso<Value, Refined, string, string>,
-      input: Input
-    ): Output;
-
     label(
       element: Expression<Token>,
       expectation: Expectation,
       input: Input
     ): Output;
 
-    rule(element: Expression<Token>, name: string, input: Input): Output;
+    rule(
+      element: Expression<Token>,
+      rule: Nonterminal.Rule<string>,
+      input: Input
+    ): Output;
 
     reference(target: () => Expression<Token>, input: Input): Output;
   }

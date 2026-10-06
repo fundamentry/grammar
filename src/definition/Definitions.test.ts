@@ -5,7 +5,12 @@ import { Success } from '@fundamentry/coproduct';
 import { Range, RangeSet } from '@fundamentry/range';
 import { CodePoint, Integer } from '@fundamentry/scalar';
 
-import { type Expectation, Named, Text, Within } from '#project/expectation';
+import {
+  type Expectation,
+  Named,
+  Quoted,
+  Characters,
+} from '#project/expectation';
 import {
   Alternation,
   Concatenation,
@@ -13,30 +18,35 @@ import {
   Label,
   Optional,
   Reference,
-  Refinement,
   Repetition,
   Rule,
   Terminal,
 } from '#project/expression';
-import { Literal, type Node } from '#project/tree';
+import { Character } from '#project/tree';
 
 import { Definitions } from './Definitions.js';
 
 const terminal = (expectation: Expectation): Expression<CodePoint> =>
   new Terminal(
-    PartialIso.of<CodePoint, Literal, string, string>(
-      token => new Success(new Literal(token)),
+    PartialIso.of<CodePoint, Character, string, string>(
+      token => new Success(new Character(token)),
       value => new Success(value.codePoint())
     ),
     expectation
   );
 
 const within = (...ranges: readonly Range<CodePoint>[]) =>
-  terminal(new Within(RangeSet.from(ranges)));
+  terminal(new Characters(RangeSet.from(ranges)));
+
+const named = (name: string) => {
+  const identity = { name: () => name };
+
+  return () => identity;
+};
 
 const DIGIT = new Rule(
   within(Range.closed(CodePoint.of('0'), CodePoint.of('9'))),
-  'DIGIT'
+  named('DIGIT')
 );
 
 const rendered = (expression: Expression<CodePoint>): readonly string[] =>
@@ -61,10 +71,13 @@ describe('Definitions', () => {
 
   describe('iterator', () => {
     it('must define the root first, then every rule it uses, once, in the order it uses them', () => {
-      const SP = new Rule(within(Range.singleton(CodePoint.of(' '))), 'SP');
+      const SP = new Rule(
+        within(Range.singleton(CodePoint.of(' '))),
+        named('SP')
+      );
       const NUMBERS = new Rule(
-        new Concatenation([DIGIT, SP, new Rule(DIGIT, 'LAST'), DIGIT]),
-        'NUMBERS'
+        new Concatenation([DIGIT, SP, new Rule(DIGIT, named('LAST')), DIGIT]),
+        named('NUMBERS')
       );
 
       expect(rendered(NUMBERS)).toEqual([
@@ -82,6 +95,17 @@ describe('Definitions', () => {
       ]);
     });
 
+    it('must reject two different rules of the same name', () => {
+      const OTHER = new Rule(
+        within(Range.singleton(CodePoint.of('x'))),
+        named('DIGIT')
+      );
+
+      expect(() => rendered(new Concatenation([DIGIT, OTHER]))).toThrow(
+        "Two different rules are named 'DIGIT'"
+      );
+    });
+
     it('must define a rule that refers to itself by its name', () => {
       const grammar: { readonly digits: Expression<CodePoint> } = {
         digits: new Rule(
@@ -89,7 +113,7 @@ describe('Definitions', () => {
             DIGIT,
             new Optional(new Reference(() => grammar.digits)),
           ]),
-          'DIGITS'
+          named('DIGITS')
         ),
       };
 
@@ -129,9 +153,9 @@ describe('Definitions', () => {
       expect(rendered(terminal(new Named('a digit')))).toEqual(['<a digit>']);
     });
 
-    it('must render an unbounded range as prose', () => {
+    it('must bound an unbounded range by the last code point', () => {
       expect(rendered(within(Range.atLeast(CodePoint.of('a'))))).toEqual([
-        '<one of {[a..+∞)}>',
+        '%x61-10FFFF',
       ]);
     });
   });
@@ -159,14 +183,6 @@ describe('Definitions', () => {
     });
   });
 
-  describe('refinement', () => {
-    it('must render its element', () => {
-      expect(
-        rendered(new Refinement(new Optional(DIGIT), PartialIso.id<Node>()))[0]
-      ).toBe('[DIGIT]');
-    });
-  });
-
   describe('label', () => {
     it('must render its element', () => {
       expect(
@@ -181,7 +197,7 @@ describe('Definitions', () => {
         )
       );
 
-      expect(rendered(new Label(http, Text.caseSensitive('http')))).toEqual([
+      expect(rendered(new Label(http, Quoted.of('http')))).toEqual([
         '%s"http"',
       ]);
     });
@@ -189,9 +205,7 @@ describe('Definitions', () => {
     it('must render its element when the text cannot be quoted', () => {
       const quote = within(Range.singleton(CodePoint.of('"')));
 
-      expect(rendered(new Label(quote, Text.caseSensitive('"')))).toEqual([
-        '%x22',
-      ]);
+      expect(rendered(new Label(quote, Quoted.of('"')))).toEqual(['%x22']);
     });
   });
 });

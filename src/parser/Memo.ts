@@ -50,7 +50,7 @@ export class Memo<in out Token> {
   }
 
   #replay(continuation: Continuation<Token>): void {
-    this.#context.fail(continuation.relabel(this.#failures.mismatch()));
+    this.#context.fail(continuation.relabel(this.#failures.frontier()));
 
     this.#context.succeed(continuation, this.#matches.steps());
   }

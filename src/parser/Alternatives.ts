@@ -1,12 +1,11 @@
-import { Left, Right } from '@fundamentry/coproduct';
 import { type Point } from '@fundamentry/stream';
 
 import { type Expectation } from '#project/expectation';
-import { Mismatch } from '#project/mismatch';
 import { Choice, type Node } from '#project/tree';
 
 import { type Context } from './Context.js';
 import { type Continuation } from './Continuation.js';
+import { Frontier } from './Frontier.js';
 import { type Parser } from './Parser.js';
 import { Segments } from './Segments.js';
 
@@ -25,25 +24,19 @@ export class Alternatives<in out Token> {
   }
 
   static of<Token>(
-    left: Parser.Compiled<Token>,
-    right: Parser.Compiled<Token>
+    alternatives: readonly Parser.Compiled<Token>[]
   ): Alternatives<Token> {
-    const side = (
-      compiled: Parser.Compiled<Token>,
-      wrap: (value: Node) => Node
-    ) =>
-      (compiled.alternatives
-        ? compiled.alternatives.#branches
-        : [{ compiled, wrap: (value: Node) => value }]
-      ).map(branch => ({
-        compiled: branch.compiled,
-        wrap: (value: Node) => wrap(branch.wrap(value)),
-      }));
-
-    return new Alternatives([
-      ...side(left, value => new Choice(new Left(value))),
-      ...side(right, value => new Choice(new Right(value))),
-    ]);
+    return new Alternatives(
+      alternatives.flatMap((compiled, index) =>
+        (compiled.alternatives
+          ? compiled.alternatives.#branches
+          : [{ compiled, wrap: (value: Node) => value }]
+        ).map(branch => ({
+          compiled: branch.compiled,
+          wrap: (value: Node) => new Choice(index, branch.wrap(value)),
+        }))
+      )
+    );
   }
 
   starts(token?: Token): boolean {
@@ -81,7 +74,7 @@ export class Alternatives<in out Token> {
   ): void {
     context.fail(
       continuation.relabel(
-        Mismatch.expected(
+        Frontier.expected(
           point,
           ...branches.flatMap(({ compiled: { expected } }) => expected)
         )

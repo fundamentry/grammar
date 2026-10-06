@@ -1,9 +1,7 @@
 export * from '#project/codec';
-export * from '#project/definition';
-export * from '#project/error';
+export { Definition } from '#project/definition';
 export * from '#project/expectation';
 export * from '#project/mismatch';
 export * from '#project/misprint';
-export * from '#project/production';
-export * from '#project/symbol';
+export * from '#project/rule';
 export * from '#project/tree';

@@ -3,75 +3,75 @@ import { describe, expect, it } from 'vitest';
 import { Misprint } from './Misprint.js';
 
 describe('Misprint', () => {
-  describe('of', () => {
-    it('must say its message at the root of the value', () => {
-      const misprint = Misprint.of('odd');
+  describe('path', () => {
+    it('must return the steps to where it occurred, outermost first', () => {
+      const path = [
+        { node: 'choice', index: 0 },
+        { node: 'repetition', index: 2 },
+      ] as const;
 
-      expect(misprint.path()).toEqual([]);
-      expect(misprint.message()).toBe('odd');
+      expect(new Misprint(path, 'odd').path()).toEqual(path);
     });
   });
 
-  describe('within', () => {
-    it('must place the misprint under each enclosing step, outermost first', () => {
-      const misprint = Misprint.of('odd')
-        .within({ node: 'repetition', index: 2 })
-        .within({ node: 'left' });
-
-      expect(misprint.path()).toEqual([
-        { node: 'left' },
-        { node: 'repetition', index: 2 },
-      ]);
-      expect(misprint.message()).toBe('odd');
+  describe('message', () => {
+    it('must return what went wrong', () => {
+      expect(new Misprint([], 'odd').message()).toBe('odd');
     });
   });
 
   describe('equals', () => {
     it('must equal a misprint with the same path and message', () => {
       expect(
-        Misprint.of('odd')
-          .within({ node: 'sequence', index: 1 })
-          .equals(Misprint.of('odd').within({ node: 'sequence', index: 1 }))
+        new Misprint([{ node: 'sequence', index: 1 }], 'odd').equals(
+          new Misprint([{ node: 'sequence', index: 1 }], 'odd')
+        )
       ).toBe(true);
     });
 
     it('must not equal a misprint at another index', () => {
       expect(
-        Misprint.of('odd')
-          .within({ node: 'sequence', index: 1 })
-          .equals(Misprint.of('odd').within({ node: 'sequence', index: 2 }))
+        new Misprint([{ node: 'sequence', index: 1 }], 'odd').equals(
+          new Misprint([{ node: 'sequence', index: 2 }], 'odd')
+        )
       ).toBe(false);
     });
 
     it('must not equal a misprint under another node', () => {
       expect(
-        Misprint.of('odd')
-          .within({ node: 'left' })
-          .equals(Misprint.of('odd').within({ node: 'right' }))
+        new Misprint([{ node: 'choice', index: 0 }], 'odd').equals(
+          new Misprint([{ node: 'choice', index: 1 }], 'odd')
+        )
       ).toBe(false);
     });
 
     it('must not equal a misprint with another message', () => {
-      expect(Misprint.of('odd').equals(Misprint.of('even'))).toBe(false);
+      expect(new Misprint([], 'odd').equals(new Misprint([], 'even'))).toBe(
+        false
+      );
     });
 
     it('must not equal a value that is not a misprint', () => {
-      expect(Misprint.of('odd').equals('odd')).toBe(false);
+      expect(new Misprint([], 'odd').equals('odd')).toBe(false);
     });
   });
 
   describe('toString', () => {
     it('must render a misprint at the root as its message', () => {
-      expect(String(Misprint.of('odd'))).toBe('odd');
+      expect(String(new Misprint([], 'odd'))).toBe('odd');
     });
 
     it('must prefix a nested misprint with its path', () => {
       expect(
         String(
-          Misprint.of('odd')
-            .within({ node: 'option' })
-            .within({ node: 'repetition', index: 2 })
-            .within({ node: 'sequence', index: 0 })
+          new Misprint(
+            [
+              { node: 'sequence', index: 0 },
+              { node: 'repetition', index: 2 },
+              { node: 'option' },
+            ],
+            'odd'
+          )
         )
       ).toBe('at /sequence[0]/repetition[2]/option: odd');
     });
@@ -79,11 +79,12 @@ describe('Misprint', () => {
     it('must render a rule in the path by its name', () => {
       expect(
         String(
-          Misprint.of('odd')
-            .within({ node: 'refinement' })
-            .within({ node: 'rule', name: 'CRLF' })
+          new Misprint(
+            [{ node: 'rule', name: 'CRLF' }, { node: 'label' }],
+            'odd'
+          )
         )
-      ).toBe('at /CRLF/refinement: odd');
+      ).toBe('at /CRLF/label: odd');
     });
   });
 });

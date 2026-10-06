@@ -5,16 +5,23 @@ import { Integer } from '@fundamentry/scalar';
 import { type Point } from '@fundamentry/stream';
 
 import { Cache } from '#project/cache';
-import { EndOfInput, type Expectation } from '#project/expectation';
+import { EndOfInput, type Expectation, Named } from '#project/expectation';
 import { type Expression } from '#project/expression';
-import { Mismatch } from '#project/mismatch';
-import { type Node, Option, Repetition, Sequence } from '#project/tree';
+import { type Mismatch } from '#project/mismatch';
+import {
+  type Node,
+  Nonterminal,
+  Option,
+  Repetition,
+  Sequence,
+} from '#project/tree';
 
 import { Alternatives } from './Alternatives.js';
 import { Chain } from './Chain.js';
 import { type Column } from './Column.js';
 import { Context } from './Context.js';
 import { type Continuation } from './Continuation.js';
+import { Frontier } from './Frontier.js';
 import { LeftCorners } from './LeftCorners.js';
 import { Repetitions } from './Repetitions.js';
 import { Spans } from './Spans.js';
@@ -36,7 +43,7 @@ export namespace Parser {
 
   export type Draft<Token> = Omit<Compiled<Token>, 'nullable'>;
 
-  export type Parsed<Token> = Result<Node, Mismatch<Token>>;
+  export type Parsed = Result<Node, Mismatch>;
 }
 
 export class Parser<in out Token> implements Expression.Visitor<
@@ -57,14 +64,14 @@ export class Parser<in out Token> implements Expression.Visitor<
     this.#root = this.#compile(expression);
   }
 
-  parse(start: Point<Token>): Parser.Parsed<Token> {
+  parse(start: Point<Token>): Parser.Parsed {
     return Context.run(start, (point, context, continuation) =>
       this.#root.parse(
         point,
         context,
         continuation.with(step => {
           if (step.rest.isAtEnd()) continuation.succeed(step);
-          else context.fail(Mismatch.expected(step.rest, new EndOfInput()));
+          else context.fail(Frontier.expected(step.rest, new EndOfInput()));
         })
       )
     );
@@ -78,7 +85,7 @@ export class Parser<in out Token> implements Expression.Visitor<
       parse: (point, context, continuation) => {
         const fail = () =>
           context.fail(
-            continuation.relabel(Mismatch.expected(point, expectation))
+            continuation.relabel(Frontier.expected(point, expectation))
           );
         const step = point.step();
 
@@ -135,22 +142,20 @@ export class Parser<in out Token> implements Expression.Visitor<
     };
   }
 
-  alternation([left, right]: readonly [
-    Expression<Token>,
-    Expression<Token>,
-  ]): Parser.Draft<Token> {
-    const alternatives = Alternatives.of(
-      this.#compile(left),
-      this.#compile(right)
+  alternation(
+    alternatives: Expression.Alternatives<Token>
+  ): Parser.Draft<Token> {
+    const compiled = Alternatives.of(
+      alternatives.map(alternative => this.#compile(alternative))
     );
 
     return {
       parse: Parser.#preferred((point, context, continuation) =>
-        alternatives.from(point, context, continuation)
+        compiled.from(point, context, continuation)
       ),
-      starts: token => alternatives.starts(token),
-      expected: alternatives.expected(),
-      alternatives,
+      starts: token => compiled.starts(token),
+      expected: compiled.expected(),
+      alternatives: compiled,
     };
   }
 
@@ -195,34 +200,6 @@ export class Parser<in out Token> implements Expression.Visitor<
     };
   }
 
-  refinement<Value extends Node, Refined extends Node>(
-    element: Expression<Token>,
-    conversion: PartialIso<Value, Refined, string, string>
-  ): Parser.Draft<Token> {
-    const { parse, starts, nullable, expected } = this.#compile(element);
-
-    return {
-      parse: Parser.#preferred((point, context, continuation) =>
-        parse(
-          point,
-          context,
-          continuation.with(({ value, rest }) =>
-            conversion.to(value as Value).match({
-              onSuccess: refined =>
-                continuation.succeed({ value: refined, rest }),
-              onFailure: reason =>
-                context.fail(
-                  continuation.relabel(Mismatch.message(rest, reason))
-                ),
-            })
-          )
-        )
-      ),
-      starts: nullable ? () => true : starts,
-      expected,
-    };
-  }
-
   label(
     element: Expression<Token>,
     expectation: Expectation
@@ -238,8 +215,25 @@ export class Parser<in out Token> implements Expression.Visitor<
     };
   }
 
-  rule(element: Expression<Token>): Parser.Draft<Token> {
-    return this.#compile(element);
+  rule(
+    element: Expression<Token>,
+    rule: Nonterminal.Rule<string>
+  ): Parser.Draft<Token> {
+    const { parse, starts } = this.#compile(element);
+    const expectation = new Named(rule.name());
+
+    return {
+      parse: (point, context, continuation) =>
+        parse(
+          point,
+          context,
+          continuation
+            .labelled(point, expectation)
+            .map((value: Node) => new Nonterminal(rule, value))
+        ),
+      starts,
+      expected: [expectation],
+    };
   }
 
   reference(target: () => Expression<Token>): Parser.Draft<Token> {

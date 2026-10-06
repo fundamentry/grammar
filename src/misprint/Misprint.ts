@@ -2,8 +2,11 @@ import { Data } from '#project/data';
 
 export namespace Misprint {
   export type Step =
-    | { readonly node: 'sequence' | 'repetition'; readonly index: number }
-    | { readonly node: 'left' | 'right' | 'option' | 'refinement' | 'label' }
+    | {
+        readonly node: 'sequence' | 'choice' | 'repetition';
+        readonly index: number;
+      }
+    | { readonly node: 'option' | 'label' }
     | { readonly node: 'rule'; readonly name: string };
 }
 
@@ -12,15 +15,11 @@ export class Misprint extends Data {
 
   readonly #message: string;
 
-  private constructor(path: readonly Misprint.Step[], message: string) {
+  constructor(path: readonly Misprint.Step[], message: string) {
     super();
 
     this.#path = path;
     this.#message = message;
-  }
-
-  static of(message: string): Misprint {
-    return new Misprint([], message);
   }
 
   path(): readonly Misprint.Step[] {
@@ -29,10 +28,6 @@ export class Misprint extends Data {
 
   message(): string {
     return this.#message;
-  }
-
-  within(step: Misprint.Step): Misprint {
-    return new Misprint([step, ...this.#path], this.#message);
   }
 
   override equals(other: unknown): boolean {

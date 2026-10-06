@@ -22,7 +22,6 @@
         "alternation",
         "optional",
         "repetition",
-        "refinement",
         "label",
         "rule",
         "reference"
@@ -70,12 +69,6 @@
         ]
       },
       {
-        "name": "error",
-        "patterns": [
-          "src/error/**"
-        ]
-      },
-      {
         "name": "expectation",
         "patterns": [
           "src/expectation/**"
@@ -112,15 +105,9 @@
         ]
       },
       {
-        "name": "production",
+        "name": "rule",
         "patterns": [
-          "src/production/**"
-        ]
-      },
-      {
-        "name": "symbol",
-        "patterns": [
-          "src/symbol/**"
+          "src/rule/**"
         ]
       },
       {
@@ -139,7 +126,6 @@
         "from": "codec",
         "allow": [
           "definition",
-          "error",
           "expectation",
           "expression",
           "mismatch",
@@ -161,10 +147,6 @@
           "expression",
           "tree"
         ]
-      },
-      {
-        "from": "error",
-        "allow": []
       },
       {
         "from": "expectation",
@@ -196,6 +178,7 @@
         "from": "parser",
         "allow": [
           "cache",
+          "data",
           "expectation",
           "expression",
           "mismatch",
@@ -213,19 +196,9 @@
         ]
       },
       {
-        "from": "production",
+        "from": "rule",
         "allow": [
           "codec",
-          "tree"
-        ]
-      },
-      {
-        "from": "symbol",
-        "allow": [
-          "codec",
-          "error",
-          "misprint",
-          "production",
           "tree"
         ]
       },

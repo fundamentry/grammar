@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { PartialIso } from '@fundamentry/category';
 
 import { Named } from '#project/expectation';
-import { type Literal } from '#project/tree';
+import { type Character } from '#project/tree';
 
 import { Concatenation } from './Concatenation.js';
 import { type Expression } from './Expression.js';
@@ -12,7 +12,7 @@ import { Terminal } from './Terminal.js';
 describe('Concatenation', () => {
   describe('accept', () => {
     const visitor = new Proxy(
-      {} as Expression.Visitor<Literal, string, readonly unknown[]>,
+      {} as Expression.Visitor<Character, string, readonly unknown[]>,
       {
         get:
           (_, method) =>
@@ -22,7 +22,7 @@ describe('Concatenation', () => {
 
     it('must visit as a concatenation with its elements and the input', () => {
       const element = new Terminal(
-        PartialIso.id<Literal>(),
+        PartialIso.id<Character>(),
         new Named('a literal')
       );
       const input = 'input';
@@ -36,7 +36,7 @@ describe('Concatenation', () => {
 
     it('must not be affected by later changes to the elements it was given', () => {
       const element = new Terminal(
-        PartialIso.id<Literal>(),
+        PartialIso.id<Character>(),
         new Named('a literal')
       );
       const elements = [element];

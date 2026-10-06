@@ -1,67 +1,67 @@
-import { type Either } from '@fundamentry/coproduct';
-import { Equatable } from '@fundamentry/trait';
-
 import { Node } from './Node.js';
 
 export namespace Choice {
-  export type Of<T extends readonly [Node, Node, ...Node[]]> =
-    T extends readonly [
-      infer First extends Node,
-      infer Second extends Node,
-      ...infer Rest extends readonly Node[],
-    ]
-      ? Rest extends readonly [
-          infer Third extends Node,
-          ...infer More extends readonly Node[],
-        ]
-        ? Of<[Choice<First, Second>, Third, ...More]>
-        : Choice<First, Second>
-      : never;
+  export type Alternative<T extends readonly Node[]> = {
+    readonly [I in keyof T]: readonly [
+      index: I extends `${infer N extends number}` ? N : number,
+      value: T[I],
+    ];
+  }[number];
 
-  export type Merged<T> =
-    T extends Choice<infer L, infer R> ? Merged<L> | Merged<R> : T;
+  export type Cases<T extends readonly Node[], R> = {
+    readonly [I in keyof T]: (value: T[I]) => R;
+  };
 }
 
-export class Choice<out L extends Node, out R extends Node> extends Node {
-  readonly #either: Either<L, R>;
+export class Choice<T extends readonly Node[]> extends Node {
+  readonly #index: number;
 
-  constructor(either: Either<L, R>) {
+  readonly #value: T[number];
+
+  constructor(...[index, value]: Choice.Alternative<T>) {
     super();
 
-    this.#either = either;
+    this.#index = index;
+    this.#value = value;
   }
 
-  static [Symbol.hasInstance]<S extends Choice<Node, Node>>(
+  static [Symbol.hasInstance]<S extends Node>(
     this: abstract new (...args: never) => S,
     value: unknown
   ): value is S {
     return (
       value instanceof Object &&
-      #either in value &&
+      #index in value &&
       Function.prototype[Symbol.hasInstance].call(this, value)
     );
   }
 
-  either(): Either<L, R> {
-    return this.#either;
+  value(): T[number] {
+    return this.#value;
   }
 
-  value(): Choice.Merged<L | R> {
-    const side: Node = this.#either.merge();
+  match<R>(cases: Choice.Cases<T, R>): R;
 
-    return (side instanceof Choice ? side.value() : side) as Choice.Merged<
-      L | R
-    >;
+  match<R>(cases: readonly ((value: T[number]) => R)[]): R {
+    const handle = cases[this.#index];
+
+    if (!handle)
+      throw new RangeError(
+        `No case for alternative ${String(this.#index)} of ${String(cases.length)}`
+      );
+
+    return handle(this.#value);
   }
 
   override equals(other: unknown): boolean {
     return (
       other instanceof Choice &&
-      Equatable.equals<unknown>(this.#either, other.#either)
+      this.#index === other.#index &&
+      this.#value.equals(other.#value)
     );
   }
 
   override toString(): string {
-    return String(this.#either.merge());
+    return String(this.#value);
   }
 }

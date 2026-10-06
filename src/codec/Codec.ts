@@ -5,7 +5,12 @@ import { CodePoint, Integer } from '@fundamentry/scalar';
 import { Point } from '@fundamentry/stream';
 
 import { type Definition, Definitions } from '#project/definition';
-import { type Expectation, Text, Within } from '#project/expectation';
+import {
+  type Expectation,
+  Named,
+  Quoted,
+  Characters,
+} from '#project/expectation';
 import {
   Alternation,
   Concatenation,
@@ -13,9 +18,8 @@ import {
   Label,
   Optional,
   Reference,
-  Refinement,
   Repetition as Repeated,
-  Rule,
+  Rule as Naming,
   Terminal,
 } from '#project/expression';
 import { type Mismatch } from '#project/mismatch';
@@ -24,75 +28,85 @@ import { Parser } from '#project/parser';
 import { Printer } from '#project/printer';
 import {
   type Choice,
-  Literal,
+  Character,
   type Node,
+  type Nonterminal,
   type Option,
   type Repetition,
   type Sequence,
+  type Literal,
 } from '#project/tree';
 
-export namespace Codec {
-  export type Character = string | number | CodePoint;
+import { Caseless } from './Caseless.js';
 
-  export type Characters =
-    | Character
-    | readonly [from: Character, to: Character]
+export namespace Codec {
+  export type CodePointLike = string | number | CodePoint;
+
+  export type CharacterSet =
+    | CodePointLike
+    | readonly [from: CodePointLike, to: CodePointLike]
     | Range<CodePoint>
     | RangeSet<CodePoint>;
 
-  export type Parsed<Token, Value> = Result<Value, Mismatch<Token>>;
+  export type Parsed<Value> = Result<Value, Mismatch>;
 
-  export type Printed<Token> = Result<Iterable<Token>, Misprint>;
+  export type Printed = Result<string, Misprint>;
 
-  export interface Constructor<Value extends Node, Refined extends Node> {
-    new (elements: Value): Refined;
-    rule(): string;
-  }
-
-  export interface Target<
-    Value extends Node,
-    Refined extends Node,
-  > extends Constructor<Value, Refined> {
-    conversion(
-      this: Constructor<Value, NoInfer<Refined>>
-    ): PartialIso<Value, NoInfer<Refined>, string, string>;
-  }
+  export type Alternatives<T extends readonly Node[]> = T extends readonly [
+    infer Head extends Node,
+    ...infer Tail extends readonly Node[],
+  ]
+    ? [
+        ...(Head extends Choice<infer Nested> ? Nested : [Head]),
+        ...Alternatives<Tail>,
+      ]
+    : [];
 }
 
-export class Codec<in out Token, in out Value extends Node> {
-  readonly #expression: Expression<Token>;
+export class Codec<in out Value extends Node> {
+  readonly #expression: Expression<CodePoint>;
 
-  #parser?: Parser<Token>;
+  readonly #alternatives: Expression.Alternatives<CodePoint>;
 
-  #printer?: Printer<Token>;
+  #parser?: Parser<CodePoint>;
 
-  private constructor(expression: Expression<Token>) {
+  #printer?: Printer<CodePoint>;
+
+  protected constructor(
+    expression: Expression<CodePoint>,
+    alternatives?: Expression.Alternatives<CodePoint>
+  ) {
     this.#expression = expression;
+    this.#alternatives = alternatives ?? [expression];
   }
 
-  static token<Token, Value extends Node>(
-    conversion: PartialIso<Token, Value, unknown, string>,
+  protected static terminal<Value extends Node>(
+    this: void,
+    conversion: PartialIso<CodePoint, Value, unknown, string>,
     expectation: Expectation
-  ): Codec<Token, Value> {
+  ): Codec<Value> {
     return new Codec(new Terminal(Codec.#verified(conversion), expectation));
   }
 
-  static literal(
-    ...characters: readonly Codec.Characters[]
-  ): Codec<CodePoint, Literal> {
-    const point = (character: Codec.Character) =>
-      CodePoint.of(
-        typeof character === 'number'
-          ? String.fromCodePoint(character)
-          : String(character)
-      );
+  protected static character(
+    this: void,
+    ...characters: readonly Codec.CharacterSet[]
+  ): Codec<Character> {
+    const point = (character: Codec.CodePointLike) =>
+      typeof character === 'number'
+        ? CodePoint.of(character)
+        : CodePoint.of(String(character));
 
     const bounded = (
-      member: Codec.Characters
-    ): member is readonly [from: Codec.Character, to: Codec.Character] =>
-      Array.isArray(member);
+      member: Codec.CharacterSet
+    ): member is readonly [
+      from: Codec.CodePointLike,
+      to: Codec.CodePointLike,
+    ] => Array.isArray(member);
 
-    const members = (member: Codec.Characters): readonly Range<CodePoint>[] => {
+    const members = (
+      member: Codec.CharacterSet
+    ): readonly Range<CodePoint>[] => {
       if (member instanceof RangeSet) return member.asRanges();
 
       if (member instanceof Range) return [member];
@@ -105,53 +119,44 @@ export class Codec<in out Token, in out Value extends Node> {
 
     const ranges = RangeSet.from(characters.flatMap(members));
 
-    return Codec.token(
-      PartialIso.of<CodePoint, Literal, undefined, string>(
+    return Codec.terminal(
+      PartialIso.of<CodePoint, Character, undefined, string>(
         codePoint =>
           ranges.contains(codePoint)
-            ? new Success(new Literal(codePoint))
+            ? new Success(new Character(codePoint))
             : new Failure(undefined),
         value =>
-          value instanceof Literal
+          value instanceof Character
             ? new Success(value.codePoint())
-            : new Failure(`'${String(value)}' is not a literal`)
+            : new Failure(`'${String(value)}' is not a character`)
       ),
-      new Within(ranges)
+      new Characters(ranges)
     );
   }
 
-  static text(
-    text: string,
-    { caseSensitive = true }: { readonly caseSensitive?: boolean } = {}
-  ): Codec<CodePoint, Sequence<readonly Literal[]>> {
-    const variants = (character: string) =>
-      caseSensitive
-        ? [character]
-        : [
-            ...new Set([
-              character,
-              character.toLowerCase(),
-              character.toUpperCase(),
-            ]),
-          ].filter(variant => /^.$/su.test(variant));
-
+  protected static literal(this: void, value: string): Codec<Literal> {
     return new Codec(
       new Label(
         new Concatenation(
           Array.from(
-            text,
-            character => Codec.literal(...variants(character)).#expression
+            value,
+            character =>
+              new Label(
+                Codec.character(character).#expression,
+                Quoted.of(character)
+              )
           )
         ),
-        caseSensitive ? Text.caseSensitive(text) : Text.caseInsensitive(text)
+        Quoted.of(value)
       )
     );
   }
 
-  static sequence<Token, Head extends Node, Tail extends readonly Node[]>(
-    first: Codec<Token, Head>,
-    ...others: { [K in keyof Tail]: Codec<Token, Tail[K]> }
-  ): Codec<Token, Sequence<readonly [Head, ...Tail]>> {
+  protected static sequence<Head extends Node, Tail extends readonly Node[]>(
+    this: void,
+    first: Codec<Head>,
+    ...others: { [K in keyof Tail]: Codec<Tail[K]> }
+  ): Codec<Sequence<readonly [Head, ...Tail]>> {
     return new Codec(
       new Concatenation([
         first.#expression,
@@ -160,95 +165,119 @@ export class Codec<in out Token, in out Value extends Node> {
     );
   }
 
-  static choice<
-    Token,
+  protected static choice<
     First extends Node,
     Second extends Node,
     Rest extends readonly Node[],
   >(
-    first: Codec<Token, First>,
-    second: Codec<Token, Second>,
-    ...others: { [K in keyof Rest]: Codec<Token, Rest[K]> }
-  ): Codec<Token, Choice.Of<[First, Second, ...Rest]>> {
-    return new Codec(
-      others.reduce<Expression<Token>>(
-        (alternatives, codec) =>
-          new Alternation([alternatives, codec.#expression]),
-        new Alternation([first.#expression, second.#expression])
-      )
-    );
+    this: void,
+    first: Codec<First>,
+    second: Codec<Second>,
+    ...others: { [K in keyof Rest]: Codec<Rest[K]> }
+  ): Codec<Choice<Codec.Alternatives<[First, Second, ...Rest]>>> {
+    const alternatives: Expression.Alternatives<CodePoint> = [
+      ...first.#alternatives,
+      ...second.#alternatives,
+      ...others.flatMap(codec => codec.#alternatives),
+    ];
+
+    return new Codec(new Alternation(alternatives), alternatives);
   }
 
-  static lazy<Token, Value extends Node>(
-    define: () => Codec<Token, Value>
-  ): Codec<Token, Value> {
-    return new Codec(new Reference(() => define().#expression));
+  protected static readonly builder = {
+    character: Codec.character,
+    literal: Codec.literal,
+    sequence: Codec.sequence,
+    choice: Codec.choice,
+  };
+
+  protected static named<const Name extends string, Value extends Node>(
+    rule: () => Nonterminal.Rule<Name>,
+    body: () => Codec<Value>
+  ): Expression<CodePoint> {
+    return new Naming(new Reference(() => body().#expression), rule);
   }
 
-  parse(tokens: Iterable<Token>): Codec.Parsed<Token, Value> {
+  parse(input: string): Codec.Parsed<Value> {
     this.#parser ??= new Parser(this.#expression);
 
-    return this.#parser.parse(Point.of(tokens)).map(value => value as Value);
+    return this.#parser
+      .parse(Point.of(input[Symbol.iterator]().map(CodePoint.of)))
+      .map(value => value as Value);
   }
 
-  print(value: Value): Codec.Printed<Token> {
+  print(value: Value): Codec.Printed {
     this.#printer ??= new Printer(this.#expression);
 
-    return this.#printer.print(value);
+    return this.#printer
+      .print(value)
+      .map(codePoints => Array.from(codePoints, String).join(''));
   }
 
-  definition(this: Codec<CodePoint, Value>): Definition {
+  definition(): Definition {
     return new Definitions(this.#expression).root();
   }
 
-  definitions(this: Codec<CodePoint, Value>): Iterable<Definition> {
+  definitions(): Iterable<Definition> {
     return new Definitions(this.#expression);
   }
 
   or<Alternative extends Node>(
-    next: Codec<Token, Alternative>
-  ): Codec<Token, Choice<Value, Alternative>> {
+    next: Codec<Alternative>
+  ): Codec<Choice<Codec.Alternatives<[Value, Alternative]>>> {
     return Codec.choice(this, next);
   }
 
-  optional(): Codec<Token, Option<Value>> {
+  optional(): Codec<Option<Value>> {
     return new Codec(new Optional(this.#expression));
   }
 
-  repeat(bounds: Range<Integer>): Codec<Token, Repetition<Value>> {
+  repeat(bounds: Range<Integer>): Codec<Repetition<Value>> {
     return new Codec(new Repeated(this.#expression, bounds));
   }
 
-  times(count: number): Codec<Token, Repetition<Value>> {
+  times(count: number): Codec<Repetition<Value>> {
     return this.repeat(Range.singleton(Integer.of(count)));
   }
 
-  many(): Codec<Token, Repetition<Value>> {
+  many(): Codec<Repetition<Value>> {
     return this.repeat(Range.atLeast(Integer.of(0)));
   }
 
-  oneOrMore(): Codec<Token, Repetition<Value>> {
+  oneOrMore(): Codec<Repetition<Value>> {
     return this.repeat(Range.atLeast(Integer.of(1)));
   }
 
-  refine<Refined extends Node>(
-    conversion: PartialIso<Value, Refined, string, string>
-  ): Codec<Token, Refined> {
+  caseless(): Codec<Value> {
+    const caseless = new Caseless(
+      characters => Codec.character(characters.ranges()).#expression
+    );
+    const [first, ...others] = this.#alternatives;
+
     return new Codec(
-      new Refinement(this.#expression, Codec.#verified(conversion))
+      caseless.rewrite(this.#expression),
+      others.length > 0
+        ? [
+            caseless.rewrite(first),
+            ...others.map(other => caseless.rewrite(other)),
+          ]
+        : undefined
     );
   }
 
-  as<Refined extends Node>(
-    target: Codec.Target<Value, Refined>
-  ): Codec<Token, Refined> {
-    return new Codec(
-      new Rule(this.refine(target.conversion()).#expression, target.rule())
-    );
-  }
+  label(name: string): Codec<Value> {
+    const expectation = new Named(name);
+    const [first, ...others] = this.#alternatives;
 
-  label(expectation: Expectation): Codec<Token, Value> {
-    return new Codec(new Label(this.#expression, expectation));
+    return new Codec(
+      new Label(this.#expression, expectation),
+      others.length > 0
+        ? [
+            new Label(first, expectation),
+            ...others.map(other => new Label(other, expectation)),
+          ]
+        : undefined
+    );
   }
 
   static #verified<Source, Value, Reason>(

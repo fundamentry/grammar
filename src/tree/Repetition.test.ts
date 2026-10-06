@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
-import { Literal } from './Literal.js';
+import { Character } from './Character.js';
 import { Repetition } from './Repetition.js';
 import { Sequence } from './Sequence.js';
 
-const A = new Literal(CodePoint.of('a'));
-const B = new Literal(CodePoint.of('b'));
+const A = new Character(CodePoint.of('a'));
+const B = new Character(CodePoint.of('b'));
 
-class SpecificRepetition extends Repetition<Literal> {}
+class SpecificRepetition extends Repetition<Character> {}
 
 describe('Repetition', () => {
   describe('instanceof', () => {
@@ -58,7 +58,7 @@ describe('Repetition', () => {
     it('must not equal a different kind of node with the same elements', () => {
       expect(
         new Repetition([A]).equals(
-          new Sequence([A]) as unknown as Repetition<Literal>
+          new Sequence([A]) as unknown as Repetition<Character>
         )
       ).toBe(false);
     });

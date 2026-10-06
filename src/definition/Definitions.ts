@@ -1,11 +1,19 @@
 import { type Range } from '@fundamentry/range';
 import { type CodePoint, type Integer } from '@fundamentry/scalar';
 
-import { type Expectation, Text, Within } from '#project/expectation';
+import { type Expectation, Quoted, Characters } from '#project/expectation';
 import { type Expression } from '#project/expression';
+import { type Nonterminal } from '#project/tree';
 
 import { Definition } from './Definition.js';
 import { Term } from './Term.js';
+
+export namespace Definitions {
+  export interface Rule {
+    readonly identity: Nonterminal.Rule<string>;
+    readonly body: Expression<CodePoint>;
+  }
+}
 
 export class Definitions
   implements
@@ -14,7 +22,7 @@ export class Definitions
 {
   readonly #root: Expression<CodePoint>;
 
-  readonly #rules = new Map<string, Expression<CodePoint>>();
+  readonly #rules = new Map<string, Definitions.Rule>();
 
   readonly #pending = new Set<Expression<CodePoint>>();
 
@@ -27,24 +35,23 @@ export class Definitions
 
     yield root;
 
-    for (const [name, element] of this.#rules)
-      if (name !== root.name()) yield this.#definition(element, name);
+    for (const [name, { body }] of this.#rules)
+      if (name !== root.name()) yield this.#definition(body, name);
   }
 
   root(): Definition {
     const root = String(this.#term(this.#root));
     const rule = this.#rules.get(root);
 
-    return rule ? this.#definition(rule, root) : new Definition(root);
+    return rule ? this.#definition(rule.body, root) : new Definition(root);
   }
 
   terminal(_: unknown, expectation: Expectation): Term {
-    const ranges =
-      expectation instanceof Within ? expectation.ranges().asRanges() : [];
-    const terms = ranges.flatMap(range => Term.codePoints(range) ?? []);
-    const [first, ...others] = terms;
+    const [first, ...others] = (
+      expectation instanceof Characters ? expectation.elements() : []
+    ).map(element => Term.element(element));
 
-    return first && terms.length === ranges.length
+    return first
       ? Term.alternation(first, ...others)
       : Term.element(`<${String(expectation)}>`);
   }
@@ -53,11 +60,11 @@ export class Definitions
     return Term.concatenation(...elements.map(element => this.#term(element)));
   }
 
-  alternation([left, right]: readonly [
-    Expression<CodePoint>,
-    Expression<CodePoint>,
-  ]): Term {
-    return Term.alternation(this.#term(left), this.#term(right));
+  alternation([first, ...others]: Expression.Alternatives<CodePoint>): Term {
+    return Term.alternation(
+      this.#term(first),
+      ...others.map(other => this.#term(other))
+    );
   }
 
   optional(element: Expression<CodePoint>): Term {
@@ -68,21 +75,20 @@ export class Definitions
     return this.#term(element).repeated(bounds);
   }
 
-  refinement(element: Expression<CodePoint>): Term {
-    return this.#term(element);
-  }
-
   label(element: Expression<CodePoint>, expectation: Expectation): Term {
-    const text =
-      expectation instanceof Text
-        ? Term.text(expectation.text(), expectation.isCaseSensitive())
-        : undefined;
-
-    return text ?? this.#term(element);
+    return expectation instanceof Quoted
+      ? Term.element(String(expectation))
+      : this.#term(element);
   }
 
-  rule(element: Expression<CodePoint>, name: string): Term {
-    if (!this.#rules.has(name)) this.#rules.set(name, element);
+  rule(body: Expression<CodePoint>, identity: Nonterminal.Rule<string>): Term {
+    const name = identity.name();
+    const known = this.#rules.get(name) ?? { identity, body };
+
+    if (known.identity !== identity)
+      throw new Error(`Two different rules are named '${name}'`);
+
+    this.#rules.set(name, known);
 
     return Term.element(name);
   }
@@ -102,8 +108,8 @@ export class Definitions
     return term;
   }
 
-  #definition(element: Expression<CodePoint>, name: string): Definition {
-    return new Definition(String(this.#term(element)), name);
+  #definition(body: Expression<CodePoint>, name: string): Definition {
+    return new Definition(String(this.#term(body)), name);
   }
 
   #term(expression: Expression<CodePoint>): Term {

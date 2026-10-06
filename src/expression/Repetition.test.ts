@@ -5,13 +5,16 @@ import { Range } from '@fundamentry/range';
 import { Integer } from '@fundamentry/scalar';
 
 import { Named } from '#project/expectation';
-import { type Literal } from '#project/tree';
+import { type Character } from '#project/tree';
 
 import { type Expression } from './Expression.js';
 import { Repetition } from './Repetition.js';
 import { Terminal } from './Terminal.js';
 
-const element = new Terminal(PartialIso.id<Literal>(), new Named('a literal'));
+const element = new Terminal(
+  PartialIso.id<Character>(),
+  new Named('a literal')
+);
 
 describe('Repetition', () => {
   describe('constructor', () => {
@@ -27,7 +30,7 @@ describe('Repetition', () => {
 
   describe('accept', () => {
     const visitor = new Proxy(
-      {} as Expression.Visitor<Literal, string, readonly unknown[]>,
+      {} as Expression.Visitor<Character, string, readonly unknown[]>,
       {
         get:
           (_, method) =>

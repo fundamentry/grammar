@@ -13,18 +13,17 @@ import {
   Label,
   Optional,
   Reference,
-  Refinement,
   Repetition,
   Rule,
   Terminal,
 } from '#project/expression';
-import { Literal, type Node } from '#project/tree';
+import { Character } from '#project/tree';
 
 import { LeftCorners } from './LeftCorners.js';
 
 const digit = new Terminal(
-  PartialIso.of<CodePoint, Literal, string, string>(
-    token => new Success(new Literal(token)),
+  PartialIso.of<CodePoint, Character, string, string>(
+    token => new Success(new Character(token)),
     value => new Failure(`'${value.toString()}' is unprintable`)
   ),
   new Named('a digit')
@@ -115,17 +114,14 @@ describe('LeftCorners', () => {
       expect(corners.of(grammar.factor).corners.has(grammar.factor)).toBe(true);
     });
 
-    it('must look through refinements, labels and rules', () => {
+    it('must look through labels and rules', () => {
       const rule: Expression<CodePoint> = new Alternation([
         new Rule(
           new Label(
-            new Refinement(
-              new Concatenation([new Reference(() => rule), digit]),
-              PartialIso.id<Node>()
-            ),
+            new Concatenation([new Reference(() => rule), digit]),
             new Named('a rule')
           ),
-          'RULE'
+          () => ({ name: () => 'RULE' })
         ),
         digit,
       ]);

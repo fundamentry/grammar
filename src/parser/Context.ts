@@ -2,13 +2,13 @@ import { Failure, Success } from '@fundamentry/coproduct';
 import { type Point } from '@fundamentry/stream';
 
 import { Cache } from '#project/cache';
-import { type Mismatch } from '#project/mismatch';
 import { type Node } from '#project/tree';
 
 import { Agenda } from './Agenda.js';
 import { Column } from './Column.js';
 import { Continuation } from './Continuation.js';
 import { Failures } from './Failures.js';
+import { type Frontier } from './Frontier.js';
 import { type Parser } from './Parser.js';
 
 export class Context<in out Token> {
@@ -31,7 +31,7 @@ export class Context<in out Token> {
   static run<Token>(
     start: Point<Token>,
     parse: Parser.Parse<Token>
-  ): Parser.Parsed<Token> {
+  ): Parser.Parsed {
     const context = new Context(start);
 
     parse(
@@ -45,7 +45,10 @@ export class Context<in out Token> {
 
     context.#agenda.drain();
 
-    return context.#parsed ?? new Failure(context.#failures.mismatch());
+    return (
+      context.#parsed ??
+      new Failure(context.#failures.frontier().mismatch(start))
+    );
   }
 
   schedule(task: () => void): void {
@@ -59,8 +62,8 @@ export class Context<in out Token> {
     this.#agenda.each(steps.values(), step => continuation.succeed(step));
   }
 
-  fail(mismatch: Mismatch<Token>): void {
-    this.#agenda.scope().fail(mismatch);
+  fail(frontier: Frontier<Token>): void {
+    this.#agenda.scope().fail(frontier);
   }
 
   after(action: () => void, resume: () => void): void {

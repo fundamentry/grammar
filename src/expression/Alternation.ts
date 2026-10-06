@@ -1,9 +1,9 @@
 import { type Expression } from './Expression.js';
 
 export class Alternation<Token> implements Expression<Token> {
-  readonly #alternatives: readonly [Expression<Token>, Expression<Token>];
+  readonly #alternatives: Expression.Alternatives<Token>;
 
-  constructor(alternatives: readonly [Expression<Token>, Expression<Token>]) {
+  constructor(alternatives: Expression.Alternatives<Token>) {
     this.#alternatives = Object.freeze([...alternatives]);
   }
 

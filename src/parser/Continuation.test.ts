@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { Point } from '@fundamentry/stream';
 
 import { Named } from '#project/expectation';
-import { Mismatch } from '#project/mismatch';
 import { type Node, Option } from '#project/tree';
 
 import { Continuation } from './Continuation.js';
+import { Frontier } from './Frontier.js';
 
 const start = Point.of('ab');
 
@@ -38,14 +38,14 @@ describe('Continuation', () => {
     });
 
     it('must keep its label', () => {
-      const mismatch = Mismatch.expected(start, new Named('a'));
+      const mismatch = Frontier.expected(start, new Named('a'));
 
       expect(
         Continuation.of<string>(() => undefined)
           .labelled(start, label)
           .with(() => undefined)
           .relabel(mismatch)
-      ).toEqual(Mismatch.expected(start, label));
+      ).toEqual(Frontier.expected(start, label));
     });
   });
 
@@ -67,8 +67,8 @@ describe('Continuation', () => {
         Continuation.of<string>(() => undefined)
           .labelled(start, label)
           .map((value: Node) => value)
-          .relabel(Mismatch.expected(start, new Named('a')))
-      ).toEqual(Mismatch.expected(start, label));
+          .relabel(Frontier.expected(start, new Named('a')))
+      ).toEqual(Frontier.expected(start, label));
     });
   });
 
@@ -77,8 +77,8 @@ describe('Continuation', () => {
       expect(
         Continuation.of<string>(() => undefined)
           .labelled(second, label)
-          .relabel(Mismatch.expected(second, new Named('a')))
-      ).toEqual(Mismatch.expected(second, label));
+          .relabel(Frontier.expected(second, new Named('a')))
+      ).toEqual(Frontier.expected(second, label));
     });
 
     it('must keep the label that already starts at the point', () => {
@@ -86,8 +86,8 @@ describe('Continuation', () => {
         Continuation.of<string>(() => undefined)
           .labelled(start, label)
           .labelled(start, new Named('an inner label'))
-          .relabel(Mismatch.expected(start, new Named('a')))
-      ).toEqual(Mismatch.expected(start, label));
+          .relabel(Frontier.expected(start, new Named('a')))
+      ).toEqual(Frontier.expected(start, label));
     });
 
     it('must replace a label that starts elsewhere', () => {
@@ -97,14 +97,14 @@ describe('Continuation', () => {
         Continuation.of<string>(() => undefined)
           .labelled(start, label)
           .labelled(second, inner)
-          .relabel(Mismatch.expected(second, new Named('a')))
-      ).toEqual(Mismatch.expected(second, inner));
+          .relabel(Frontier.expected(second, new Named('a')))
+      ).toEqual(Frontier.expected(second, inner));
     });
   });
 
   describe('relabel', () => {
     it('must leave a mismatch alone without a label', () => {
-      const mismatch = Mismatch.expected(start, new Named('a'));
+      const mismatch = Frontier.expected(start, new Named('a'));
 
       expect(Continuation.of<string>(() => undefined).relabel(mismatch)).toBe(
         mismatch
@@ -112,7 +112,7 @@ describe('Continuation', () => {
     });
 
     it('must not relabel a mismatch past where its label starts', () => {
-      const mismatch = Mismatch.expected(second, new Named('b'));
+      const mismatch = Frontier.expected(second, new Named('b'));
 
       expect(
         Continuation.of<string>(() => undefined)

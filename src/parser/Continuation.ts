@@ -1,8 +1,9 @@
 import { type Point } from '@fundamentry/stream';
 
 import { type Expectation } from '#project/expectation';
-import { type Mismatch } from '#project/mismatch';
 import { type Node } from '#project/tree';
+
+import { type Frontier } from './Frontier.js';
 
 export namespace Continuation {
   export interface Label<out Token> {
@@ -55,9 +56,9 @@ export class Continuation<in out Token, in Value = Node> {
       : new Continuation(this.#succeed, { start: point, expectation });
   }
 
-  relabel(mismatch: Mismatch<Token>): Mismatch<Token> {
-    return this.#label?.start.equals(mismatch.at())
-      ? mismatch.relabel(this.#label.expectation)
-      : mismatch;
+  relabel(frontier: Frontier<Token>): Frontier<Token> {
+    return this.#label?.start.equals(frontier.at())
+      ? frontier.relabel(this.#label.expectation)
+      : frontier;
   }
 }
