@@ -1,4 +1,4 @@
-export class Visits<Key> {
+export class Visits<in out Key> {
   readonly #keys = new Set<Key>();
 
   visit(key: Key): boolean {

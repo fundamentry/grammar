@@ -4,13 +4,13 @@ import { Integer } from '@fundamentry/scalar';
 import { type Expression } from '#project/expression';
 
 export namespace LeftCorners {
-  export interface Facts<Token> {
+  export interface Facts<in out Token> {
     readonly nullable: boolean;
     readonly corners: ReadonlySet<Expression<Token>>;
   }
 }
 
-export class LeftCorners<Token> implements Expression.Visitor<
+export class LeftCorners<in out Token> implements Expression.Visitor<
   Token,
   undefined,
   LeftCorners.Facts<Token>
@@ -25,10 +25,6 @@ export class LeftCorners<Token> implements Expression.Visitor<
       this.#current = new Map();
       this.of(root);
     } while (this.#changed());
-  }
-
-  isLeftRecursive(expression: Expression<Token>): boolean {
-    return this.of(expression).corners.has(expression);
   }
 
   of(expression: Expression<Token>): LeftCorners.Facts<Token> {

@@ -59,8 +59,15 @@ export class Mismatch<Token> extends Data {
     return this.#messages;
   }
 
+  compareReach(other: Mismatch<Token>): number {
+    if (this.#isEmpty() || other.#isEmpty())
+      return Number(other.#isEmpty()) - Number(this.#isEmpty());
+
+    return this.#at.compareTo(other.#at);
+  }
+
   merge(other: Mismatch<Token>): Mismatch<Token> {
-    const distance = other.#at.compareTo(this.#at);
+    const distance = other.compareReach(this);
 
     if (distance !== 0) return distance > 0 ? other : this;
 
@@ -68,7 +75,9 @@ export class Mismatch<Token> extends Data {
   }
 
   relabel(expectation: Expectation): Mismatch<Token> {
-    return new Mismatch(this.#at, [expectation], this.#messages);
+    return this.#isEmpty()
+      ? this
+      : new Mismatch(this.#at, [expectation], this.#messages);
   }
 
   override equals(other: unknown): boolean {
@@ -90,6 +99,10 @@ export class Mismatch<Token> extends Data {
       `Expected ${Mismatch.#alternatives.format(this.#expected.map(String))}, got ${found}`,
       ...this.#messages,
     ].join('; ');
+  }
+
+  #isEmpty(): boolean {
+    return this.#expected.length + this.#messages.length === 0;
   }
 
   #combine(other: Mismatch<Token>): Mismatch<Token> {

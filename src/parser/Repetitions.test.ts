@@ -8,6 +8,7 @@ import { Mismatch } from '#project/mismatch';
 import { type Node, Option } from '#project/tree';
 
 import { Context } from './Context.js';
+import { Continuation } from './Continuation.js';
 import { type Parser } from './Parser.js';
 import { Repetitions } from './Repetitions.js';
 
@@ -15,7 +16,7 @@ const letters: Parser.Parse<string> = (point, context, continuation) => {
   const step = point.step();
 
   if (step)
-    context.succeed(continuation, { value: new Option(), rest: step.rest });
+    context.succeed(continuation, [{ value: new Option(), rest: step.rest }]);
 };
 
 const repeat = (
@@ -26,10 +27,14 @@ const repeat = (
   const counts: number[] = [];
   const start = Point.of(text);
   const parsed = Context.run(start, (point, context) =>
-    new Repetitions(bounds).from(point, context, element, {
-      succeed: ({ value }: Point.Step<string, readonly Node[]>) =>
-        counts.push(value.length),
-    })
+    new Repetitions(bounds).from(
+      point,
+      context,
+      element,
+      Continuation.of(({ value }: Point.Step<string, readonly Node[]>) =>
+        counts.push(value.length)
+      )
+    )
   );
 
   assert(!parsed.ok());
@@ -59,7 +64,7 @@ describe('Repetitions', () => {
 
     it('must not repeat a zero-width iteration beyond the minimum', () => {
       const empty: Parser.Parse<string> = (point, context, continuation) =>
-        context.succeed(continuation, { value: new Option(), rest: point });
+        context.succeed(continuation, [{ value: new Option(), rest: point }]);
 
       expect(repeat(Range.atLeast(Integer.of(2)), 'a', empty).counts).toEqual([
         2,
@@ -76,7 +81,7 @@ describe('Repetitions', () => {
 
     it('must report the failures of its iterations', () => {
       const failing: Parser.Parse<string> = (point, context, continuation) => {
-        context.fail(Mismatch.message(point, 'nope'), continuation.label);
+        context.fail(continuation.relabel(Mismatch.message(point, 'nope')));
         letters(point, context, continuation);
       };
 

@@ -5,36 +5,28 @@ import { Integer } from '@fundamentry/scalar';
 import { type Point } from '@fundamentry/stream';
 
 import { Cache } from '#project/cache';
-import { type Expectation } from '#project/expectation';
+import { EndOfInput, type Expectation } from '#project/expectation';
 import { type Expression } from '#project/expression';
 import { Mismatch } from '#project/mismatch';
 import { type Node, Option, Repetition, Sequence } from '#project/tree';
 
 import { Alternatives } from './Alternatives.js';
 import { Chain } from './Chain.js';
+import { type Column } from './Column.js';
 import { Context } from './Context.js';
+import { type Continuation } from './Continuation.js';
 import { LeftCorners } from './LeftCorners.js';
 import { Repetitions } from './Repetitions.js';
-import { Visits } from './Visits.js';
+import { Spans } from './Spans.js';
 
 export namespace Parser {
-  export interface Label<Token> {
-    readonly start: Point<Token>;
-    readonly expectation: Expectation;
-  }
-
-  export interface Continuation<Token, Value = Node> {
-    readonly label?: Label<Token>;
-    readonly succeed: (step: Point.Step<Token, Value>) => void;
-  }
-
-  export type Parse<Token> = (
+  export type Parse<in out Token> = (
     point: Point<Token>,
     context: Context<Token>,
     continuation: Continuation<Token>
   ) => void;
 
-  export interface Compiled<Token> {
+  export interface Compiled<in out Token> {
     readonly parse: Parse<Token>;
     readonly starts: (token?: Token) => boolean;
     readonly nullable: boolean;
@@ -47,12 +39,14 @@ export namespace Parser {
   export type Parsed<Token> = Result<Node, Mismatch<Token>>;
 }
 
-export class Parser<Token> implements Expression.Visitor<
+export class Parser<in out Token> implements Expression.Visitor<
   Token,
   undefined,
   Parser.Draft<Token>
 > {
   readonly #compiled = new Cache<Expression<Token>, Parser.Compiled<Token>>();
+
+  readonly #rules = new Cache<Expression<Token>, Column.Rule<Token>>();
 
   readonly #corners: LeftCorners<Token>;
 
@@ -64,7 +58,16 @@ export class Parser<Token> implements Expression.Visitor<
   }
 
   parse(start: Point<Token>): Parser.Parsed<Token> {
-    return Context.run(start, this.#root.parse);
+    return Context.run(start, (point, context, continuation) =>
+      this.#root.parse(
+        point,
+        context,
+        continuation.with(step => {
+          if (step.rest.isAtEnd()) continuation.succeed(step);
+          else context.fail(Mismatch.expected(step.rest, new EndOfInput()));
+        })
+      )
+    );
   }
 
   terminal<Value extends Node>(
@@ -73,19 +76,19 @@ export class Parser<Token> implements Expression.Visitor<
   ): Parser.Draft<Token> {
     return {
       parse: (point, context, continuation) => {
-        const step = point.step();
-        const value = step ? conversion.to(step.value) : undefined;
-
-        if (step && value?.ok())
-          context.succeed(continuation, {
-            value: value.value(),
-            rest: step.rest,
-          });
-        else
+        const fail = () =>
           context.fail(
-            Mismatch.expected(point, expectation),
-            continuation.label
+            continuation.relabel(Mismatch.expected(point, expectation))
           );
+        const step = point.step();
+
+        if (step)
+          conversion.to(step.value).match({
+            onSuccess: value =>
+              context.succeed(continuation, [{ value, rest: step.rest }]),
+            onFailure: fail,
+          });
+        else fail();
       },
       starts: token => token !== undefined && conversion.to(token).ok(),
       expected: [expectation],
@@ -109,16 +112,20 @@ export class Parser<Token> implements Expression.Visitor<
           const element = compiled[index];
 
           if (element)
-            element.parse(rest, context, {
-              label: continuation.label,
-              succeed: step =>
-                proceed(index + 1, prefix.append(step.value), step.rest),
-            });
-          else
-            context.succeed(continuation, {
-              value: new Sequence(prefix.toArray()),
+            element.parse(
               rest,
-            });
+              context,
+              continuation.with(step =>
+                proceed(index + 1, prefix.append(step.value), step.rest)
+              )
+            );
+          else
+            context.succeed(continuation, [
+              {
+                value: new Sequence(prefix.toArray()),
+                rest,
+              },
+            ]);
         };
 
         proceed(0, Chain.empty(), point);
@@ -152,11 +159,11 @@ export class Parser<Token> implements Expression.Visitor<
 
     return {
       parse: Parser.#preferred((point, context, continuation) => {
-        context.succeed(continuation, { value: new Option(), rest: point });
+        context.succeed(continuation, [{ value: new Option(), rest: point }]);
         parse(
           point,
           context,
-          Parser.#mapped(continuation, value => new Option(value))
+          continuation.map((value: Node) => new Option(value))
         );
       }),
       starts,
@@ -180,10 +187,7 @@ export class Parser<Token> implements Expression.Visitor<
           point,
           context,
           parse,
-          Parser.#mapped(
-            continuation,
-            (values: readonly Node[]) => new Repetition(values)
-          )
+          continuation.map((values: readonly Node[]) => new Repetition(values))
         )
       ),
       starts: token => iterates && starts(token),
@@ -199,19 +203,20 @@ export class Parser<Token> implements Expression.Visitor<
 
     return {
       parse: Parser.#preferred((point, context, continuation) =>
-        parse(point, context, {
-          label: continuation.label,
-          succeed: ({ value, rest }) =>
+        parse(
+          point,
+          context,
+          continuation.with(({ value, rest }) =>
             conversion.to(value as Value).match({
               onSuccess: refined =>
                 continuation.succeed({ value: refined, rest }),
               onFailure: reason =>
                 context.fail(
-                  Mismatch.message(rest, reason),
-                  continuation.label
+                  continuation.relabel(Mismatch.message(rest, reason))
                 ),
-            }),
-        })
+            })
+          )
+        )
       ),
       starts: nullable ? () => true : starts,
       expected,
@@ -226,12 +231,7 @@ export class Parser<Token> implements Expression.Visitor<
 
     return {
       parse: Parser.#preferred((point, context, continuation) =>
-        parse(point, context, {
-          label: continuation.label?.start.equals(point)
-            ? continuation.label
-            : { start: point, expectation },
-          succeed: continuation.succeed,
-        })
+        parse(point, context, continuation.labelled(point, expectation))
       ),
       starts,
       expected: [expectation],
@@ -243,14 +243,17 @@ export class Parser<Token> implements Expression.Visitor<
   }
 
   reference(target: () => Expression<Token>): Parser.Draft<Token> {
-    const rule = () => this.#compile(target());
+    const rule = () =>
+      this.#rules.get(target(), expression => ({
+        expression,
+        parse: (point, context, continuation) =>
+          this.#compile(expression).parse(point, context, continuation),
+        corners: this.#corners.of(expression).corners,
+      }));
 
     return {
-      parse: this.#corners.isLeftRecursive(target())
-        ? (point, context: Context<Token>, continuation) =>
-            context.grow(rule().parse, point, continuation)
-        : (point, context, continuation) =>
-            rule().parse(point, context, continuation),
+      parse: (point, context: Context<Token>, continuation) =>
+        context.recall(rule(), point, continuation),
       starts: () => true,
       expected: [],
     };
@@ -265,26 +268,15 @@ export class Parser<Token> implements Expression.Visitor<
 
   static #preferred<Token>(parse: Parser.Parse<Token>): Parser.Parse<Token> {
     return (point, context, continuation) => {
-      const spans = new Visits<number>();
+      const spans = new Spans(point);
 
-      parse(point, context, {
-        label: continuation.label,
-        succeed: step => {
-          if (spans.visit(step.rest.distanceFrom(point)))
-            continuation.succeed(step);
-        },
-      });
-    };
-  }
-
-  static #mapped<Token, Value>(
-    continuation: Parser.Continuation<Token>,
-    map: (value: Value) => Node
-  ): Parser.Continuation<Token, Value> {
-    return {
-      label: continuation.label,
-      succeed: ({ value, rest }) =>
-        continuation.succeed({ value: map(value), rest }),
+      parse(
+        point,
+        context,
+        continuation.with(step => {
+          if (spans.visit(step)) continuation.succeed(step);
+        })
+      );
     };
   }
 }

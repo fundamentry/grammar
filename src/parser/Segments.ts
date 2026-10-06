@@ -4,7 +4,7 @@ export namespace Segments {
     | { readonly accepted: false; readonly items: readonly T[] };
 }
 
-export class Segments<T> implements Iterable<Segments.Segment<T>> {
+export class Segments<in out T> implements Iterable<Segments.Segment<T>> {
   readonly #items: Iterable<T>;
 
   readonly #accepts: (item: T) => boolean;

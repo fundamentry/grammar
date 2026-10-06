@@ -2,30 +2,30 @@ import { Failure, Success } from '@fundamentry/coproduct';
 import { type Point } from '@fundamentry/stream';
 
 import { Cache } from '#project/cache';
-import { EndOfInput } from '#project/expectation';
-import { Mismatch } from '#project/mismatch';
+import { type Mismatch } from '#project/mismatch';
 import { type Node } from '#project/tree';
 
-import { Growth } from './Growth.js';
+import { Agenda } from './Agenda.js';
+import { Column } from './Column.js';
+import { Continuation } from './Continuation.js';
+import { Failures } from './Failures.js';
 import { type Parser } from './Parser.js';
 
-export class Context<Token> {
+export class Context<in out Token> {
   readonly #start: Point<Token>;
 
-  readonly #tasks: (() => void)[] = [];
+  readonly #failures: Failures<Token>;
 
-  readonly #growths = new Cache<
-    Parser.Parse<Token>,
-    Map<number, Growth<Token>>
-  >();
+  readonly #agenda: Agenda<Failures<Token>>;
 
-  #mismatch: Mismatch<Token>;
+  readonly #columns = new Cache<number, Column<Token>>();
 
   #parsed?: Success<Node>;
 
   private constructor(start: Point<Token>) {
     this.#start = start;
-    this.#mismatch = Mismatch.empty(start);
+    this.#failures = new Failures(start);
+    this.#agenda = new Agenda(this.#failures);
   }
 
   static run<Token>(
@@ -34,72 +34,54 @@ export class Context<Token> {
   ): Parser.Parsed<Token> {
     const context = new Context(start);
 
-    parse(start, context, {
-      succeed: ({ value, rest }) => {
-        if (rest.isAtEnd()) context.#parsed ??= new Success(value);
-        else context.fail(Mismatch.expected(rest, new EndOfInput()));
-      },
-    });
+    parse(
+      start,
+      context,
+      Continuation.of(({ value }) => {
+        context.#parsed ??= new Success(value);
+        context.#agenda.clear();
+      })
+    );
 
-    while (!context.#parsed) {
-      const task = context.#tasks.pop();
+    context.#agenda.drain();
 
-      if (!task) break;
-
-      task();
-    }
-
-    return context.#parsed ?? new Failure(context.#mismatch);
+    return context.#parsed ?? new Failure(context.#failures.mismatch());
   }
 
   schedule(task: () => void): void {
-    this.#tasks.push(task);
+    this.#agenda.schedule(task);
   }
 
   succeed<Value>(
-    continuation: Parser.Continuation<Token, Value>,
-    ...steps: readonly Point.Step<Token, Value>[]
+    continuation: Continuation<Token, Value>,
+    steps: readonly Point.Step<Token, Value>[]
   ): void {
-    for (const step of steps.toReversed())
-      this.schedule(() => continuation.succeed(step));
+    this.#agenda.each(steps.values(), step => continuation.succeed(step));
   }
 
-  fail(mismatch: Mismatch<Token>, label?: Parser.Label<Token>): void {
-    this.#mismatch = this.#mismatch.merge(
-      label?.start.equals(mismatch.at())
-        ? mismatch.relabel(label.expectation)
-        : mismatch
-    );
+  fail(mismatch: Mismatch<Token>): void {
+    this.#agenda.scope().fail(mismatch);
+  }
+
+  after(action: () => void, resume: () => void): void {
+    this.#agenda.after(action, resume);
   }
 
   each<T>(items: Iterator<T>, visit: (item: T) => void): void {
-    const pull = () => {
-      const next = items.next();
-
-      if (next.done) return;
-
-      this.schedule(pull);
-      visit(next.value);
-    };
-
-    this.schedule(pull);
+    this.#agenda.each(items, visit);
   }
 
-  grow(
-    parse: Parser.Parse<Token>,
+  within(failures: Failures<Token>, action: () => void): void {
+    this.#agenda.within(failures, action);
+  }
+
+  recall(
+    rule: Column.Rule<Token>,
     point: Point<Token>,
-    continuation: Parser.Continuation<Token>
+    continuation: Continuation<Token>
   ): void {
-    const growths = this.#growths.get(parse, () => new Map());
-    const offset = point.distanceFrom(this.#start);
-    const active = growths.get(offset);
-
-    if (active) this.succeed(continuation, ...active.seed());
-    else {
-      const growth = new Growth(point);
-
-      growths.set(offset, growth);
-      growth.run(parse, this, continuation, () => growths.delete(offset));
-    }
+    this.#columns
+      .get(point.distanceFrom(this.#start), () => new Column(this, point))
+      .recall(rule, continuation);
   }
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { Point } from '@fundamentry/stream';
 
@@ -6,7 +6,6 @@ import { type Node, Option } from '#project/tree';
 
 import { Context } from './Context.js';
 import { Growth } from './Growth.js';
-import { type Parser } from './Parser.js';
 
 const start = Point.of('abc');
 
@@ -21,111 +20,64 @@ const step = (offset: number): Point.Step<string, Node> => ({
   rest: at(offset),
 });
 
+const run = (
+  found: (
+    seed: readonly Point.Step<string, Node>[]
+  ) => Point.Step<string, Node> | undefined
+) => {
+  const seeds: (readonly Point.Step<string, Node>[])[] = [];
+  const events: (string | Point.Step<string, Node>)[] = [];
+
+  Context.run(start, (_, context, continuation) => {
+    const growth = new Growth(context, start);
+
+    growth.run(
+      (_point, inner, next) => {
+        const seed = growth.seed();
+        const match = found(seed);
+
+        seeds.push(seed);
+
+        if (match) inner.succeed(next, [match]);
+      },
+      continuation.with(match => events.push(match)),
+      () => events.push('done')
+    );
+  });
+
+  return { seeds, events };
+};
+
+const upTo =
+  (limit: number) =>
+  ([last]: readonly Point.Step<string, Node>[]) => {
+    const offset = last ? last.rest.distanceFrom(start) + 1 : 1;
+
+    return offset <= limit ? step(offset) : undefined;
+  };
+
 describe('Growth', () => {
   describe('run', () => {
-    const grow = (
-      growth: Growth<string>,
-      limit: number
-    ): Parser.Parse<string> =>
-      vi.fn<Parser.Parse<string>>((_, context, continuation) => {
-        const [seed] = growth.seed();
-        const offset = seed ? seed.rest.distanceFrom(start) + 1 : 1;
-
-        if (offset <= limit) context.succeed(continuation, step(offset));
-      });
-
-    const run = (growth: Growth<string>, parse: Parser.Parse<string>) => {
-      const events: (string | Point.Step<string, Node>)[] = [];
-
-      Context.run(start, (_, context, continuation) =>
-        growth.run(
-          parse,
-          context,
-          { ...continuation, succeed: found => events.push(found) },
-          () => events.push('done')
-        )
-      );
-
-      return events;
-    };
-
     it('must pass on every match it grew, longest first, once it is done', () => {
-      const growth = new Growth(start);
-
-      expect(run(growth, grow(growth, 3))).toEqual([
-        'done',
-        step(3),
-        step(2),
-        step(1),
-      ]);
+      expect(run(upTo(3)).events).toEqual(['done', step(3), step(2), step(1)]);
     });
 
     it('must stop after the first pass that grows nothing', () => {
-      const growth = new Growth(start);
-      const parse = grow(growth, 2);
+      expect(run(upTo(2)).seeds).toHaveLength(3);
+    });
 
-      run(growth, parse);
-
-      expect(parse).toHaveBeenCalledTimes(3);
+    it('must not grow from a span it found before', () => {
+      expect(run(() => step(1)).seeds).toHaveLength(2);
     });
 
     it('must be done without matches when the first pass finds none', () => {
-      const growth = new Growth(start);
-
-      expect(run(growth, grow(growth, 0))).toEqual(['done']);
+      expect(run(upTo(0)).events).toEqual(['done']);
     });
   });
 
   describe('seed', () => {
-    it('must start without a seed', () => {
-      expect(new Growth(start).seed()).toEqual([]);
-    });
-
-    it('must seed what the last pass grew', () => {
-      const growth = new Growth(start);
-
-      growth.absorb(step(1));
-      growth.grew();
-      growth.absorb(step(1));
-      growth.absorb(step(2));
-      growth.grew();
-
-      expect(growth.seed()).toEqual([step(2)]);
-    });
-  });
-
-  describe('grew', () => {
-    it('must report that a pass grew when it found a new span', () => {
-      const growth = new Growth(start);
-
-      growth.absorb(step(1));
-
-      expect(growth.grew()).toBe(true);
-    });
-
-    it('must report that a pass did not grow when it found no new span', () => {
-      const growth = new Growth(start);
-
-      growth.absorb(step(1));
-      growth.grew();
-      growth.absorb(step(1));
-
-      expect(growth.grew()).toBe(false);
-    });
-  });
-
-  describe('steps', () => {
-    it('must list longer spans before shorter ones', () => {
-      const growth = new Growth(start);
-
-      growth.absorb(step(1));
-      growth.grew();
-      growth.absorb(step(3));
-      growth.grew();
-      growth.absorb(step(2));
-      growth.grew();
-
-      expect(growth.steps()).toEqual([step(3), step(2), step(1)]);
+    it('must seed each pass with what the pass before it grew', () => {
+      expect(run(upTo(2)).seeds).toEqual([[], [step(1)], [step(2)]]);
     });
   });
 });

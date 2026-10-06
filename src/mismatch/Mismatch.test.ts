@@ -36,6 +36,29 @@ describe('Mismatch', () => {
     });
   });
 
+  describe('compareReach', () => {
+    it('must order mismatches by how far they got', () => {
+      expect(
+        Mismatch.expected(next, digit).compareReach(
+          Mismatch.expected(start, digit)
+        )
+      ).toBeGreaterThan(0);
+    });
+
+    it('must order an empty mismatch before any other, wherever it is', () => {
+      expect(
+        Mismatch.empty(end).compareReach(Mismatch.expected(start, digit))
+      ).toBeLessThan(0);
+      expect(
+        Mismatch.expected(start, digit).compareReach(Mismatch.empty(end))
+      ).toBeGreaterThan(0);
+    });
+
+    it('must order empty mismatches alike', () => {
+      expect(Mismatch.empty(start).compareReach(Mismatch.empty(end))).toBe(0);
+    });
+  });
+
   describe('merge', () => {
     it('must keep the mismatch that got further', () => {
       const near = Mismatch.expected(start, digit);
@@ -62,6 +85,13 @@ describe('Mismatch', () => {
       expect(Mismatch.empty(start).merge(mismatch)).toEqual(mismatch);
       expect(mismatch.merge(Mismatch.empty(start))).toEqual(mismatch);
     });
+
+    it('must leave anything merged with an empty mismatch further on unchanged', () => {
+      const mismatch = Mismatch.expected(start, digit);
+
+      expect(Mismatch.empty(end).merge(mismatch)).toEqual(mismatch);
+      expect(mismatch.merge(Mismatch.empty(end))).toEqual(mismatch);
+    });
   });
 
   describe('relabel', () => {
@@ -71,6 +101,12 @@ describe('Mismatch', () => {
         .relabel(new Named('a value'));
 
       expect(String(relabelled)).toBe("Expected a value, got 'a'; odd");
+    });
+
+    it('must leave the empty mismatch empty', () => {
+      expect(Mismatch.empty(start).relabel(new Named('a value'))).toEqual(
+        Mismatch.empty(start)
+      );
     });
   });
 

@@ -64,11 +64,9 @@ describe('LeftCorners', () => {
 
       expect(new LeftCorners(alternation).of(alternation).nullable).toBe(true);
     });
-  });
 
-  describe('isLeftRecursive', () => {
     it('must not find a terminal left-recursive', () => {
-      expect(new LeftCorners(digit).isLeftRecursive(digit)).toBe(false);
+      expect(new LeftCorners(digit).of(digit).corners.has(digit)).toBe(false);
     });
 
     it('must find a rule that starts with itself left-recursive', () => {
@@ -77,7 +75,7 @@ describe('LeftCorners', () => {
         digit,
       ]);
 
-      expect(new LeftCorners(sum).isLeftRecursive(sum)).toBe(true);
+      expect(new LeftCorners(sum).of(sum).corners.has(sum)).toBe(true);
     });
 
     it('must not find a rule that ends with itself left-recursive', () => {
@@ -85,7 +83,7 @@ describe('LeftCorners', () => {
         new Concatenation([digit, new Reference(() => list)])
       );
 
-      expect(new LeftCorners(list).isLeftRecursive(list)).toBe(false);
+      expect(new LeftCorners(list).of(list).corners.has(list)).toBe(false);
     });
 
     it('must find a rule that refers to itself after what can match empty input left-recursive', () => {
@@ -94,7 +92,7 @@ describe('LeftCorners', () => {
         digit,
       ]);
 
-      expect(new LeftCorners(rule).isLeftRecursive(rule)).toBe(true);
+      expect(new LeftCorners(rule).of(rule).corners.has(rule)).toBe(true);
     });
 
     it('must find rules that start with each other left-recursive', () => {
@@ -113,8 +111,8 @@ describe('LeftCorners', () => {
       };
       const corners = new LeftCorners(grammar.term);
 
-      expect(corners.isLeftRecursive(grammar.term)).toBe(true);
-      expect(corners.isLeftRecursive(grammar.factor)).toBe(true);
+      expect(corners.of(grammar.term).corners.has(grammar.term)).toBe(true);
+      expect(corners.of(grammar.factor).corners.has(grammar.factor)).toBe(true);
     });
 
     it('must look through refinements, labels and rules', () => {
@@ -132,7 +130,7 @@ describe('LeftCorners', () => {
         digit,
       ]);
 
-      expect(new LeftCorners(rule).isLeftRecursive(rule)).toBe(true);
+      expect(new LeftCorners(rule).of(rule).corners.has(rule)).toBe(true);
     });
 
     it('must not look into a repetition that never iterates', () => {
@@ -147,7 +145,7 @@ describe('LeftCorners', () => {
         digit,
       ]);
 
-      expect(new LeftCorners(rule).isLeftRecursive(rule)).toBe(false);
+      expect(new LeftCorners(rule).of(rule).corners.has(rule)).toBe(false);
     });
   });
 });

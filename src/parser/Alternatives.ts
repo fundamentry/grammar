@@ -6,17 +6,18 @@ import { Mismatch } from '#project/mismatch';
 import { Choice, type Node } from '#project/tree';
 
 import { type Context } from './Context.js';
+import { type Continuation } from './Continuation.js';
 import { type Parser } from './Parser.js';
 import { Segments } from './Segments.js';
 
 export namespace Alternatives {
-  export interface Branch<Token> {
+  export interface Branch<in out Token> {
     readonly compiled: Parser.Compiled<Token>;
     readonly wrap: (value: Node) => Node;
   }
 }
 
-export class Alternatives<Token> {
+export class Alternatives<in out Token> {
   readonly #branches: readonly Alternatives.Branch<Token>[];
 
   private constructor(branches: readonly Alternatives.Branch<Token>[]) {
@@ -56,7 +57,7 @@ export class Alternatives<Token> {
   from(
     point: Point<Token>,
     context: Context<Token>,
-    continuation: Parser.Continuation<Token>
+    continuation: Continuation<Token>
   ): void {
     const token = point.peek();
 
@@ -76,14 +77,15 @@ export class Alternatives<Token> {
     branches: readonly Alternatives.Branch<Token>[],
     point: Point<Token>,
     context: Context<Token>,
-    continuation: Parser.Continuation<Token>
+    continuation: Continuation<Token>
   ): void {
     context.fail(
-      Mismatch.expected(
-        point,
-        ...branches.flatMap(({ compiled: { expected } }) => expected)
-      ),
-      continuation.label
+      continuation.relabel(
+        Mismatch.expected(
+          point,
+          ...branches.flatMap(({ compiled: { expected } }) => expected)
+        )
+      )
     );
   }
 
@@ -91,12 +93,8 @@ export class Alternatives<Token> {
     { compiled, wrap }: Alternatives.Branch<Token>,
     point: Point<Token>,
     context: Context<Token>,
-    continuation: Parser.Continuation<Token>
+    continuation: Continuation<Token>
   ): void {
-    compiled.parse(point, context, {
-      label: continuation.label,
-      succeed: ({ value, rest }) =>
-        continuation.succeed({ value: wrap(value), rest }),
-    });
+    compiled.parse(point, context, continuation.map(wrap));
   }
 }

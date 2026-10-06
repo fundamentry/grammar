@@ -10,6 +10,7 @@ import { Choice, Literal, type Node } from '#project/tree';
 
 import { Alternatives } from './Alternatives.js';
 import { Context } from './Context.js';
+import { Continuation } from './Continuation.js';
 import { type Parser } from './Parser.js';
 
 const input = (text: string) => Point.of(Array.from(text, CodePoint.of));
@@ -20,9 +21,11 @@ const explore = (
 ) => {
   const steps: Point.Step<CodePoint, Node>[] = [];
   const parsed = Context.run(point, (start, context) =>
-    alternatives.from(start, context, {
-      succeed: step => steps.push(step),
-    })
+    alternatives.from(
+      start,
+      context,
+      Continuation.of(step => steps.push(step))
+    )
   );
 
   assert(!parsed.ok());
@@ -38,11 +41,14 @@ const character = (text: string): Parser.Compiled<CodePoint> => {
       const step = point.step();
 
       if (step?.value.equals(CodePoint.of(text)))
-        context.succeed(continuation, {
-          value: new Literal(step.value),
-          rest: step.rest,
-        });
-      else context.fail(Mismatch.expected(point, expected), continuation.label);
+        context.succeed(continuation, [
+          {
+            value: new Literal(step.value),
+            rest: step.rest,
+          },
+        ]);
+      else
+        context.fail(continuation.relabel(Mismatch.expected(point, expected)));
     },
     starts: token => token?.equals(CodePoint.of(text)) ?? false,
     nullable: false,
@@ -52,10 +58,12 @@ const character = (text: string): Parser.Compiled<CodePoint> => {
 
 const empty: Parser.Compiled<CodePoint> = {
   parse: (point, context, continuation) =>
-    context.succeed(continuation, {
-      value: new Literal(CodePoint.of('_')),
-      rest: point,
-    }),
+    context.succeed(continuation, [
+      {
+        value: new Literal(CodePoint.of('_')),
+        rest: point,
+      },
+    ]),
   starts: () => false,
   nullable: true,
   expected: [],
@@ -170,9 +178,11 @@ describe('Alternatives', () => {
       });
 
       Context.run(point, (start, context) =>
-        alternatives.from(start, context, {
-          succeed: () => events.push('parsed a'),
-        })
+        alternatives.from(
+          start,
+          context,
+          Continuation.of(() => events.push('parsed a'))
+        )
       );
 
       expect(events).toEqual(['parsed a', 'looked at b']);

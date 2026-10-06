@@ -1,4 +1,4 @@
-export class Chain<T> {
+export class Chain<out T> {
   readonly #link?: readonly [T, Chain<T>];
 
   private constructor(link?: readonly [T, Chain<T>]) {

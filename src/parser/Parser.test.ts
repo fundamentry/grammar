@@ -81,6 +81,50 @@ describe('Parser', () => {
       expect(parsed.ok()).toBe(true);
     });
 
+    it('must parse a referenced expression once per point', () => {
+      const accepts = vi.fn<(token: CodePoint) => boolean>(() => true);
+      const counted = character('a counted token', accepts);
+
+      new Parser(
+        new Alternation([
+          new Concatenation([new Reference(() => counted), letter]),
+          new Concatenation([new Reference(() => counted), digit]),
+        ])
+      ).parse(input('12'));
+
+      expect(accepts).toHaveBeenCalledOnce();
+    });
+
+    it('must grow a left-recursive expression once per point', () => {
+      const calls = (
+        root: (chain: Expression<CodePoint>) => Expression<CodePoint>
+      ) => {
+        const accepts = vi.fn<(token: CodePoint) => boolean>(() => true);
+        const counted = character('a counted token', accepts);
+        const chain: Expression<CodePoint> = new Alternation([
+          new Concatenation([new Reference(() => chain), counted]),
+          counted,
+        ]);
+
+        new Parser(root(chain)).parse(input('11'));
+
+        return accepts.mock.calls.length;
+      };
+
+      const once = calls(
+        chain => new Concatenation([new Reference(() => chain), letter])
+      );
+      const twice = calls(
+        chain =>
+          new Alternation([
+            new Concatenation([new Reference(() => chain), letter]),
+            new Concatenation([new Reference(() => chain), digit]),
+          ])
+      );
+
+      expect(twice).toBe(once);
+    });
+
     it('must expect the end of input where a candidate stops short of it', () => {
       const parsed = new Parser(digit).parse(input('12'));
 

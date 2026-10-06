@@ -6,8 +6,9 @@ import { Cache } from '#project/cache';
 import { type Node } from '#project/tree';
 
 import { type Context } from './Context.js';
+import { type Continuation } from './Continuation.js';
 import { type Parser } from './Parser.js';
-import { Visits } from './Visits.js';
+import { Spans } from './Spans.js';
 
 export class Repetitions {
   readonly #bounds: Range<Integer>;
@@ -20,9 +21,9 @@ export class Repetitions {
     start: Point<Token>,
     context: Context<Token>,
     element: Parser.Parse<Token>,
-    continuation: Parser.Continuation<Token, readonly Node[]>
+    continuation: Continuation<Token, readonly Node[]>
   ): void {
-    const states = new Cache<number, Visits<number>>();
+    const states = new Cache<number, Spans<Token>>();
 
     const state = (count: Integer, satisfied: boolean) =>
       satisfied && !this.#bounds.hasUpperBound() ? Infinity : count.value();
@@ -36,7 +37,7 @@ export class Repetitions {
     ): void => {
       const next = count.increment();
       const fits = this.#bounds.contains(next);
-      const visits = states.get(state(next, fits), () => new Visits());
+      const spans = states.get(state(next, fits), () => new Spans(start));
 
       context.schedule(() => {
         if (satisfied) continuation.succeed({ value: [...path], rest });
@@ -45,18 +46,16 @@ export class Repetitions {
       });
 
       if (!satisfied || fits)
-        element(rest, context, {
-          label: continuation.label,
-          succeed: ({ value, rest: after }) => {
-            if (
-              (!satisfied || !after.equals(rest)) &&
-              visits.visit(after.distanceFrom(start))
-            ) {
-              path.push(value);
-              frame(after, next, fits);
+        element(
+          rest,
+          context,
+          continuation.with<Node>(step => {
+            if ((!satisfied || !step.rest.equals(rest)) && spans.visit(step)) {
+              path.push(step.value);
+              frame(step.rest, next, fits);
             }
-          },
-        });
+          })
+        );
     };
 
     frame(start, Integer.of(0));
