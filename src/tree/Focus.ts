@@ -2,41 +2,41 @@ import { Morphism, type Optic, Optional, Prism } from '@fundamentry/category';
 
 import { type Node } from './Node.js';
 
-export class Selection<T extends Node, A> {
+export class Focus<T extends Node, A> {
   readonly #tree: T;
 
   readonly #is: (node: Node) => boolean;
 
-  readonly #focus: Optional<Node, A, unknown>;
+  readonly #optic: Optional<Node, A, unknown>;
 
   private constructor(
     tree: T,
     is: (node: Node) => boolean,
-    focus: Optional<Node, A, unknown>
+    optic: Optional<Node, A, unknown>
   ) {
     this.#tree = tree;
     this.#is = is;
-    this.#focus = focus;
+    this.#optic = optic;
   }
 
   static of<T extends Node, F extends Node>(
     tree: T,
     is: (node: Node) => node is F
-  ): Selection<T, F> {
-    return new Selection(
+  ): Focus<T, F> {
+    return new Focus(
       tree,
       is,
       Optional.id<Node>().andThen(Prism.fromPredicate(is, () => undefined))
     );
   }
 
-  focus<B>(optic: Optic<Optic.Kind, A, B, unknown>): Selection<T, B> {
-    return new Selection(this.#tree, this.#is, this.#focus.andThen(optic));
+  focus<B>(optic: Optic<Optic.Kind, A, B, unknown>): Focus<T, B> {
+    return new Focus(this.#tree, this.#is, this.#optic.andThen(optic));
   }
 
   values(): IteratorObject<A> {
     return this.#tree.outermost(this.#is).flatMap(found =>
-      this.#focus.preview(found).match<readonly A[]>({
+      this.#optic.preview(found).match<readonly A[]>({
         onSuccess: value => [value],
         onFailure: () => [],
       })
@@ -55,7 +55,7 @@ export class Selection<T extends Node, A> {
 
   modify(update: (value: A) => A): T {
     const is = this.#is;
-    const modified = this.#focus.modify(Morphism.of(update));
+    const modified = this.#optic.modify(Morphism.of(update));
 
     function rewrite<N extends Node>(node: N): N;
 

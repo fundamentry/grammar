@@ -9,12 +9,12 @@ import {
   type Nonterminal,
   type Option,
   Repetition,
-  type Selection,
   Sequence,
   type Literal,
 } from '#project/tree';
 
 import { Rule } from './Rule.js';
+import { type Selection } from './Selection.js';
 
 const character = (char: string) => new Character(CodePoint.of(char));
 

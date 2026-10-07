@@ -1,5 +1,7 @@
 import { Codec } from '#project/codec';
-import { type Node, Nonterminal, Selection } from '#project/tree';
+import { Focus, type Node, Nonterminal } from '#project/tree';
+
+import { Selection } from './Selection.js';
 
 export namespace Rule {
   export type Value<R> = R extends { print(value: infer N): unknown }
@@ -44,6 +46,9 @@ export class Rule<
   }
 
   in<T extends Node>(tree: T): Selection<T, Nonterminal<Name, Elements>> {
-    return Selection.of(tree, (node: Node) => this.is(node));
+    return new Selection(
+      Focus.of(tree, (node: Node) => this.is(node)),
+      this
+    );
   }
 }
