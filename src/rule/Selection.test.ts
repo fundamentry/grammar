@@ -277,6 +277,55 @@ describe('Selection', () => {
     });
   });
 
+  describe('insert, append and prepend', () => {
+    const digits = (input: string) =>
+      PORT.in(parsed(PORT, input)).elements().at(1).value().at(1);
+
+    it('must insert an element at the index', () => {
+      expect(String(digits('h:13').insert(1, parsed(DIGIT, '2')))).toBe(
+        'h:123'
+      );
+    });
+
+    it('must count a negative index from the end', () => {
+      expect(String(digits('h:13').insert(-1, parsed(DIGIT, '2')))).toBe(
+        'h:123'
+      );
+    });
+
+    it('must insert an element from text', () => {
+      const inserted = digits('h:13').insert(1, '2');
+
+      assert(inserted.ok());
+      expect(String(inserted.value())).toBe('h:123');
+    });
+
+    it('must refuse text the element does not accept', () => {
+      expect(digits('h:13').insert(1, 'x').ok()).toBe(false);
+    });
+
+    it('must append and prepend an element', () => {
+      expect(String(digits('h:2').append(parsed(DIGIT, '3')))).toBe('h:23');
+      expect(String(digits('h:2').prepend(parsed(DIGIT, '1')))).toBe('h:12');
+    });
+
+    it('must append and prepend an element from text', () => {
+      const appended = digits('h:2').append('3');
+      const prepended = digits('h:2').prepend('1');
+
+      assert(appended.ok() && prepended.ok());
+      expect(String(appended.value())).toBe('h:23');
+      expect(String(prepended.value())).toBe('h:12');
+    });
+
+    it('must create the parts around a missing repetition', () => {
+      const appended = digits('h').append('8');
+
+      assert(appended.ok());
+      expect(String(appended.value())).toBe('h:8');
+    });
+  });
+
   describe('alternative', () => {
     it('must narrow to the alternative taken', () => {
       expect(

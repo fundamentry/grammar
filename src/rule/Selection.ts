@@ -71,6 +71,67 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
     return this.#place.remove();
   }
 
+  insert<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    index: number,
+    element: E
+  ): T;
+
+  insert<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    index: number,
+    text: string
+  ): Codec.Parsed<T>;
+
+  insert<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    index: number,
+    element: E | string
+  ): T | Codec.Parsed<T>;
+
+  insert<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    index: number,
+    element: E | string
+  ): T | Codec.Parsed<T> {
+    const inserted = (value: E) =>
+      this.#focus
+        .focus(Repetition.elements())
+        .modify(elements => elements.toSpliced(index, 0, value));
+
+    return typeof element === 'string'
+      ? this.#codec.element().parse(element).map(inserted)
+      : inserted(element);
+  }
+
+  append<E extends Node>(this: Selection<T, Repetition<E>>, element: E): T;
+
+  append<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    text: string
+  ): Codec.Parsed<T>;
+
+  append<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    element: E | string
+  ): T | Codec.Parsed<T> {
+    return this.insert(Infinity, element);
+  }
+
+  prepend<E extends Node>(this: Selection<T, Repetition<E>>, element: E): T;
+
+  prepend<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    text: string
+  ): Codec.Parsed<T>;
+
+  prepend<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    element: E | string
+  ): T | Codec.Parsed<T> {
+    return this.insert(0, element);
+  }
+
   focus<B>(optic: Optic<Optic.Kind, A, B, unknown>): Focus<T, B> {
     return this.#focus.focus(optic);
   }
