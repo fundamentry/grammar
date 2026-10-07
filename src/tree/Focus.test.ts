@@ -72,6 +72,18 @@ describe('Focus', () => {
     });
   });
 
+  describe('iterator', () => {
+    it('must iterate over the values', () => {
+      const first = digit(A);
+      const second = digit(B);
+
+      expect([...Focus.of(new Sequence([first, A, second]), isDigit)]).toEqual([
+        first,
+        second,
+      ]);
+    });
+  });
+
   describe('find', () => {
     it('must find the first focused node', () => {
       const first = digit(A);

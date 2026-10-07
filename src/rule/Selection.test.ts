@@ -46,6 +46,15 @@ describe('Selection', () => {
     });
   });
 
+  describe('iterator', () => {
+    it('must iterate over the values', () => {
+      expect([...DIGIT.in(parsed(PORT, 'h:12'))].map(String)).toEqual([
+        '1',
+        '2',
+      ]);
+    });
+  });
+
   describe('set', () => {
     it('must parse text with the codec of the focus and set it', () => {
       const set = DIGIT.in(parsed(PORT, 'h:12')).set('7');

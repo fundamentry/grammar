@@ -2,7 +2,7 @@ import { Morphism, type Optic, Optional, Prism } from '@fundamentry/category';
 
 import { type Node } from './Node.js';
 
-export class Focus<T extends Node, A> {
+export class Focus<T extends Node, A> implements Iterable<A> {
   readonly #tree: T;
 
   readonly #is: (node: Node) => boolean;
@@ -41,6 +41,10 @@ export class Focus<T extends Node, A> {
         onFailure: () => [],
       })
     );
+  }
+
+  [Symbol.iterator](): IteratorObject<A> {
+    return this.values();
   }
 
   find(): A | undefined {

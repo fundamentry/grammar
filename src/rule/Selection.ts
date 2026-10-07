@@ -12,7 +12,7 @@ import {
 
 import { type Rule } from './Rule.js';
 
-export class Selection<T extends Node, A extends Node> {
+export class Selection<T extends Node, A extends Node> implements Iterable<A> {
   readonly #focus: Focus<T, A>;
 
   readonly #codec: Codec<A>;
@@ -42,6 +42,10 @@ export class Selection<T extends Node, A extends Node> {
 
   values(): IteratorObject<A> {
     return this.#focus.values();
+  }
+
+  [Symbol.iterator](): IteratorObject<A> {
+    return this.values();
   }
 
   find(): A | undefined {
