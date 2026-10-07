@@ -38,6 +38,7 @@ import {
 } from '#project/tree';
 
 import { Caseless } from './Caseless.js';
+import { Defaults } from './Defaults.js';
 import { Parts } from './Parts.js';
 
 export namespace Codec {
@@ -213,6 +214,15 @@ export class Codec<in out Value extends Node> {
     return this.#printer
       .print(value)
       .map(codePoints => Array.from(codePoints, String).join(''));
+  }
+
+  default(): Result<Value, Expectation | Mismatch> {
+    return new Defaults()
+      .text(this.#expression)
+      .match<Result<Value, Expectation | Mismatch>>({
+        onSuccess: text => this.parse(text),
+        onFailure: expectation => new Failure(expectation),
+      });
   }
 
   definition(): Definition {

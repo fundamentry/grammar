@@ -676,6 +676,26 @@ describe('Codec', () => {
     });
   });
 
+  describe('default', () => {
+    it('must parse the default text of the codec', () => {
+      const defaulted = build
+        .sequence(build.literal('-'), digit.optional())
+        .default();
+
+      assert(defaulted.ok());
+      expect(defaulted.value()).toEqual(
+        new Sequence([new Sequence(characters('-')), new Option()])
+      );
+    });
+
+    it('must report what has no default', () => {
+      const defaulted = build.sequence(build.literal('-'), digit).default();
+
+      assert(!defaulted.ok());
+      expect(String(defaulted.error())).toBe('a digit');
+    });
+  });
+
   describe('definition', () => {
     it('must define a repetition by its bounds', () => {
       expect(String(build.character(['0', '9']).many().definition())).toBe(
