@@ -1,3 +1,9 @@
+## 6.1.0
+
+### 🚀 Features
+
+- select the nodes of several rules at once ([6bfa216](https://github.com/fundamentry/grammar/commit/6bfa216))
+
 # 6.0.0
 
 ### 🚀 Features
