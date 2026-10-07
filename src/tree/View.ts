@@ -1,6 +1,4 @@
-import { type View } from './View.js';
-
-export class Projection<out A> implements View<A> {
+export class View<out A> implements Iterable<A> {
   readonly #values: () => IteratorObject<A>;
 
   constructor(values: () => IteratorObject<A>) {
@@ -22,6 +20,6 @@ export class Projection<out A> implements View<A> {
   }
 
   map<B>(project: (value: A) => B): View<B> {
-    return new Projection(() => this.values().map(value => project(value)));
+    return new View(() => this.values().map(value => project(value)));
   }
 }

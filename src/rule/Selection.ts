@@ -10,15 +10,14 @@ import {
   Option,
   Repetition,
   Sequence,
+  View,
 } from '#project/tree';
 
-import { Projection } from './Projection.js';
 import { type Rule } from './Rule.js';
-import { type View } from './View.js';
 
 export const select: unique symbol = Symbol('select');
 
-export class Selection<T extends Node, A extends Node> implements View<A> {
+export class Selection<T extends Node, A extends Node> extends View<A> {
   readonly #focus: Focus<T, A>;
 
   readonly #codec: Codec<A>;
@@ -30,6 +29,8 @@ export class Selection<T extends Node, A extends Node> implements View<A> {
     codec: Codec<A>,
     place: Focus<T, Node>
   ) {
+    super(() => focus.values());
+
     this.#focus = focus;
     this.#codec = codec;
     this.#place = place;
@@ -44,22 +45,6 @@ export class Selection<T extends Node, A extends Node> implements View<A> {
       rule,
       Focus.of(tree, (node): node is Node => rule.is(node))
     );
-  }
-
-  values(): IteratorObject<A> {
-    return this.#focus.values();
-  }
-
-  [Symbol.iterator](): IteratorObject<A> {
-    return this.values();
-  }
-
-  find(): A | undefined {
-    return this.#focus.find();
-  }
-
-  map<B>(project: (value: A) => B): View<B> {
-    return new Projection(() => this.values()).map(project);
   }
 
   set(value: A): T;

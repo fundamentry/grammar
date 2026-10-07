@@ -85,6 +85,17 @@ describe('Focus', () => {
     });
   });
 
+  describe('map', () => {
+    it('must project each value', () => {
+      expect(
+        Focus.of(new Sequence([digit(A), digit(B)]), isDigit)
+          .map(String)
+          .values()
+          .toArray()
+      ).toEqual(['a', 'b']);
+    });
+  });
+
   describe('find', () => {
     it('must find the first focused node', () => {
       const first = digit(A);

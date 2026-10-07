@@ -1,15 +1,23 @@
 import { Prism } from '@fundamentry/category';
 
 import { Codec } from '#project/codec';
-import { type Node, Nonterminal } from '#project/tree';
+import { type Node, Nonterminal, type View } from '#project/tree';
 
+import { Rules } from './Rules.js';
 import { select, Selection } from './Selection.js';
-import { type View } from './View.js';
 
 export namespace Rule {
   export interface Any {
+    is(node: Node): boolean;
+
     in(tree: Node): View<Node>;
   }
+
+  export type Selected<R> = R extends {
+    is(node: Node): node is infer N extends Node;
+  }
+    ? N
+    : never;
 
   export type Value<R> = R extends { print(value: infer N): unknown }
     ? N
@@ -38,6 +46,14 @@ export class Rule<
       )
     );
     this.#name = name;
+  }
+
+  static any<const R extends readonly Rule.Any[]>(
+    ...rules: R
+  ): Rules<Rule.Selected<R[number]>> {
+    return new Rules((node): node is Rule.Selected<R[number]> =>
+      rules.some(rule => rule.is(node))
+    );
   }
 
   name(): Name {

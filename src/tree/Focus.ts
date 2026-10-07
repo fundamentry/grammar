@@ -3,6 +3,7 @@ import { Morphism, type Optic, Optional } from '@fundamentry/category';
 import { type Node } from './Node.js';
 import { Option } from './Option.js';
 import { Repetition } from './Repetition.js';
+import { View } from './View.js';
 
 export namespace Focus {
   export type Narrow<T extends Node, A> = <B>(
@@ -10,10 +11,8 @@ export namespace Focus {
   ) => Focus<T, B>;
 }
 
-export class Focus<T extends Node, A> implements Iterable<A> {
+export class Focus<T extends Node, A> extends View<A> {
   readonly #tree: T;
-
-  readonly #values: () => IteratorObject<A>;
 
   readonly #modify: (update: Morphism<A, A>) => T;
 
@@ -25,8 +24,9 @@ export class Focus<T extends Node, A> implements Iterable<A> {
     modify: (update: Morphism<A, A>) => T,
     narrow: Focus.Narrow<T, A>
   ) {
+    super(values);
+
     this.#tree = tree;
-    this.#values = values;
     this.#modify = modify;
     this.#narrow = narrow;
   }
@@ -40,20 +40,6 @@ export class Focus<T extends Node, A> implements Iterable<A> {
 
   focus<B>(optic: Optic<Optic.Kind, A, B, unknown>): Focus<T, B> {
     return this.#narrow(optic);
-  }
-
-  values(): IteratorObject<A> {
-    return this.#values();
-  }
-
-  [Symbol.iterator](): IteratorObject<A> {
-    return this.values();
-  }
-
-  find(): A | undefined {
-    const [first] = this.values();
-
-    return first;
   }
 
   set(value: A): T {

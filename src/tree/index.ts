@@ -5,5 +5,6 @@ export { Node } from './Node.js';
 export { Option } from './Option.js';
 export { Repetition } from './Repetition.js';
 export { Focus } from './Focus.js';
+export { View } from './View.js';
 export { Sequence } from './Sequence.js';
 export { type Literal } from './Literal.js';

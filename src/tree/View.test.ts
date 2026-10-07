@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { Projection } from './Projection.js';
+import { View } from './View.js';
 
-describe('Projection', () => {
+describe('View', () => {
   describe('values', () => {
     it('must yield the values it was made from', () => {
-      expect(new Projection(() => [1, 2].values()).values().toArray()).toEqual([
+      expect(new View(() => [1, 2].values()).values().toArray()).toEqual([
         1, 2,
       ]);
     });
@@ -13,24 +13,24 @@ describe('Projection', () => {
 
   describe('iterator', () => {
     it('must iterate over the values', () => {
-      expect([...new Projection(() => [1, 2].values())]).toEqual([1, 2]);
+      expect([...new View(() => [1, 2].values())]).toEqual([1, 2]);
     });
   });
 
   describe('find', () => {
     it('must find the first value', () => {
-      expect(new Projection(() => [1, 2].values()).find()).toBe(1);
+      expect(new View(() => [1, 2].values()).find()).toBe(1);
     });
 
     it('must find nothing without values', () => {
-      expect(new Projection(() => [].values()).find()).toBeUndefined();
+      expect(new View(() => [].values()).find()).toBeUndefined();
     });
   });
 
   describe('map', () => {
     it('must project every value', () => {
       expect(
-        new Projection(() => [1, 2].values())
+        new View(() => [1, 2].values())
           .map(value => value * 10)
           .values()
           .toArray()
@@ -39,7 +39,7 @@ describe('Projection', () => {
 
     it('must hand the projection the value alone', () => {
       expect(
-        new Projection(() => ['10', '10'].values())
+        new View(() => ['10', '10'].values())
           .map(Number.parseInt)
           .values()
           .toArray()
@@ -48,7 +48,7 @@ describe('Projection', () => {
 
     it('must project only the values pulled', () => {
       const projected: number[] = [];
-      const iterator = new Projection(() => [1, 2, 3].values())
+      const iterator = new View(() => [1, 2, 3].values())
         .map(value => {
           projected.push(value);
 

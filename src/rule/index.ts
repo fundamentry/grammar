@@ -1,3 +1,3 @@
 export { Rule } from './Rule.js';
+export { Rules } from './Rules.js';
 export { Selection } from './Selection.js';
-export { type View } from './View.js';
