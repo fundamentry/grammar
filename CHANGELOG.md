@@ -1,3 +1,14 @@
+# 5.0.0
+
+### 🚀 Features
+
+- memoize parser rules per point ([d4e1746](https://github.com/fundamentry/grammar/commit/d4e1746))
+- ⚠️  rebuild the public API around rules ([8ba1102](https://github.com/fundamentry/grammar/commit/8ba1102))
+
+### ⚠️  Breaking Changes
+
+- rebuild the public API around rules  ([8ba1102](https://github.com/fundamentry/grammar/commit/8ba1102))
+
 # 4.0.0
 
 ### 🚀 Features
