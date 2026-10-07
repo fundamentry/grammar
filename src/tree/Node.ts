@@ -23,9 +23,9 @@ export abstract class Node extends Data {
     }
   }
 
-  *outermost(
-    matches: (node: Node) => boolean
-  ): Generator<Node, void, undefined> {
+  *outermost<F extends Node>(
+    matches: (node: Node) => node is F
+  ): Generator<F, void, undefined> {
     const pending: Iterator<Node, undefined>[] = [[this].values()];
 
     for (let top = pending.at(-1); top; top = pending.at(-1)) {

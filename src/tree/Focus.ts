@@ -1,48 +1,49 @@
-import { Morphism, type Optic, Optional, Prism } from '@fundamentry/category';
+import { Morphism, type Optic, Optional } from '@fundamentry/category';
 
 import { type Node } from './Node.js';
 import { Option } from './Option.js';
 import { Repetition } from './Repetition.js';
 
+export namespace Focus {
+  export type Narrow<T extends Node, A> = <B>(
+    optic: Optic<Optic.Kind, A, B, unknown>
+  ) => Focus<T, B>;
+}
+
 export class Focus<T extends Node, A> implements Iterable<A> {
   readonly #tree: T;
 
-  readonly #is: (node: Node) => boolean;
+  readonly #values: () => IteratorObject<A>;
 
-  readonly #optic: Optional<Node, A, unknown>;
+  readonly #modify: (update: Morphism<A, A>) => T;
+
+  readonly #narrow: Focus.Narrow<T, A>;
 
   private constructor(
     tree: T,
-    is: (node: Node) => boolean,
-    optic: Optional<Node, A, unknown>
+    values: () => IteratorObject<A>,
+    modify: (update: Morphism<A, A>) => T,
+    narrow: Focus.Narrow<T, A>
   ) {
     this.#tree = tree;
-    this.#is = is;
-    this.#optic = optic;
+    this.#values = values;
+    this.#modify = modify;
+    this.#narrow = narrow;
   }
 
   static of<T extends Node, F extends Node>(
     tree: T,
     is: (node: Node) => node is F
   ): Focus<T, F> {
-    return new Focus(
-      tree,
-      is,
-      Optional.id<Node>().andThen(Prism.fromPredicate(is, () => undefined))
-    );
+    return Focus.#over(tree, is, Optional.id<F>());
   }
 
   focus<B>(optic: Optic<Optic.Kind, A, B, unknown>): Focus<T, B> {
-    return new Focus(this.#tree, this.#is, this.#optic.andThen(optic));
+    return this.#narrow(optic);
   }
 
   values(): IteratorObject<A> {
-    return this.#tree.outermost(this.#is).flatMap(found =>
-      this.#optic.preview(found).match<readonly A[]>({
-        onSuccess: value => [value],
-        onFailure: () => [],
-      })
-    );
+    return this.#values();
   }
 
   [Symbol.iterator](): IteratorObject<A> {
@@ -60,11 +61,7 @@ export class Focus<T extends Node, A> implements Iterable<A> {
   }
 
   modify(update: (value: A) => A): T {
-    const modified = this.#optic.modify(Morphism.of(update));
-
-    return Focus.#rewrite(this.#tree, (node, rewrite) =>
-      this.#is(node) ? modified.apply(node) : node.map(rewrite)
-    );
+    return this.#modify(Morphism.of(update));
   }
 
   remove(): T {
@@ -97,6 +94,31 @@ export class Focus<T extends Node, A> implements Iterable<A> {
         ? repetition(node, rewrite)
         : node.map(rewrite);
     });
+  }
+
+  static #over<T extends Node, F extends Node, A>(
+    tree: T,
+    is: (node: Node) => node is F,
+    optic: Optional<F, A, unknown>
+  ): Focus<T, A> {
+    return new Focus(
+      tree,
+      () =>
+        tree.outermost(is).flatMap(found =>
+          optic.preview(found).match<readonly A[]>({
+            onSuccess: value => [value],
+            onFailure: () => [],
+          })
+        ),
+      update => {
+        const modified = optic.modify(update);
+
+        return Focus.#rewrite(tree, (node, rewrite) =>
+          is(node) ? modified.apply(node) : node.map(rewrite)
+        );
+      },
+      next => Focus.#over(tree, is, optic.andThen(next))
+    );
   }
 
   static #rewrite<T extends Node>(

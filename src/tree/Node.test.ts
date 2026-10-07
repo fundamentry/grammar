@@ -46,7 +46,7 @@ describe('Node', () => {
   });
 
   describe('outermost', () => {
-    const isDigit = (node: Node) =>
+    const isDigit = (node: Node): node is Nonterminal<'DIGIT', Node> =>
       node instanceof Nonterminal && node.rule() === DIGIT;
 
     it('must yield the matching nodes in document order', () => {
