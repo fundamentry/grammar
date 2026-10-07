@@ -76,6 +76,12 @@ describe('Choice', () => {
     });
   });
 
+  describe('children', () => {
+    it('must have the value of the alternative taken as its only child', () => {
+      expect(new Choice<[Character, Character]>(1, B).children()).toEqual([B]);
+    });
+  });
+
   describe('equals', () => {
     it('must equal a choice of the same alternative with an equal value', () => {
       expect(

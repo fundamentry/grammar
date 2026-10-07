@@ -24,6 +24,10 @@ export class Sequence<out T extends readonly Node[]> extends Node {
     return this.#elements;
   }
 
+  override children(): T {
+    return this.#elements;
+  }
+
   override equals(other: unknown): boolean {
     return (
       other instanceof Sequence &&

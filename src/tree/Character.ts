@@ -15,6 +15,10 @@ export class Character extends Node {
     return this.#codePoint;
   }
 
+  override children(): readonly [] {
+    return Object.freeze<[]>([]);
+  }
+
   override equals(other: unknown): boolean {
     return (
       other instanceof Character && this.#codePoint.equals(other.#codePoint)

@@ -15,6 +15,12 @@ describe('Character', () => {
     });
   });
 
+  describe('children', () => {
+    it('must have no children', () => {
+      expect(new Character(A).children()).toEqual([]);
+    });
+  });
+
   describe('equals', () => {
     it('must equal a character of an equal code point', () => {
       expect(new Character(A).equals(new Character(CodePoint.of('a')))).toBe(

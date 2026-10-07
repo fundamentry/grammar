@@ -54,6 +54,16 @@ describe('Option', () => {
     });
   });
 
+  describe('children', () => {
+    it('must have its value as its only child when present', () => {
+      expect(new Option(A).children()).toEqual([A]);
+    });
+
+    it('must have no children when absent', () => {
+      expect(new Option().children()).toEqual([]);
+    });
+  });
+
   describe('equals', () => {
     it('must equal an option of an equal value', () => {
       expect(new Option(A).equals(new Option(A))).toBe(true);

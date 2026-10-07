@@ -25,6 +25,10 @@ export class Repetition<out A extends Node> extends Node {
     return this.#sequence.elements();
   }
 
+  override children(): readonly A[] {
+    return this.elements();
+  }
+
   override equals(other: unknown): boolean {
     return (
       other instanceof Repetition && this.#sequence.equals(other.#sequence)

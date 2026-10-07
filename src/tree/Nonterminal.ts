@@ -40,6 +40,10 @@ export class Nonterminal<
     return this.#elements;
   }
 
+  override children(): readonly [Elements] {
+    return Object.freeze<[Elements]>([this.#elements]);
+  }
+
   override equals(other: unknown): boolean {
     return (
       other instanceof Nonterminal &&

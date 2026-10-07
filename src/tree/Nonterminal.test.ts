@@ -35,6 +35,12 @@ describe('Nonterminal', () => {
     });
   });
 
+  describe('children', () => {
+    it('must have its elements as its only child', () => {
+      expect(new Nonterminal(DIGIT, seven).children()).toEqual([seven]);
+    });
+  });
+
   describe('type', () => {
     it('must not let a nonterminal of one rule pass for another', () => {
       expectTypeOf(new Nonterminal(DIGIT, seven)).not.toExtend<

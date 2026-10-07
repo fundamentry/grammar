@@ -38,6 +38,14 @@ describe('Repetition', () => {
     });
   });
 
+  describe('children', () => {
+    it('must have its elements as its children', () => {
+      const elements = [A, B];
+
+      expect(new Repetition(elements).children()).toBe(elements);
+    });
+  });
+
   describe('equals', () => {
     it('must equal a repetition of equal elements', () => {
       expect(new Repetition([A, B]).equals(new Repetition([A, B]))).toBe(true);

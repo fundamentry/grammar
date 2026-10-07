@@ -53,6 +53,10 @@ export class Choice<T extends readonly Node[]> extends Node {
     return handle(this.#value);
   }
 
+  override children(): readonly [T[number]] {
+    return Object.freeze<[T[number]]>([this.#value]);
+  }
+
   override equals(other: unknown): boolean {
     return (
       other instanceof Choice &&

@@ -30,6 +30,10 @@ export class Option<out T extends Node = never> extends Node {
     return Object.freeze(this.#value === undefined ? [] : [this.#value]);
   }
 
+  override children(): readonly T[] {
+    return this.elements();
+  }
+
   override equals(other: unknown): boolean {
     return (
       other instanceof Option &&

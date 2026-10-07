@@ -38,6 +38,14 @@ describe('Sequence', () => {
     });
   });
 
+  describe('children', () => {
+    it('must have its elements as its children', () => {
+      const elements = [A, B] as const;
+
+      expect(new Sequence(elements).children()).toBe(elements);
+    });
+  });
+
   describe('equals', () => {
     it('must equal a sequence of equal elements', () => {
       expect(new Sequence([A, B]).equals(new Sequence([A, B]))).toBe(true);
