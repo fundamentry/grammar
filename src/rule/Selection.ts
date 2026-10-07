@@ -12,11 +12,13 @@ import {
   Sequence,
 } from '#project/tree';
 
+import { Projection } from './Projection.js';
 import { type Rule } from './Rule.js';
+import { type View } from './View.js';
 
 export const select: unique symbol = Symbol('select');
 
-export class Selection<T extends Node, A extends Node> implements Iterable<A> {
+export class Selection<T extends Node, A extends Node> implements View<A> {
   readonly #focus: Focus<T, A>;
 
   readonly #codec: Codec<A>;
@@ -54,6 +56,10 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
 
   find(): A | undefined {
     return this.#focus.find();
+  }
+
+  map<B>(project: (value: A) => B): View<B> {
+    return new Projection(() => this.values()).map(project);
   }
 
   set(value: A): T;

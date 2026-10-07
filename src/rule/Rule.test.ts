@@ -216,6 +216,24 @@ describe('Rule', () => {
     });
   });
 
+  describe('Any', () => {
+    it('must fit every rule', () => {
+      expectTypeOf(DIGIT).toExtend<Rule.Any>();
+      expectTypeOf(LIST).toExtend<Rule.Any>();
+    });
+
+    it('must read the text of any rule in a tree', () => {
+      const parsed = LIST.parse('1,2');
+
+      assert(parsed.ok());
+
+      const text = (rule: Rule.Any) =>
+        rule.in(parsed.value()).map(String).values().toArray();
+
+      expect([text(DIGIT), text(LIST)]).toEqual([['1', '2'], ['1,2']]);
+    });
+  });
+
   describe('Value', () => {
     it('must be the nonterminal the rule produces', () => {
       expectTypeOf<Rule.Value<typeof DIGIT>>().toEqualTypeOf<

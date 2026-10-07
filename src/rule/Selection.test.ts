@@ -55,6 +55,39 @@ describe('Selection', () => {
     });
   });
 
+  describe('map', () => {
+    it('must project each value that exists', () => {
+      expect(
+        DIGIT.in(parsed(PORT, 'h:12'))
+          .map(String)
+          .map(Number)
+          .values()
+          .toArray()
+      ).toEqual([1, 2]);
+    });
+
+    it('must project nothing where the part is missing', () => {
+      expect(
+        PORT.in(parsed(PORT, 'h')).elements().at(1).value().map(String).find()
+      ).toBeUndefined();
+    });
+
+    it('must build a nested value only where its part exists', () => {
+      const address = (input: string) =>
+        PORT.in(parsed(PORT, input))
+          .elements()
+          .at(1)
+          .value()
+          .map(port => ({
+            digits: DIGIT.in(port).map(String).values().toArray(),
+          }))
+          .find();
+
+      expect(address('h:12')).toEqual({ digits: ['1', '2'] });
+      expect(address('h')).toBeUndefined();
+    });
+  });
+
   describe('set', () => {
     it('must parse text with the codec of the focus and set it', () => {
       const set = DIGIT.in(parsed(PORT, 'h:12')).set('7');

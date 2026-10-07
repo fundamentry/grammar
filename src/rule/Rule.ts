@@ -4,8 +4,13 @@ import { Codec } from '#project/codec';
 import { type Node, Nonterminal } from '#project/tree';
 
 import { select, Selection } from './Selection.js';
+import { type View } from './View.js';
 
 export namespace Rule {
+  export interface Any {
+    in(tree: Node): View<Node>;
+  }
+
   export type Value<R> = R extends { print(value: infer N): unknown }
     ? N
     : never;
