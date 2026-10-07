@@ -1,4 +1,9 @@
-import { Lens, Morphism, Prism } from '@fundamentry/category';
+import {
+  FallibleMorphism,
+  Morphism,
+  Optional,
+  Prism,
+} from '@fundamentry/category';
 import { Failure, Success } from '@fundamentry/coproduct';
 
 import { Node } from './Node.js';
@@ -55,23 +60,30 @@ export class Choice<T extends readonly Node[]> extends Node {
     );
   }
 
-  static alternativeOr<
+  static alternativeFrom<
     T extends readonly Node[],
     const I extends Node.Index<T>,
-  >(index: I, fallback: T[I]): Lens<Choice<T>, T[I]>;
+  >(index: I, initial: T[I]): Optional<Choice<T>, T[I], undefined>;
 
-  static alternativeOr(
+  static alternativeFrom(
     index: number,
-    fallback: Node
-  ): Lens<Choice<readonly Node[]>, Node> {
-    return Lens.of(
-      Morphism.of(choice =>
-        choice.#index === index ? choice.#value : fallback
+    initial: Node
+  ): Optional<Choice<readonly Node[]>, Node, undefined> {
+    return Optional.of(
+      FallibleMorphism.of(choice =>
+        choice.#index === index
+          ? new Success(choice.#value)
+          : new Failure(undefined)
       ),
-      Morphism.of(([choice, value]) =>
-        choice.#index === index || !value.equals(fallback)
-          ? new Choice(index, value)
-          : choice
+      Morphism.of(update =>
+        Morphism.of(choice => {
+          const taken = choice.#index === index;
+          const updated = update.apply(taken ? choice.#value : initial);
+
+          return taken || !updated.equals(initial)
+            ? new Choice<readonly Node[]>(index, updated)
+            : choice;
+        })
       )
     );
   }

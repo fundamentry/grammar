@@ -71,18 +71,20 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
   }
 
   edit(update: (text: string) => string): Codec.Parsed<T> {
-    const failures: Codec.Parsed<T>[] = [];
+    const failures: Exclude<Codec.Parsed<A>, Success<A>>[] = [];
 
-    const edited = this.#focus.modify(value =>
-      this.#codec.parse(update(String(value))).match({
+    const edited = this.#focus.modify(value => {
+      const parsed = this.#codec.parse(update(String(value)));
+
+      return parsed.match({
         onSuccess: node => node,
         onFailure: mismatch => {
           failures.push(new Failure(mismatch));
 
           return value;
         },
-      })
-    );
+      });
+    });
 
     const [failure] = failures;
 
@@ -213,7 +215,7 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
     return new Selection(
       this.#focus.focus(
         fallback.match<Optic<Optic.Kind, Option<U>, U, unknown>>({
-          onSuccess: initial => Option.valueOr(initial),
+          onSuccess: initial => Option.valueFrom(initial),
           onFailure: () => Option.value(),
         })
       ),
@@ -232,7 +234,7 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
     return new Selection(
       this.#focus.focus(
         fallback.match<Optic<Optic.Kind, Choice<U>, U[I], unknown>>({
-          onSuccess: initial => Choice.alternativeOr<U, I>(index, initial),
+          onSuccess: initial => Choice.alternativeFrom<U, I>(index, initial),
           onFailure: () => Choice.alternative<U, I>(index),
         })
       ),

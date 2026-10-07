@@ -86,29 +86,34 @@ describe('Option', () => {
     });
   });
 
-  describe('valueOr lens', () => {
-    it('must get the value when present', () => {
-      expect(Option.valueOr(B).get(new Option(A))).toBe(A);
+  describe('valueFrom', () => {
+    it('must preview the value when present', () => {
+      const previewed = Option.valueFrom(B).preview(new Option(A));
+
+      assert(previewed.ok());
+      expect(previewed.value()).toBe(A);
     });
 
-    it('must get the fallback when absent', () => {
-      expect(Option.valueOr(B).get(new Option<Character>())).toBe(B);
+    it('must not preview an absent value', () => {
+      expect(Option.valueFrom(B).preview(new Option<Character>()).ok()).toBe(
+        false
+      );
     });
 
-    it('must set a value, making the option present', () => {
-      expect(Option.valueOr(B).set(new Option<Character>(), A)).toEqual(
+    it('must create an absent option from the initial value when set', () => {
+      expect(Option.valueFrom(B).set(new Option<Character>(), A)).toEqual(
         new Option(A)
       );
     });
 
-    it('must leave an absent option absent when set to the fallback', () => {
+    it('must leave an absent option absent when set to the initial value', () => {
       const absent = new Option<Character>();
 
-      expect(Option.valueOr(B).set(absent, B)).toBe(absent);
+      expect(Option.valueFrom(B).set(absent, B)).toBe(absent);
     });
 
-    it('must keep a present option present when set to the fallback', () => {
-      expect(Option.valueOr(B).set(new Option(A), B)).toEqual(new Option(B));
+    it('must keep a present option present when set to the initial value', () => {
+      expect(Option.valueFrom(B).set(new Option(A), B)).toEqual(new Option(B));
     });
   });
 

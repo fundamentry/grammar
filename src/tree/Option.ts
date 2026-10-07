@@ -1,4 +1,9 @@
-import { Lens, Morphism, Prism } from '@fundamentry/category';
+import {
+  FallibleMorphism,
+  Morphism,
+  Optional,
+  Prism,
+} from '@fundamentry/category';
 import { Failure, Success } from '@fundamentry/coproduct';
 import { Equatable } from '@fundamentry/trait';
 
@@ -32,11 +37,21 @@ export class Option<out T extends Node = never> extends Node {
     );
   }
 
-  static valueOr<T extends Node>(fallback: T): Lens<Option<T>, T> {
-    return Lens.of(
-      Morphism.of(option => option.#value ?? fallback),
-      Morphism.of(([option, value]) =>
-        option.#value || !value.equals(fallback) ? new Option(value) : option
+  static valueFrom<T extends Node>(
+    initial: T
+  ): Optional<Option<T>, T, undefined> {
+    return Optional.of(
+      FallibleMorphism.of(option =>
+        option.#value ? new Success(option.#value) : new Failure(undefined)
+      ),
+      Morphism.of(update =>
+        Morphism.of(option => {
+          const updated = update.apply(option.#value ?? initial);
+
+          return option.#value || !updated.equals(initial)
+            ? new Option(updated)
+            : option;
+        })
       )
     );
   }

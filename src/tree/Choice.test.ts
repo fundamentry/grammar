@@ -82,31 +82,38 @@ describe('Choice', () => {
     });
   });
 
-  describe('alternativeOr lens', () => {
-    const lens = Choice.alternativeOr<[Character, Character], 1>(1, B);
+  describe('alternativeFrom', () => {
+    const optional = Choice.alternativeFrom<[Character, Character], 1>(1, B);
 
-    it('must get the value of the alternative when taken', () => {
-      expect(lens.get(new Choice<[Character, Character]>(1, A))).toBe(A);
+    it('must preview the value of the alternative when taken', () => {
+      const previewed = optional.preview(
+        new Choice<[Character, Character]>(1, A)
+      );
+
+      assert(previewed.ok());
+      expect(previewed.value()).toBe(A);
     });
 
-    it('must get the fallback when another alternative is taken', () => {
-      expect(lens.get(new Choice<[Character, Character]>(0, A))).toBe(B);
+    it('must not preview another alternative', () => {
+      expect(
+        optional.preview(new Choice<[Character, Character]>(0, A)).ok()
+      ).toBe(false);
     });
 
-    it('must set a value, taking the alternative', () => {
-      expect(lens.set(new Choice<[Character, Character]>(0, A), A)).toEqual(
+    it('must take the alternative from the initial value when set', () => {
+      expect(optional.set(new Choice<[Character, Character]>(0, A), A)).toEqual(
         new Choice<[Character, Character]>(1, A)
       );
     });
 
-    it('must keep another alternative when set to the fallback', () => {
+    it('must keep another alternative when set to the initial value', () => {
       const other = new Choice<[Character, Character]>(0, A);
 
-      expect(lens.set(other, B)).toBe(other);
+      expect(optional.set(other, B)).toBe(other);
     });
 
-    it('must keep the alternative taken when set to the fallback', () => {
-      expect(lens.set(new Choice<[Character, Character]>(1, A), B)).toEqual(
+    it('must keep the alternative taken when set to the initial value', () => {
+      expect(optional.set(new Choice<[Character, Character]>(1, A), B)).toEqual(
         new Choice<[Character, Character]>(1, B)
       );
     });

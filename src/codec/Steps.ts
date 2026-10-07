@@ -95,10 +95,10 @@ export class Steps {
     wrap: (value: Node) => Node,
     fallback: Steps.Fallback
   ): Steps.Step {
-    const preview = (slot: S) => {
+    const preview = (slot: S): Steps.Fallback => {
       const value = read(slot);
 
-      return value ? new Success(value) : fallback;
+      return value ? new Success(value) : new Failure(undefined);
     };
 
     const created =

@@ -87,10 +87,10 @@ describe('Routes', () => {
 
       assert(route);
 
-      const previewed = route.preview(new Choice(0, A));
+      const other = new Nonterminal(TARGET, new Character(CodePoint.of('b')));
 
-      assert(previewed.ok());
-      expect(previewed.value()).toBe(found);
+      expect(route.preview(new Choice(0, A)).ok()).toBe(false);
+      expect(route.set(new Choice(0, A), other)).toEqual(new Choice(1, other));
     });
 
     it('must lead through an option to its value', () => {
@@ -100,10 +100,12 @@ describe('Routes', () => {
 
       assert(route);
 
-      const previewed = route.preview(new Option());
+      const previewed = route.preview(new Option(found));
+      const other = new Nonterminal(TARGET, new Character(CodePoint.of('b')));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
+      expect(route.set(new Option(), other)).toEqual(new Option(other));
     });
 
     it('must lead through other rules, labels and references', () => {

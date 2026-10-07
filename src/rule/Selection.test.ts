@@ -99,10 +99,10 @@ describe('Selection', () => {
       ).toBe('12');
     });
 
-    it('must read a missing place as its default', () => {
-      expect(String(ADDRESS.in(parsed(ADDRESS, 'h')).to(NUMBER).find())).toBe(
-        ''
-      );
+    it('must find nothing where the place is missing', () => {
+      expect(
+        ADDRESS.in(parsed(ADDRESS, 'h')).to(NUMBER).find()
+      ).toBeUndefined();
     });
 
     it('must create the parts around a missing place when set', () => {
@@ -189,6 +189,20 @@ describe('Selection', () => {
       expect(String(edited.value())).toBe('h:80');
     });
 
+    it('must refuse text a missing part does not accept', () => {
+      const edited = PORT.in(parsed(PORT, 'h'))
+        .elements()
+        .at(1)
+        .value()
+        .at(1)
+        .edit(() => 'x');
+
+      assert(!edited.ok());
+      expect(String(edited.error())).toBe(
+        "Expected DIGIT or end of input, got 'x'"
+      );
+    });
+
     it('must leave a missing part missing when its default text stays', () => {
       const tree = parsed(PORT, 'h');
       const edited = PORT.in(tree)
@@ -264,8 +278,8 @@ describe('Selection', () => {
       expect(String(port('h:1').find())).toBe(':1');
     });
 
-    it('must read an absent option as its default', () => {
-      expect(String(port('h').find())).toBe(':');
+    it('must find nothing where the option is absent', () => {
+      expect(port('h').find()).toBeUndefined();
     });
 
     it('must make an absent option present when set', () => {

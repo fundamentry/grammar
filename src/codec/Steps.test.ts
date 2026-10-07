@@ -97,8 +97,10 @@ describe('Steps', () => {
       expect(step.modify(toB).apply(new Option(A))).toEqual(new Option(B));
     });
 
-    it('must preview an absent option as its fallback', () => {
-      expect(previewed(Steps.value(new Success(A)), new Option())).toBe(A);
+    it('must not preview an absent option, even with a fallback', () => {
+      expect(Steps.value(new Success(A)).preview(new Option()).ok()).toBe(
+        false
+      );
     });
 
     it('must create an absent option from its fallback when updated', () => {
