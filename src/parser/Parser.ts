@@ -1,4 +1,3 @@
-import { type PartialIso } from '@fundamentry/category';
 import { type Result } from '@fundamentry/coproduct';
 import { type Range } from '@fundamentry/range';
 import { Integer } from '@fundamentry/scalar';
@@ -6,7 +5,7 @@ import { type Point } from '@fundamentry/stream';
 
 import { Cache } from '#project/cache';
 import { EndOfInput, type Expectation, Named } from '#project/expectation';
-import { type Expression } from '#project/expression';
+import { type Expression, Fallback } from '#project/expression';
 import { type Mismatch } from '#project/mismatch';
 import {
   type Node,
@@ -24,6 +23,7 @@ import { type Continuation } from './Continuation.js';
 import { Frontier } from './Frontier.js';
 import { LeftCorners } from './LeftCorners.js';
 import { Repetitions } from './Repetitions.js';
+import { Singles } from './Singles.js';
 import { Spans } from './Spans.js';
 
 export namespace Parser {
@@ -46,7 +46,7 @@ export namespace Parser {
   export type Parsed = Result<Node, Mismatch>;
 }
 
-export class Parser<in out Token> implements Expression.Visitor<
+export class Parser<in out Token> implements Expression.Composites<
   Token,
   undefined,
   Parser.Draft<Token>
@@ -54,6 +54,8 @@ export class Parser<in out Token> implements Expression.Visitor<
   readonly #compiled = new Cache<Expression<Token>, Parser.Compiled<Token>>();
 
   readonly #rules = new Cache<Expression<Token>, Column.Rule<Token>>();
+
+  readonly #visitor = new Fallback(new Singles<Token>(), Parser.#single, this);
 
   readonly #corners: LeftCorners<Token>;
 
@@ -75,31 +77,6 @@ export class Parser<in out Token> implements Expression.Visitor<
         })
       )
     );
-  }
-
-  terminal<Value extends Node>(
-    conversion: PartialIso<Token, Value, unknown, string>,
-    expectation: Expectation
-  ): Parser.Draft<Token> {
-    return {
-      parse: (point, context, continuation) => {
-        const fail = () =>
-          context.fail(
-            continuation.relabel(Frontier.expected(point, expectation))
-          );
-        const step = point.step();
-
-        if (step)
-          conversion.to(step.value).match({
-            onSuccess: value =>
-              context.succeed(continuation, [{ value, rest: step.rest }]),
-            onFailure: fail,
-          });
-        else fail();
-      },
-      starts: token => token !== undefined && conversion.to(token).ok(),
-      expected: [expectation],
-    };
   }
 
   concatenation(elements: readonly Expression<Token>[]): Parser.Draft<Token> {
@@ -255,9 +232,30 @@ export class Parser<in out Token> implements Expression.Visitor<
 
   #compile(expression: Expression<Token>): Parser.Compiled<Token> {
     return this.#compiled.get(expression, () => ({
-      ...expression.accept(this, undefined),
+      ...expression.accept(this.#visitor, undefined),
       nullable: this.#corners.of(expression).nullable,
     }));
+  }
+
+  static #single<Token>({
+    match,
+    expected,
+  }: Singles.Single<Token>): Parser.Draft<Token> {
+    return {
+      parse: (point, context, continuation) => {
+        const step = point.step();
+        const value = step && match(step.value);
+
+        if (step && value)
+          context.succeed(continuation, [{ value, rest: step.rest }]);
+        else
+          context.fail(
+            continuation.relabel(Frontier.expected(point, ...expected))
+          );
+      },
+      starts: token => token !== undefined && match(token) !== undefined,
+      expected,
+    };
   }
 
   static #preferred<Token>(parse: Parser.Parse<Token>): Parser.Parse<Token> {

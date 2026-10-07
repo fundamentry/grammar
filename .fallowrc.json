@@ -26,6 +26,18 @@
         "rule",
         "reference"
       ]
+    },
+    {
+      "implements": "Expression.Composites",
+      "members": [
+        "concatenation",
+        "alternation",
+        "optional",
+        "repetition",
+        "label",
+        "rule",
+        "reference"
+      ]
     }
   ],
   "health": {

@@ -7,3 +7,4 @@ export { Reference } from './Reference.js';
 export { Repetition } from './Repetition.js';
 export { Rule } from './Rule.js';
 export { Terminal } from './Terminal.js';
+export { Fallback } from './Fallback.js';

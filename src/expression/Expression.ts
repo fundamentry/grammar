@@ -18,13 +18,19 @@ export namespace Expression {
     ...Expression<Token>[],
   ];
 
-  export interface Visitor<Token, Input, Output> {
+  export interface Visitor<Token, Input, Output> extends Composites<
+    Token,
+    Input,
+    Output
+  > {
     terminal<Value extends Node>(
       conversion: PartialIso<Token, Value, unknown, string>,
       expectation: Expectation,
       input: Input
     ): Output;
+  }
 
+  export interface Composites<Token, Input, Output> {
     concatenation(elements: readonly Expression<Token>[], input: Input): Output;
 
     alternation(alternatives: Alternatives<Token>, input: Input): Output;

@@ -10,6 +10,7 @@ import {
   Alternation,
   Concatenation,
   type Expression,
+  Label,
   Optional,
   Reference,
   Rule,
@@ -104,9 +105,41 @@ describe('Parser', () => {
       expect(parsed.ok()).toBe(true);
     });
 
+    it('must try an alternative that starts with any alternative of a nested alternation', () => {
+      const parsed = new Parser(
+        new Alternation([
+          new Concatenation([
+            new Alternation([
+              new Concatenation([letter, letter]),
+              new Concatenation([digit, letter]),
+            ]),
+            digit,
+          ]),
+          digit,
+        ])
+      ).parse(input('1a2'));
+
+      expect(parsed.ok()).toBe(true);
+    });
+
+    it('must parse a single token through a reference to it', () => {
+      expect(
+        new Parser(
+          new Concatenation([new Reference(() => digit), letter])
+        ).parse(input('1a'))
+      ).toEqual(
+        new Success(
+          new Sequence([
+            new Character(CodePoint.of('1')),
+            new Character(CodePoint.of('a')),
+          ])
+        )
+      );
+    });
+
     it('must parse a referenced expression once per point', () => {
       const accepts = vi.fn<(token: CodePoint) => boolean>(() => true);
-      const counted = character('a counted token', accepts);
+      const counted = new Optional(character('a counted token', accepts));
 
       new Parser(
         new Alternation([
@@ -116,6 +149,51 @@ describe('Parser', () => {
       ).parse(input('12'));
 
       expect(accepts).toHaveBeenCalledOnce();
+    });
+
+    it('must yield the first alternative that matches a single token', () => {
+      expect(
+        new Parser(
+          new Alternation([letter, new Alternation([digit, digit])])
+        ).parse(input('1'))
+      ).toEqual(
+        new Success(
+          new Choice(1, new Choice(0, new Character(CodePoint.of('1'))))
+        )
+      );
+    });
+
+    it('must expect every alternative of a single token that matches none', () => {
+      const parsed = new Parser(new Alternation([digit, letter])).parse(
+        input('!')
+      );
+
+      assert(!parsed.ok());
+      expect(String(parsed.error())).toBe(
+        "Expected a digit or a letter, got '!'"
+      );
+    });
+
+    it('must parse a single token through a sequence of it', () => {
+      expect(new Parser(new Concatenation([digit])).parse(input('1'))).toEqual(
+        new Success(new Sequence([new Character(CodePoint.of('1'))]))
+      );
+    });
+
+    it('must report a single token by its label', () => {
+      const parsed = new Parser(new Label(digit, new Named('a number'))).parse(
+        input('x')
+      );
+
+      assert(!parsed.ok());
+      expect(String(parsed.error())).toBe("Expected a number, got 'x'");
+    });
+
+    it('must expect a single token at the end of input', () => {
+      const parsed = new Parser(digit).parse(input(''));
+
+      assert(!parsed.ok());
+      expect(String(parsed.error())).toBe('Expected a digit, got end of input');
     });
 
     it('must grow a left-recursive expression once per point', () => {
