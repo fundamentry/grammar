@@ -46,6 +46,34 @@ describe('Selection', () => {
     });
   });
 
+  describe('set', () => {
+    it('must parse text with the codec of the focus and set it', () => {
+      const set = DIGIT.in(parsed(PORT, 'h:12')).set('7');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:77');
+    });
+
+    it('must report text the focus does not accept', () => {
+      const set = DIGIT.in(parsed(PORT, 'h:12')).set('x');
+
+      assert(!set.ok());
+      expect(String(set.error())).toBe("Expected DIGIT, got 'x'");
+    });
+
+    it('must create a missing part from text', () => {
+      const set = PORT.in(parsed(PORT, 'h'))
+        .elements()
+        .at(1)
+        .value()
+        .at(1)
+        .set('80');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:80');
+    });
+  });
+
   describe('focus', () => {
     it('must narrow to a part with any optic, leaving the grammar behind', () => {
       const focus = PORT.in(parsed(PORT, 'h:1'))

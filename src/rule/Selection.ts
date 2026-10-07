@@ -28,8 +28,14 @@ export class Selection<T extends Node, A extends Node> {
     return this.#focus.find();
   }
 
-  set(value: A): T {
-    return this.#focus.set(value);
+  set(value: A): T;
+
+  set(text: string): Codec.Parsed<T>;
+
+  set(value: A | string): T | Codec.Parsed<T> {
+    return typeof value === 'string'
+      ? this.#codec.parse(value).map(node => this.#focus.set(node))
+      : this.#focus.set(value);
   }
 
   modify(update: (value: A) => A): T {
