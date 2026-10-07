@@ -1,6 +1,7 @@
 import { Morphism, type Optic, Optional, Prism } from '@fundamentry/category';
 
 import { type Node } from './Node.js';
+import { Option } from './Option.js';
 
 export class Focus<T extends Node, A> implements Iterable<A> {
   readonly #tree: T;
@@ -58,15 +59,39 @@ export class Focus<T extends Node, A> implements Iterable<A> {
   }
 
   modify(update: (value: A) => A): T {
-    const is = this.#is;
     const modified = this.#optic.modify(Morphism.of(update));
 
+    return Focus.#rewrite(this.#tree, (node, rewrite) =>
+      this.#is(node) ? modified.apply(node) : node.map(rewrite)
+    );
+  }
+
+  remove(): T {
+    const targets = new Set<unknown>(this.values());
+
+    const leads = (node: Node): boolean =>
+      !(node instanceof Option) &&
+      (targets.has(node) || node.children().some(leads));
+
+    const removable = (node: Node) =>
+      node instanceof Option &&
+      (targets.has(node) || node.children().some(leads));
+
+    return Focus.#rewrite(this.#tree, (node, rewrite) =>
+      removable(node) ? new Option() : node.map(rewrite)
+    );
+  }
+
+  static #rewrite<T extends Node>(
+    tree: T,
+    step: (node: Node, rewrite: Node.Transform) => Node
+  ): T {
     function rewrite<N extends Node>(node: N): N;
 
     function rewrite(node: Node): Node {
-      return is(node) ? modified.apply(node) : node.map(rewrite);
+      return step(node, rewrite);
     }
 
-    return rewrite(this.#tree);
+    return rewrite(tree);
   }
 }

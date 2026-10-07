@@ -150,6 +150,32 @@ describe('Selection', () => {
     });
   });
 
+  describe('remove', () => {
+    it('must make absent the optional part around the selection', () => {
+      expect(String(DIGIT.in(parsed(PORT, 'h:12')).remove())).toBe('h');
+    });
+
+    it('must remove a part reached by its rule, with what surrounds it', () => {
+      const NUMBER = new Rule('number', () => DIGIT.many());
+      const ADDRESS = new Rule('address', codec =>
+        codec.sequence(
+          codec.literal('h'),
+          codec.sequence(codec.literal(':'), NUMBER).optional()
+        )
+      );
+
+      expect(
+        String(ADDRESS.in(parsed(ADDRESS, 'h:80')).to(NUMBER).remove())
+      ).toBe('h');
+    });
+
+    it('must leave a missing part missing', () => {
+      const tree = parsed(PORT, 'h');
+
+      expect(PORT.in(tree).elements().at(1).value().remove()).toEqual(tree);
+    });
+  });
+
   describe('focus', () => {
     it('must narrow to a part with any optic, leaving the grammar behind', () => {
       const focus = PORT.in(parsed(PORT, 'h:1'))

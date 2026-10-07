@@ -153,6 +153,48 @@ describe('Focus', () => {
     });
   });
 
+  describe('remove', () => {
+    it('must make absent the option that holds a focused node', () => {
+      expect(
+        Focus.of(
+          new Sequence([A, new Option(new Sequence([B, digit(A)]))]),
+          isDigit
+        ).remove()
+      ).toEqual(new Sequence([A, new Option()]));
+    });
+
+    it('must make absent a focused option itself', () => {
+      expect(
+        Focus.of(new Sequence([digit(new Option(A))]), isDigit)
+          .focus(Nonterminal.elements())
+          .remove()
+      ).toEqual(new Sequence([digit(new Option())]));
+    });
+
+    it('must make absent only the innermost option', () => {
+      expect(
+        Focus.of(
+          new Option(new Sequence([A, new Option(digit(B))])),
+          isDigit
+        ).remove()
+      ).toEqual(new Option(new Sequence([A, new Option()])));
+    });
+
+    it('must leave a focused node no option holds as it is', () => {
+      const tree = new Sequence([digit(A)]);
+
+      expect(Focus.of(tree, isDigit).remove()).toEqual(tree);
+    });
+
+    it('must leave options that hold no focused node as they are', () => {
+      const tree = new Sequence([new Option(A), new Option(digit(B))]);
+
+      expect(Focus.of(tree, isDigit).remove()).toEqual(
+        new Sequence([new Option(A), new Option()])
+      );
+    });
+  });
+
   describe('focus', () => {
     it('must narrow each focused node to a part of it', () => {
       expect(

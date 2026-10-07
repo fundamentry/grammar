@@ -66,6 +66,10 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
     return this.#focus.modify(update);
   }
 
+  remove(): T {
+    return this.#place.remove();
+  }
+
   focus<B>(optic: Optic<Optic.Kind, A, B, unknown>): Focus<T, B> {
     return this.#focus.focus(optic);
   }
