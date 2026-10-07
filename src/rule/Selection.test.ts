@@ -150,6 +150,51 @@ describe('Selection', () => {
     });
   });
 
+  describe('edit', () => {
+    it('must rewrite each selected part from its own text', () => {
+      const edited = DIGIT.in(parsed(PORT, 'h:12')).edit(digit =>
+        String(Number(digit) + 1)
+      );
+
+      assert(edited.ok());
+      expect(String(edited.value())).toBe('h:23');
+    });
+
+    it('must refuse the whole edit when any text does not parse', () => {
+      const edited = DIGIT.in(parsed(PORT, 'h:19')).edit(digit =>
+        String(Number(digit) + 1)
+      );
+
+      assert(!edited.ok());
+      expect(String(edited.error())).toBe("Expected end of input, got '0'");
+    });
+
+    it('must create a missing part when its default text changes', () => {
+      const edited = PORT.in(parsed(PORT, 'h'))
+        .elements()
+        .at(1)
+        .value()
+        .at(1)
+        .edit(digits => digits || '80');
+
+      assert(edited.ok());
+      expect(String(edited.value())).toBe('h:80');
+    });
+
+    it('must leave a missing part missing when its default text stays', () => {
+      const tree = parsed(PORT, 'h');
+      const edited = PORT.in(tree)
+        .elements()
+        .at(1)
+        .value()
+        .at(1)
+        .edit(digits => digits);
+
+      assert(edited.ok());
+      expect(edited.value()).toEqual(tree);
+    });
+  });
+
   describe('remove', () => {
     it('must remove the elements of a repetition it selects', () => {
       expect(String(DIGIT.in(parsed(PORT, 'h:12')).remove())).toBe('h:');
