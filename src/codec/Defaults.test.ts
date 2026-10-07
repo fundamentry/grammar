@@ -144,6 +144,10 @@ describe('Defaults', () => {
       );
     });
 
+    it('must default a repetition without a fewest count to nothing', () => {
+      expect(text(new Repetition(digit, Range.atMost(Integer.of(3))))).toBe('');
+    });
+
     it('must see through a label and a reference', () => {
       expect(
         text(new Label(new Reference(() => letter('a')), new Named('a')))

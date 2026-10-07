@@ -151,6 +151,22 @@ describe('Parser', () => {
       expect(accepts).toHaveBeenCalledOnce();
     });
 
+    it('must continue from a span that several candidates reach once', () => {
+      const accepts = vi.fn<(token: CodePoint) => boolean>(() => false);
+
+      new Parser(
+        new Concatenation([
+          new Alternation([
+            new Concatenation([digit]),
+            new Concatenation([new Optional(letter), digit]),
+          ]),
+          character('a counted token', accepts),
+        ])
+      ).parse(input('12'));
+
+      expect(accepts).toHaveBeenCalledOnce();
+    });
+
     it('must yield the first alternative that matches a single token', () => {
       expect(
         new Parser(
