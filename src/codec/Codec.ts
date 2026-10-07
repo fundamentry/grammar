@@ -283,12 +283,17 @@ export class Codec<in out Value extends Node> {
   static #verified<Source, Value, Reason>(
     conversion: PartialIso<Source, Value, Reason, string>
   ): PartialIso<Source, Value, Reason, string> {
-    return PartialIso.of(
+    const verified = PartialIso.of(
       FallibleMorphism.id<Source>(),
       FallibleMorphism.fromPredicate(
         (source: Source) => conversion.to(source).ok(),
         source => `'${String(source)}' does not belong to this rule`
       )
     ).andThen(conversion);
+
+    return PartialIso.of(
+      (source: Source) => conversion.to(source),
+      (value: Value) => verified.from(value)
+    );
   }
 }
