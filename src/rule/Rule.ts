@@ -42,4 +42,12 @@ export class Rule<
   is(node: Node): node is Nonterminal<Name, Elements> {
     return node instanceof Nonterminal && node.rule() === this;
   }
+
+  find(tree: Node): Nonterminal<Name, Elements> | undefined {
+    return tree.nodes().find(node => this.is(node));
+  }
+
+  occurrences(tree: Node): IteratorObject<Nonterminal<Name, Elements>> {
+    return tree.nodes().filter(node => this.is(node));
+  }
 }
