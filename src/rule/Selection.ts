@@ -1,5 +1,5 @@
 import { type Optic } from '@fundamentry/category';
-import { Success } from '@fundamentry/coproduct';
+import { Failure, Success } from '@fundamentry/coproduct';
 
 import { type Codec, route, Steps } from '#project/codec';
 import {
@@ -71,25 +71,22 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
   }
 
   edit(update: (text: string) => string): Codec.Parsed<T> {
-    const parsed = (value: A) => this.#codec.parse(update(String(value)));
+    const failures: Codec.Parsed<T>[] = [];
 
-    const failure = this.values()
-      .map(parsed)
-      .find(
-        (result): result is Exclude<Codec.Parsed<A>, Success<A>> => !result.ok()
-      );
+    const edited = this.#focus.modify(value =>
+      this.#codec.parse(update(String(value))).match({
+        onSuccess: node => node,
+        onFailure: mismatch => {
+          failures.push(new Failure(mismatch));
 
-    return (
-      failure ??
-      new Success(
-        this.#focus.modify(value =>
-          parsed(value).match({
-            onSuccess: edited => edited,
-            onFailure: () => value,
-          })
-        )
-      )
+          return value;
+        },
+      })
     );
+
+    const [failure] = failures;
+
+    return failure ?? new Success(edited);
   }
 
   remove(): T {

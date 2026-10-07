@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest';
+import { assert, describe, expect, it, vi } from 'vitest';
 
 import { type Codec } from '#project/codec';
 import { Focus, type Node, Sequence } from '#project/tree';
@@ -167,6 +167,14 @@ describe('Selection', () => {
 
       assert(!edited.ok());
       expect(String(edited.error())).toBe("Expected end of input, got '0'");
+    });
+
+    it('must read the text of each selected part once', () => {
+      const update = vi.fn((digit: string) => digit);
+
+      DIGIT.in(parsed(PORT, 'h:12')).edit(update);
+
+      expect(update.mock.calls).toEqual([['1'], ['2']]);
     });
 
     it('must create a missing part when its default text changes', () => {
