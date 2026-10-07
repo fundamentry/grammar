@@ -29,15 +29,16 @@ import { Printer } from '#project/printer';
 import {
   type Choice,
   Character,
+  type Literal,
   type Node,
   type Nonterminal,
   type Option,
   type Repetition,
   type Sequence,
-  type Literal,
 } from '#project/tree';
 
 import { Caseless } from './Caseless.js';
+import { Parts } from './Parts.js';
 
 export namespace Codec {
   export type CodePointLike = string | number | CodePoint;
@@ -222,6 +223,34 @@ export class Codec<in out Value extends Node> {
     return new Definitions(this.#expression);
   }
 
+  elements<Name extends string, Elements extends Node>(
+    this: Codec<Nonterminal<Name, Elements>>
+  ): Codec<Elements> {
+    return this.#part(0);
+  }
+
+  at<T extends readonly Node[], const I extends Node.Index<T>>(
+    this: Codec<Sequence<T>>,
+    index: I
+  ): Codec<T[I]> {
+    return this.#part(index);
+  }
+
+  alternative<T extends readonly Node[], const I extends Node.Index<T>>(
+    this: Codec<Choice<T>>,
+    index: I
+  ): Codec<T[I]> {
+    return this.#part(index);
+  }
+
+  value<T extends Node>(this: Codec<Option<T>>): Codec<T> {
+    return this.#part(0);
+  }
+
+  element<A extends Node>(this: Codec<Repetition<A>>): Codec<A> {
+    return this.#part(0);
+  }
+
   or<Alternative extends Node>(
     next: Codec<Alternative>
   ): Codec<Choice<Codec.Alternatives<[Value, Alternative]>>> {
@@ -278,6 +307,10 @@ export class Codec<in out Value extends Node> {
           ]
         : undefined
     );
+  }
+
+  #part<Part extends Node>(index: number): Codec<Part> {
+    return new Codec(new Parts(this.#expression).at(index));
   }
 
   static #verified<Source, Value, Reason>(

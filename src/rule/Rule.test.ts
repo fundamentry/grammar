@@ -2,6 +2,7 @@ import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
+import { type Codec } from '#project/codec';
 import {
   Choice,
   Character,
@@ -144,6 +145,21 @@ describe('Rule', () => {
 
     it('must not hold for a node that is not a nonterminal', () => {
       expect(DIGIT.is(seven)).toBe(false);
+    });
+  });
+
+  describe('elements', () => {
+    it('must parse with the body of the rule', () => {
+      const body = LIST.elements();
+      const parsed = body.parse('1,2');
+
+      assert(parsed.ok());
+      expect(String(parsed.value())).toBe('1,2');
+      expect(parsed.value().index()).toBe(0);
+    });
+
+    it('must type the codec by the elements of the rule', () => {
+      expectTypeOf(DIGIT.elements()).toEqualTypeOf<Codec<Character>>();
     });
   });
 

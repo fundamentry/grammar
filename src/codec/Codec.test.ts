@@ -616,6 +616,66 @@ describe('Codec', () => {
     });
   });
 
+  describe('at', () => {
+    it('must parse with the element of a sequence at the index', () => {
+      const second = build.sequence(digit, letter).at(1);
+
+      expect(parse(second, 'a').ok()).toBe(true);
+      expect(parse(second, '1').ok()).toBe(false);
+    });
+
+    it('must see through a label', () => {
+      const first = build.sequence(digit, letter).label('pair').at(0);
+
+      expect(parse(first, '1').ok()).toBe(true);
+    });
+
+    it('must type the codec by the element at the index', () => {
+      expectTypeOf(
+        build.sequence(digit, build.literal('-')).at(1)
+      ).toEqualTypeOf<Codec<Literal>>();
+    });
+  });
+
+  describe('alternative', () => {
+    it('must parse with the alternative at the index', () => {
+      const second = build.choice(digit, letter).alternative(1);
+
+      expect(parse(second, 'a').ok()).toBe(true);
+      expect(parse(second, '1').ok()).toBe(false);
+    });
+
+    it('must index the alternatives of nested choices as the parse does', () => {
+      const codec = build.choice(
+        build.choice(digit, letter),
+        build.literal('-')
+      );
+      const parsed = parse(codec, '-');
+
+      assert(parsed.ok());
+      expect(parsed.value().index()).toBe(2);
+      expect(parse(codec.alternative(2), '-').ok()).toBe(true);
+    });
+  });
+
+  describe('value', () => {
+    it('must parse with what an option holds', () => {
+      const held = digit.optional().value();
+
+      expect(parse(held, '1').ok()).toBe(true);
+      expect(parse(held, '').ok()).toBe(false);
+    });
+  });
+
+  describe('element', () => {
+    it('must parse with what a repetition repeats', () => {
+      const repeated = digit.many().element();
+
+      expect(parse(repeated, '1').ok()).toBe(true);
+      expect(parse(repeated, '11').ok()).toBe(false);
+    });
+  });
+
   describe('definition', () => {
     it('must define a repetition by its bounds', () => {
       expect(String(build.character(['0', '9']).many().definition())).toBe(
