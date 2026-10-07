@@ -74,6 +74,73 @@ describe('Selection', () => {
     });
   });
 
+  describe('to', () => {
+    const NUMBER = new Rule('number', () => DIGIT.many());
+
+    const ADDRESS = new Rule('address', codec =>
+      codec.sequence(
+        codec.literal('h'),
+        codec.sequence(codec.literal(':'), NUMBER).optional()
+      )
+    );
+
+    it('must narrow to the one place of a rule within another', () => {
+      expect(
+        String(ADDRESS.in(parsed(ADDRESS, 'h:12')).to(NUMBER).find())
+      ).toBe('12');
+    });
+
+    it('must read a missing place as its default', () => {
+      expect(String(ADDRESS.in(parsed(ADDRESS, 'h')).to(NUMBER).find())).toBe(
+        ''
+      );
+    });
+
+    it('must create the parts around a missing place when set', () => {
+      const set = ADDRESS.in(parsed(ADDRESS, 'h')).to(NUMBER).set('80');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:80');
+    });
+
+    it('must leave a missing place missing when nothing changes', () => {
+      const tree = parsed(ADDRESS, 'h');
+
+      expect(
+        ADDRESS.in(tree)
+          .to(NUMBER)
+          .modify(number => number)
+      ).toEqual(tree);
+    });
+
+    it('must continue from the steps taken before it', () => {
+      const set = ADDRESS.in(parsed(ADDRESS, 'h'))
+        .elements()
+        .at(1)
+        .to(NUMBER)
+        .set('80');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:80');
+    });
+
+    it('must refuse a rule found in more than one place', () => {
+      const RANGE = new Rule('range', codec =>
+        codec.sequence(NUMBER, codec.literal('-'), NUMBER)
+      );
+
+      expect(() => RANGE.in(parsed(RANGE, '1-2')).to(NUMBER)).toThrow(
+        new RangeError('2 routes lead to number')
+      );
+    });
+
+    it('must refuse a rule found only within a repetition', () => {
+      expect(() => NUMBER.in(parsed(NUMBER, '12')).to(DIGIT)).toThrow(
+        new RangeError('0 routes lead to DIGIT')
+      );
+    });
+  });
+
   describe('focus', () => {
     it('must narrow to a part with any optic, leaving the grammar behind', () => {
       const focus = PORT.in(parsed(PORT, 'h:1'))

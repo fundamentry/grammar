@@ -1,23 +1,43 @@
-import { type Optic } from '@fundamentry/category';
+import { type Optic, Prism } from '@fundamentry/category';
 
-import { type Codec } from '#project/codec';
+import { type Codec, Steps } from '#project/codec';
 import {
   Choice,
-  type Focus,
+  Focus,
   type Node,
   Nonterminal,
   Option,
   Sequence,
 } from '#project/tree';
 
+import { type Rule } from './Rule.js';
+
 export class Selection<T extends Node, A extends Node> {
   readonly #focus: Focus<T, A>;
 
   readonly #codec: Codec<A>;
 
-  constructor(focus: Focus<T, A>, codec: Codec<A>) {
+  readonly #place: Focus<T, Node>;
+
+  private constructor(
+    focus: Focus<T, A>,
+    codec: Codec<A>,
+    place: Focus<T, Node>
+  ) {
     this.#focus = focus;
     this.#codec = codec;
+    this.#place = place;
+  }
+
+  static of<T extends Node, Name extends string, Elements extends Node>(
+    tree: T,
+    rule: Rule<Name, Elements>
+  ): Selection<T, Nonterminal<Name, Elements>> {
+    return new Selection(
+      Focus.of(tree, node => rule.is(node)),
+      rule,
+      Focus.of(tree, (node): node is Node => rule.is(node))
+    );
   }
 
   values(): IteratorObject<A> {
@@ -46,12 +66,30 @@ export class Selection<T extends Node, A extends Node> {
     return this.#focus.focus(optic);
   }
 
+  to<Name extends string, Elements extends Node>(
+    rule: Rule<Name, Elements>
+  ): Selection<T, Nonterminal<Name, Elements>> {
+    const place = this.#place.focus(this.#codec.route(rule));
+
+    return new Selection(
+      place.focus(
+        Prism.fromPredicate(
+          node => rule.is(node),
+          () => undefined
+        )
+      ),
+      rule,
+      place
+    );
+  }
+
   elements<Name extends string, Elements extends Node>(
     this: Selection<T, Nonterminal<Name, Elements>>
   ): Selection<T, Elements> {
     return new Selection(
       this.#focus.focus(Nonterminal.elements()),
-      this.#codec.elements()
+      this.#codec.elements(),
+      this.#place.focus(Steps.elements())
     );
   }
 
@@ -61,21 +99,24 @@ export class Selection<T extends Node, A extends Node> {
   ): Selection<T, U[I]> {
     return new Selection(
       this.#focus.focus(Sequence.at<U, I>(index)),
-      this.#codec.at<U, I>(index)
+      this.#codec.at<U, I>(index),
+      this.#place.focus(Steps.at(index))
     );
   }
 
   value<U extends Node>(this: Selection<T, Option<U>>): Selection<T, U> {
     const codec = this.#codec.value();
+    const fallback = codec.default();
 
     return new Selection(
       this.#focus.focus(
-        codec.default().match<Optic<Optic.Kind, Option<U>, U, unknown>>({
-          onSuccess: fallback => Option.valueOr(fallback),
+        fallback.match<Optic<Optic.Kind, Option<U>, U, unknown>>({
+          onSuccess: initial => Option.valueOr(initial),
           onFailure: () => Option.value(),
         })
       ),
-      codec
+      codec,
+      this.#place.focus(Steps.value(fallback))
     );
   }
 
@@ -84,15 +125,17 @@ export class Selection<T extends Node, A extends Node> {
     index: I
   ): Selection<T, U[I]> {
     const codec = this.#codec.alternative<U, I>(index);
+    const fallback = codec.default();
 
     return new Selection(
       this.#focus.focus(
-        codec.default().match<Optic<Optic.Kind, Choice<U>, U[I], unknown>>({
-          onSuccess: fallback => Choice.alternativeOr<U, I>(index, fallback),
+        fallback.match<Optic<Optic.Kind, Choice<U>, U[I], unknown>>({
+          onSuccess: initial => Choice.alternativeOr<U, I>(index, initial),
           onFailure: () => Choice.alternative<U, I>(index),
         })
       ),
-      codec
+      codec,
+      this.#place.focus(Steps.alternative(index, fallback))
     );
   }
 }

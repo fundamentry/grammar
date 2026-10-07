@@ -67,6 +67,12 @@
             "allowAsThisParameter": true
           }
         ],
+        "@typescript-eslint/no-extraneous-class": [
+          "error",
+          {
+            "allowStaticOnly": true
+          }
+        ],
         "no-plusplus": "off",
         "no-restricted-syntax": "off"
       }

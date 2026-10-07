@@ -40,6 +40,8 @@ import {
 import { Caseless } from './Caseless.js';
 import { Defaults } from './Defaults.js';
 import { Parts } from './Parts.js';
+import { Routes } from './Routes.js';
+import { type Steps } from './Steps.js';
 
 export namespace Codec {
   export type CodePointLike = string | number | CodePoint;
@@ -223,6 +225,21 @@ export class Codec<in out Value extends Node> {
         onSuccess: text => this.parse(text),
         onFailure: expectation => new Failure(expectation),
       });
+  }
+
+  route(target: Nonterminal.Rule<string>): Steps.Step {
+    const routes = new Routes(target, expression =>
+      new Codec(expression).default()
+    ).from(this.#expression);
+
+    const [route] = routes;
+
+    if (!route || routes.length > 1)
+      throw new RangeError(
+        `${String(routes.length)} routes lead to ${target.name()}`
+      );
+
+    return route;
   }
 
   definition(): Definition {

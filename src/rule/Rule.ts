@@ -1,5 +1,5 @@
 import { Codec } from '#project/codec';
-import { Focus, type Node, Nonterminal } from '#project/tree';
+import { type Node, Nonterminal } from '#project/tree';
 
 import { Selection } from './Selection.js';
 
@@ -46,9 +46,6 @@ export class Rule<
   }
 
   in<T extends Node>(tree: T): Selection<T, Nonterminal<Name, Elements>> {
-    return new Selection(
-      Focus.of(tree, (node: Node) => this.is(node)),
-      this
-    );
+    return Selection.of(tree, this);
   }
 }
