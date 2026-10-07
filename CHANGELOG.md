@@ -1,3 +1,30 @@
+## 5.1.0
+
+### 🚀 Features
+
+- expose the children of tree nodes ([e6d077c](https://github.com/fundamentry/grammar/commit/e6d077c))
+- walk the nodes of a tree ([2c96591](https://github.com/fundamentry/grammar/commit/2c96591))
+- find the occurrences of a rule in a tree ([d33b5ee](https://github.com/fundamentry/grammar/commit/d33b5ee))
+- focus on the parts of tree nodes with optics ([231db87](https://github.com/fundamentry/grammar/commit/231db87))
+- edit the occurrences of a rule in a tree ([b03d115](https://github.com/fundamentry/grammar/commit/b03d115))
+- reach the codecs of the parts of a codec ([ff18243](https://github.com/fundamentry/grammar/commit/ff18243))
+- default codecs to the shortest text they accept ([2be23de](https://github.com/fundamentry/grammar/commit/2be23de))
+- read missing parts of nodes as their defaults ([fd9eead](https://github.com/fundamentry/grammar/commit/fd9eead))
+- step through selections by the grammar ([4aba734](https://github.com/fundamentry/grammar/commit/4aba734))
+- set the parts of a selection from text ([e19e708](https://github.com/fundamentry/grammar/commit/e19e708))
+- select the one place of a rule within another ([67da3f5](https://github.com/fundamentry/grammar/commit/67da3f5))
+- iterate over focuses and selections ([37474bc](https://github.com/fundamentry/grammar/commit/37474bc))
+- remove the optional parts around a selection ([fbfa842](https://github.com/fundamentry/grammar/commit/fbfa842))
+- remove the elements of repetitions around a selection ([67bb3e6](https://github.com/fundamentry/grammar/commit/67bb3e6))
+- select the elements of repetitions by position ([baa83d7](https://github.com/fundamentry/grammar/commit/baa83d7))
+- insert elements into the repetitions of a selection ([00e4d03](https://github.com/fundamentry/grammar/commit/00e4d03))
+- edit the parts of a selection as text ([91cef17](https://github.com/fundamentry/grammar/commit/91cef17))
+
+### 🔥 Performance
+
+- parse single-token expressions in one step ([68b3091](https://github.com/fundamentry/grammar/commit/68b3091))
+- parse terminals without composing morphisms ([730a253](https://github.com/fundamentry/grammar/commit/730a253))
+
 # 5.0.0
 
 ### 🚀 Features
