@@ -22,6 +22,6 @@ export class Projection<out A> implements View<A> {
   }
 
   map<B>(project: (value: A) => B): View<B> {
-    return new Projection(() => this.values().map(project));
+    return new Projection(() => this.values().map(value => project(value)));
   }
 }
