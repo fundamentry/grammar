@@ -46,12 +46,4 @@ export class Rule<
   in<T extends Node>(tree: T): Selection<T, Nonterminal<Name, Elements>> {
     return Selection.of(tree, (node: Node) => this.is(node));
   }
-
-  find(tree: Node): Nonterminal<Name, Elements> | undefined {
-    return tree.nodes().find(node => this.is(node));
-  }
-
-  occurrences(tree: Node): IteratorObject<Nonterminal<Name, Elements>> {
-    return tree.nodes().filter(node => this.is(node));
-  }
 }

@@ -5,7 +5,6 @@ import { CodePoint } from '@fundamentry/scalar';
 import {
   Choice,
   Character,
-  Node,
   type Nonterminal,
   type Option,
   Repetition,
@@ -183,91 +182,6 @@ describe('Rule', () => {
           Sequence<readonly [Nonterminal<'DIGIT', Character>, Character]>,
           Nonterminal<'DIGIT', Character>
         >
-      >();
-    });
-  });
-
-  describe('find', () => {
-    it('must find the first node of the rule in document order', () => {
-      const parsed = LIST.parse('1,2,3');
-
-      assert(parsed.ok());
-      expect(String(DIGIT.find(parsed.value()))).toBe('1');
-    });
-
-    it('must find the tree itself when it is a node of the rule', () => {
-      const tree = DIGIT.node(seven);
-
-      expect(DIGIT.find(tree)).toBe(tree);
-    });
-
-    it('must find nothing where the rule does not occur', () => {
-      expect(DIGIT.find(literal('7'))).toBeUndefined();
-    });
-
-    it('must type what it finds as a node of the rule', () => {
-      expectTypeOf(DIGIT.find(seven)).toEqualTypeOf<
-        Nonterminal<'DIGIT', Character> | undefined
-      >();
-    });
-  });
-
-  describe('occurrences', () => {
-    it('must find every node of the rule in document order', () => {
-      const parsed = LIST.parse('1,2,3');
-
-      assert(parsed.ok());
-      expect(DIGIT.occurrences(parsed.value()).map(String).toArray()).toEqual([
-        '1',
-        '2',
-        '3',
-      ]);
-    });
-
-    it('must find nodes of the rule nested in one another, outermost first', () => {
-      const parsed = LIST.parse('1,2,3');
-
-      assert(parsed.ok());
-      expect(LIST.occurrences(parsed.value()).map(String).toArray()).toEqual([
-        '1,2,3',
-        '1,2',
-        '1',
-      ]);
-    });
-
-    it('must find nothing where the rule does not occur', () => {
-      expect(DIGIT.occurrences(literal('7')).toArray()).toEqual([]);
-    });
-
-    it('must explore the tree only as far as the nodes pulled', () => {
-      class Unexplored extends Node {
-        override map(): Node {
-          return this;
-        }
-
-        override children(): readonly Node[] {
-          throw new Error('Children were explored');
-        }
-
-        override equals(other: unknown): boolean {
-          return other === this;
-        }
-
-        override toString(): string {
-          return '?';
-        }
-      }
-
-      const digit = DIGIT.node(seven);
-      const found = DIGIT.occurrences(new Sequence([digit, new Unexplored()]));
-
-      expect(found.next().value).toBe(digit);
-      expect(() => found.next()).toThrow('Children were explored');
-    });
-
-    it('must type what it finds as nodes of the rule', () => {
-      expectTypeOf(DIGIT.occurrences(seven)).toEqualTypeOf<
-        IteratorObject<Nonterminal<'DIGIT', Character>>
       >();
     });
   });
