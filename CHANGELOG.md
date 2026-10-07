@@ -1,3 +1,18 @@
+# 6.0.0
+
+### 🚀 Features
+
+- project the values of selections through read-only views ([bfc3ff4](https://github.com/fundamentry/grammar/commit/bfc3ff4))
+
+### 🩹 Fixes
+
+- ⚠️  read only the parts a tree has ([45d4686](https://github.com/fundamentry/grammar/commit/45d4686))
+- hand projections the value alone ([1ded011](https://github.com/fundamentry/grammar/commit/1ded011))
+
+### ⚠️  Breaking Changes
+
+- read only the parts a tree has  ([45d4686](https://github.com/fundamentry/grammar/commit/45d4686))
+
 ## 5.1.0
 
 ### 🚀 Features
