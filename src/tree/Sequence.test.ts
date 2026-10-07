@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
 import { Character } from './Character.js';
+import { Option } from './Option.js';
 import { Repetition } from './Repetition.js';
 import { Sequence } from './Sequence.js';
 
@@ -43,6 +44,49 @@ describe('Sequence', () => {
       const elements = [A, B] as const;
 
       expect(new Sequence(elements).children()).toBe(elements);
+    });
+  });
+
+  describe('with', () => {
+    it('must replace the element at the index', () => {
+      expect(new Sequence([A, B] as const).with(1, A)).toEqual(
+        new Sequence([A, A])
+      );
+    });
+
+    it('must leave the original sequence as it was', () => {
+      const sequence = new Sequence([A, B] as const);
+
+      sequence.with(1, A);
+
+      expect(sequence).toEqual(new Sequence([A, B]));
+    });
+  });
+
+  describe('at', () => {
+    it('must get the element at the index', () => {
+      expect(
+        Sequence.at<readonly [Character, Character], 1>(1).get(
+          new Sequence([A, B] as const)
+        )
+      ).toBe(B);
+    });
+
+    it('must set the element at the index', () => {
+      expect(
+        Sequence.at<readonly [Character, Character], 0>(0).set(
+          new Sequence([A, B] as const),
+          B
+        )
+      ).toEqual(new Sequence([B, B]));
+    });
+
+    it('must type the focus by its index', () => {
+      expectTypeOf(
+        Sequence.at<readonly [Character, Option<Character>], 1>(1).get(
+          new Sequence([A, new Option(B)] as const)
+        )
+      ).toEqualTypeOf<Option<Character>>();
     });
   });
 

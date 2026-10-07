@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
@@ -25,6 +25,45 @@ describe('Choice', () => {
     it('must not recognise other values', () => {
       expect(new Option(A)).not.toBeInstanceOf(Choice);
       expect(undefined).not.toBeInstanceOf(Choice);
+    });
+  });
+
+  describe('index', () => {
+    it('must return the index of the alternative taken', () => {
+      expect(new Choice<[Character, Character]>(1, B).index()).toBe(1);
+    });
+  });
+
+  describe('alternative', () => {
+    it('must preview the value of the alternative taken', () => {
+      const previewed = Choice.alternative<[Character, Character], 1>(
+        1
+      ).preview(new Choice<[Character, Character]>(1, B));
+
+      assert(previewed.ok());
+      expect(previewed.value()).toBe(B);
+    });
+
+    it('must not preview another alternative', () => {
+      expect(
+        Choice.alternative<[Character, Character], 0>(0)
+          .preview(new Choice<[Character, Character]>(1, B))
+          .ok()
+      ).toBe(false);
+    });
+
+    it('must review a value as a choice of the alternative', () => {
+      expect(
+        Choice.alternative<[Character, Character], 1>(1).review(A)
+      ).toEqual(new Choice<[Character, Character]>(1, A));
+    });
+
+    it('must type the focus by its alternative', () => {
+      expectTypeOf(
+        Choice.alternative<[Character, Option<Character>], 1>(1).review(
+          new Option(A)
+        )
+      ).toEqualTypeOf<Choice<[Character, Option<Character>]>>();
     });
   });
 

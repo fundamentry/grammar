@@ -1,3 +1,5 @@
+import { Lens, Morphism } from '@fundamentry/category';
+
 import { Node } from './Node.js';
 
 export namespace Nonterminal {
@@ -29,6 +31,19 @@ export class Nonterminal<
       value instanceof Object &&
       #rule in value &&
       Function.prototype[Symbol.hasInstance].call(this, value)
+    );
+  }
+
+  static elements<Name extends string, Elements extends Node>(): Lens<
+    Nonterminal<Name, Elements>,
+    Elements
+  > {
+    return Lens.of(
+      Morphism.of((node: Nonterminal<Name, Elements>) => node.#elements),
+      Morphism.of(
+        ([node, elements]: readonly [Nonterminal<Name, Elements>, Elements]) =>
+          new Nonterminal(node.#rule, elements)
+      )
     );
   }
 

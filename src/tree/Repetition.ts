@@ -1,3 +1,5 @@
+import { Lens, Morphism } from '@fundamentry/category';
+
 import { Node } from './Node.js';
 import { Sequence } from './Sequence.js';
 
@@ -18,6 +20,18 @@ export class Repetition<out A extends Node> extends Node {
       value instanceof Object &&
       #sequence in value &&
       Function.prototype[Symbol.hasInstance].call(this, value)
+    );
+  }
+
+  static elements<A extends Node>(): Lens<Repetition<A>, readonly A[]> {
+    return Lens.of(
+      Morphism.of((repetition: Repetition<A>) =>
+        repetition.#sequence.elements()
+      ),
+      Morphism.of(
+        ([, elements]: readonly [Repetition<A>, readonly A[]]) =>
+          new Repetition(elements)
+      )
     );
   }
 

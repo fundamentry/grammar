@@ -41,6 +41,27 @@ describe('Nonterminal', () => {
     });
   });
 
+  describe('elements lens', () => {
+    it('must get the elements', () => {
+      expect(
+        Nonterminal.elements<'DIGIT', Character>().get(
+          new Nonterminal(DIGIT, seven)
+        )
+      ).toBe(seven);
+    });
+
+    it('must set the elements, keeping the rule', () => {
+      const eight = new Character(CodePoint.of('8'));
+      const node = Nonterminal.elements<'DIGIT', Character>().set(
+        new Nonterminal(DIGIT, seven),
+        eight
+      );
+
+      expect(node.rule()).toBe(DIGIT);
+      expect(node.elements()).toBe(eight);
+    });
+  });
+
   describe('type', () => {
     it('must not let a nonterminal of one rule pass for another', () => {
       expectTypeOf(new Nonterminal(DIGIT, seven)).not.toExtend<

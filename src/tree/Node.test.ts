@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
@@ -29,6 +29,18 @@ class Unexplored extends Node {
 }
 
 describe('Node', () => {
+  describe('Index', () => {
+    it('must be the indices of a tuple of nodes', () => {
+      expectTypeOf<
+        Node.Index<readonly [Character, Option<Character>]>
+      >().toEqualTypeOf<0 | 1>();
+    });
+
+    it('must be nothing for nodes of unknown length', () => {
+      expectTypeOf<Node.Index<readonly Character[]>>().toEqualTypeOf<never>();
+    });
+  });
+
   describe('nodes', () => {
     it('must yield a leaf alone', () => {
       expect(Array.from(A.nodes())).toEqual([A]);

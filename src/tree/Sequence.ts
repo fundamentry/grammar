@@ -1,3 +1,5 @@
+import { Lens, Morphism } from '@fundamentry/category';
+
 import { Node } from './Node.js';
 
 export class Sequence<out T extends readonly Node[]> extends Node {
@@ -18,6 +20,23 @@ export class Sequence<out T extends readonly Node[]> extends Node {
       #elements in value &&
       Function.prototype[Symbol.hasInstance].call(this, value)
     );
+  }
+
+  static at<T extends readonly Node[], const I extends Node.Index<T>>(
+    index: I
+  ): Lens<Sequence<T>, T[I]> {
+    return Lens.of(
+      Morphism.of((sequence: Sequence<T>) => sequence.#elements[index]),
+      Morphism.of(([sequence, element]: readonly [Sequence<T>, T[I]]) =>
+        sequence.with(index, element)
+      )
+    );
+  }
+
+  with<I extends Node.Index<T>>(index: I, element: T[I]): Sequence<T>;
+
+  with(index: number, element: Node): Sequence<readonly Node[]> {
+    return new Sequence<readonly Node[]>(this.#elements.with(index, element));
   }
 
   elements(): T {

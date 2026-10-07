@@ -46,6 +46,22 @@ describe('Repetition', () => {
     });
   });
 
+  describe('elements lens', () => {
+    it('must get the elements', () => {
+      const elements = [A, B];
+
+      expect(
+        Repetition.elements<Character>().get(new Repetition(elements))
+      ).toBe(elements);
+    });
+
+    it('must set the elements', () => {
+      expect(
+        Repetition.elements<Character>().set(new Repetition([A]), [A, B])
+      ).toEqual(new Repetition([A, B]));
+    });
+  });
+
   describe('equals', () => {
     it('must equal a repetition of equal elements', () => {
       expect(new Repetition([A, B]).equals(new Repetition([A, B]))).toBe(true);

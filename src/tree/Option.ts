@@ -1,3 +1,5 @@
+import { Prism } from '@fundamentry/category';
+import { Failure, Success } from '@fundamentry/coproduct';
 import { Equatable } from '@fundamentry/trait';
 
 import { Node } from './Node.js';
@@ -19,6 +21,14 @@ export class Option<out T extends Node = never> extends Node {
       value instanceof Object &&
       #value in value &&
       Function.prototype[Symbol.hasInstance].call(this, value)
+    );
+  }
+
+  static value<T extends Node>(): Prism<Option<T>, T, undefined> {
+    return Prism.of(
+      (option: Option<T>) =>
+        option.#value ? new Success(option.#value) : new Failure(undefined),
+      (value: T) => new Option(value)
     );
   }
 

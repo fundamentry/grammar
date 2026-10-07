@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
@@ -41,6 +41,23 @@ describe('Option', () => {
       expectTypeOf(new Option()).toExtend<
         Option<Sequence<readonly [Character]>>
       >();
+    });
+  });
+
+  describe('value prism', () => {
+    it('must preview the value when present', () => {
+      const previewed = Option.value<Character>().preview(new Option(A));
+
+      assert(previewed.ok());
+      expect(previewed.value()).toBe(A);
+    });
+
+    it('must not preview an absent value', () => {
+      expect(Option.value<Character>().preview(new Option()).ok()).toBe(false);
+    });
+
+    it('must review a value as a present option', () => {
+      expect(Option.value<Character>().review(A)).toEqual(new Option(A));
     });
   });
 

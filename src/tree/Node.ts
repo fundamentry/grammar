@@ -1,5 +1,11 @@
 import { Data } from '#project/data';
 
+export namespace Node {
+  export type Index<T extends readonly Node[]> = {
+    [I in keyof T]: I extends `${infer N extends number}` ? N : never;
+  }[number];
+}
+
 export abstract class Node extends Data {
   abstract children(): readonly Node[];
 

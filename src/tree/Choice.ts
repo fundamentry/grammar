@@ -1,3 +1,6 @@
+import { Prism } from '@fundamentry/category';
+import { Failure, Success } from '@fundamentry/coproduct';
+
 import { Node } from './Node.js';
 
 export namespace Choice {
@@ -34,6 +37,26 @@ export class Choice<T extends readonly Node[]> extends Node {
       #index in value &&
       Function.prototype[Symbol.hasInstance].call(this, value)
     );
+  }
+
+  static alternative<T extends readonly Node[], const I extends Node.Index<T>>(
+    index: I
+  ): Prism<Choice<T>, T[I], undefined>;
+
+  static alternative(
+    index: number
+  ): Prism<Choice<readonly Node[]>, Node, undefined> {
+    return Prism.of(
+      (choice: Choice<readonly Node[]>) =>
+        choice.#index === index
+          ? new Success(choice.#value)
+          : new Failure(undefined),
+      (value: Node) => new Choice<readonly Node[]>(index, value)
+    );
+  }
+
+  index(): number {
+    return this.#index;
   }
 
   value(): T[number] {
