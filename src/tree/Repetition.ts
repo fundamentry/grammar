@@ -1,4 +1,10 @@
-import { Lens, Morphism } from '@fundamentry/category';
+import {
+  FallibleMorphism,
+  Lens,
+  Morphism,
+  Optional,
+} from '@fundamentry/category';
+import { Failure, Success } from '@fundamentry/coproduct';
 
 import { Node } from './Node.js';
 import { Sequence } from './Sequence.js';
@@ -31,6 +37,29 @@ export class Repetition<out A extends Node> extends Node {
       Morphism.of(
         ([, elements]: readonly [Repetition<A>, readonly A[]]) =>
           new Repetition(elements)
+      )
+    );
+  }
+
+  static at<A extends Node>(
+    index: number
+  ): Optional<Repetition<A>, A, undefined> {
+    return Optional.of(
+      FallibleMorphism.of(repetition => {
+        const element = repetition.elements().at(index);
+
+        return element ? new Success(element) : new Failure(undefined);
+      }),
+      Morphism.of(update =>
+        Morphism.of(repetition => {
+          const element = repetition.elements().at(index);
+
+          return element
+            ? new Repetition(
+                repetition.elements().with(index, update.apply(element))
+              )
+            : repetition;
+        })
       )
     );
   }

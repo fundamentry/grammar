@@ -7,6 +7,7 @@ import {
   type Node,
   Nonterminal,
   Option,
+  Repetition,
   Sequence,
 } from '#project/tree';
 
@@ -110,6 +111,25 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
       this.#codec.at<U, I>(index),
       this.#place.focus(Steps.at(index))
     );
+  }
+
+  element<E extends Node>(
+    this: Selection<T, Repetition<E>>,
+    index: number
+  ): Selection<T, E> {
+    return new Selection(
+      this.#focus.focus(Repetition.at<E>(index)),
+      this.#codec.element(),
+      this.#place.focus(Steps.element(index))
+    );
+  }
+
+  first<E extends Node>(this: Selection<T, Repetition<E>>): Selection<T, E> {
+    return this.element(0);
+  }
+
+  last<E extends Node>(this: Selection<T, Repetition<E>>): Selection<T, E> {
+    return this.element(-1);
   }
 
   value<U extends Node>(this: Selection<T, Option<U>>): Selection<T, U> {

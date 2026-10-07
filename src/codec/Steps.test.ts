@@ -10,6 +10,7 @@ import {
   type Node,
   Nonterminal,
   Option,
+  Repetition,
   Sequence,
 } from '#project/tree';
 
@@ -67,6 +68,24 @@ describe('Steps', () => {
 
       expect(Steps.at(0).preview(node).ok()).toBe(false);
       expect(Steps.at(0).modify(toB).apply(node)).toBe(node);
+    });
+  });
+
+  describe('element', () => {
+    it('must preview and update the element of a repetition at the index', () => {
+      const node = new Repetition([A, A]);
+
+      expect(previewed(Steps.element(-1), node)).toBe(A);
+      expect(Steps.element(-1).modify(toB).apply(node)).toEqual(
+        new Repetition([A, B])
+      );
+    });
+
+    it('must pass over anything but a repetition', () => {
+      const node = new Sequence([A]);
+
+      expect(Steps.element(0).preview(node).ok()).toBe(false);
+      expect(Steps.element(0).modify(toB).apply(node)).toBe(node);
     });
   });
 

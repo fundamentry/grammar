@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
@@ -56,6 +56,39 @@ describe('Repetition', () => {
       }
 
       expect(new Repetition([A, A]).map(toB)).toEqual(new Repetition([B, B]));
+    });
+  });
+
+  describe('at', () => {
+    it('must preview the element at the index', () => {
+      const previewed = Repetition.at<Character>(1).preview(
+        new Repetition([A, B])
+      );
+
+      assert(previewed.ok());
+      expect(previewed.value()).toBe(B);
+    });
+
+    it('must count a negative index from the end', () => {
+      const previewed = Repetition.at<Character>(-1).preview(
+        new Repetition([A, B])
+      );
+
+      assert(previewed.ok());
+      expect(previewed.value()).toBe(B);
+    });
+
+    it('must update the element at the index', () => {
+      expect(
+        Repetition.at<Character>(0).set(new Repetition([A, A]), B)
+      ).toEqual(new Repetition([B, A]));
+    });
+
+    it('must pass over an index without an element', () => {
+      const repetition = new Repetition([A]);
+
+      expect(Repetition.at<Character>(1).preview(repetition).ok()).toBe(false);
+      expect(Repetition.at<Character>(1).set(repetition, B)).toBe(repetition);
     });
   });
 

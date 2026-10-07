@@ -1,4 +1,9 @@
-import { FallibleMorphism, Morphism, Optional } from '@fundamentry/category';
+import {
+  FallibleMorphism,
+  Morphism,
+  Optional,
+  Prism,
+} from '@fundamentry/category';
 import { Failure, type Result, Success } from '@fundamentry/coproduct';
 
 import {
@@ -6,6 +11,7 @@ import {
   type Node,
   Nonterminal,
   Option,
+  Repetition,
   Sequence,
 } from '#project/tree';
 
@@ -52,6 +58,17 @@ export class Steps {
         })
       )
     );
+  }
+
+  static element(index: number): Steps.Step {
+    return Optional.id<Node>()
+      .andThen(
+        Prism.fromPredicate(
+          node => node instanceof Repetition,
+          () => undefined
+        )
+      )
+      .andThen(Repetition.at(index));
   }
 
   static value(fallback: Steps.Fallback): Steps.Step {

@@ -244,6 +244,39 @@ describe('Selection', () => {
     });
   });
 
+  describe('element, first and last', () => {
+    const digits = (input: string) =>
+      PORT.in(parsed(PORT, input)).elements().at(1).value().at(1);
+
+    it('must narrow to the element of a repetition at the index', () => {
+      expect(String(digits('h:123').element(1).find())).toBe('2');
+      expect(String(digits('h:123').first().find())).toBe('1');
+      expect(String(digits('h:123').last().find())).toBe('3');
+    });
+
+    it('must set the element from text', () => {
+      const set = digits('h:123').last().set('9');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:129');
+    });
+
+    it('must remove the element', () => {
+      expect(String(digits('h:123').first().remove())).toBe('h:23');
+    });
+
+    it('must select nothing past the last element', () => {
+      const tree = parsed(PORT, 'h:1');
+
+      expect(
+        PORT.in(tree).elements().at(1).value().at(1).element(1).find()
+      ).toBeUndefined();
+      expect(
+        PORT.in(tree).elements().at(1).value().at(1).element(1).remove()
+      ).toEqual(tree);
+    });
+  });
+
   describe('alternative', () => {
     it('must narrow to the alternative taken', () => {
       expect(
