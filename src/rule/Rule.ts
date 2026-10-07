@@ -1,5 +1,5 @@
 import { Codec } from '#project/codec';
-import { type Node, Nonterminal } from '#project/tree';
+import { type Node, Nonterminal, Selection } from '#project/tree';
 
 export namespace Rule {
   export type Value<R> = R extends { print(value: infer N): unknown }
@@ -41,6 +41,10 @@ export class Rule<
 
   is(node: Node): node is Nonterminal<Name, Elements> {
     return node instanceof Nonterminal && node.rule() === this;
+  }
+
+  in<T extends Node>(tree: T): Selection<T, Nonterminal<Name, Elements>> {
+    return Selection.of(tree, (node: Node) => this.is(node));
   }
 
   find(tree: Node): Nonterminal<Name, Elements> | undefined {

@@ -32,6 +32,10 @@ export class Option<out T extends Node = never> extends Node {
     );
   }
 
+  override map(transform: Node.Transform): Option<T> {
+    return new Option(this.#value && transform(this.#value));
+  }
+
   value(): T | undefined {
     return this.#value;
   }

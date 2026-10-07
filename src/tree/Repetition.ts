@@ -35,6 +35,10 @@ export class Repetition<out A extends Node> extends Node {
     );
   }
 
+  override map(transform: Node.Transform): Repetition<A> {
+    return new Repetition(this.elements().map(transform));
+  }
+
   elements(): readonly A[] {
     return this.#sequence.elements();
   }

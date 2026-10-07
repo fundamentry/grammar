@@ -47,6 +47,10 @@ export class Nonterminal<
     );
   }
 
+  override map(transform: Node.Transform): Nonterminal<Name, Elements> {
+    return new Nonterminal(this.#rule, transform(this.#elements));
+  }
+
   rule(): Nonterminal.Rule<Name> {
     return this.#rule;
   }

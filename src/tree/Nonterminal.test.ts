@@ -3,6 +3,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { CodePoint } from '@fundamentry/scalar';
 
 import { Character } from './Character.js';
+import { type Node } from './Node.js';
 import { Nonterminal } from './Nonterminal.js';
 import { Option } from './Option.js';
 
@@ -38,6 +39,23 @@ describe('Nonterminal', () => {
   describe('children', () => {
     it('must have its elements as its only child', () => {
       expect(new Nonterminal(DIGIT, seven).children()).toEqual([seven]);
+    });
+  });
+
+  describe('map', () => {
+    it('must transform the elements, keeping the rule', () => {
+      const eight = new Character(CodePoint.of('8'));
+
+      function toEight<N extends Node>(node: N): N;
+
+      function toEight(node: Node): Node {
+        return node instanceof Character ? eight : node;
+      }
+
+      const node = new Nonterminal(DIGIT, seven).map(toEight);
+
+      expect(node.rule()).toBe(DIGIT);
+      expect(node.elements()).toBe(eight);
     });
   });
 

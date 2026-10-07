@@ -4,6 +4,7 @@ import { CodePoint } from '@fundamentry/scalar';
 
 import { Character } from './Character.js';
 import { Choice } from './Choice.js';
+import { type Node } from './Node.js';
 import { Option } from './Option.js';
 
 const A = new Character(CodePoint.of('a'));
@@ -25,6 +26,20 @@ describe('Choice', () => {
     it('must not recognise other values', () => {
       expect(new Option(A)).not.toBeInstanceOf(Choice);
       expect(undefined).not.toBeInstanceOf(Choice);
+    });
+  });
+
+  describe('map', () => {
+    it('must transform the value, keeping the alternative taken', () => {
+      function toB<N extends Node>(node: N): N;
+
+      function toB(node: Node): Node {
+        return node instanceof Character ? B : node;
+      }
+
+      expect(new Choice<[Character, Character]>(1, A).map(toB)).toEqual(
+        new Choice<[Character, Character]>(1, B)
+      );
     });
   });
 

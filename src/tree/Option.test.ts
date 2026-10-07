@@ -3,6 +3,7 @@ import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 import { CodePoint } from '@fundamentry/scalar';
 
 import { Character } from './Character.js';
+import { type Node } from './Node.js';
 import { Option } from './Option.js';
 import { Sequence } from './Sequence.js';
 
@@ -41,6 +42,30 @@ describe('Option', () => {
       expectTypeOf(new Option()).toExtend<
         Option<Sequence<readonly [Character]>>
       >();
+    });
+  });
+
+  describe('map', () => {
+    it('must transform the value when present', () => {
+      function toB<N extends Node>(node: N): N;
+
+      function toB(node: Node): Node {
+        return node instanceof Character ? B : node;
+      }
+
+      expect(new Option(A).map(toB)).toEqual(new Option(B));
+    });
+
+    it('must stay absent without rewriting anything', () => {
+      const rewritten: Node[] = [];
+      const record: Node.Transform = node => {
+        rewritten.push(node);
+
+        return node;
+      };
+
+      expect(new Option<Character>().map(record)).toEqual(new Option());
+      expect(rewritten).toEqual([]);
     });
   });
 

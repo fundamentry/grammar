@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { CodePoint } from '@fundamentry/scalar';
 
 import { Character } from './Character.js';
+import { type Node } from './Node.js';
 import { Repetition } from './Repetition.js';
 import { Sequence } from './Sequence.js';
 
@@ -43,6 +44,18 @@ describe('Repetition', () => {
       const elements = [A, B];
 
       expect(new Repetition(elements).children()).toBe(elements);
+    });
+  });
+
+  describe('map', () => {
+    it('must transform every element', () => {
+      function toB<N extends Node>(node: N): N;
+
+      function toB(node: Node): Node {
+        return node instanceof Character ? B : node;
+      }
+
+      expect(new Repetition([A, A]).map(toB)).toEqual(new Repetition([B, B]));
     });
   });
 

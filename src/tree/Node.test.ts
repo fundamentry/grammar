@@ -15,6 +15,10 @@ const B = new Character(CodePoint.of('b'));
 const DIGIT = { name: (): 'DIGIT' => 'DIGIT' };
 
 class Unexplored extends Node {
+  override map(): Node {
+    return this;
+  }
+
   override children(): readonly Node[] {
     throw new Error('Children were explored');
   }
@@ -38,6 +42,48 @@ describe('Node', () => {
 
     it('must be nothing for nodes of unknown length', () => {
       expectTypeOf<Node.Index<readonly Character[]>>().toEqualTypeOf<never>();
+    });
+  });
+
+  describe('outermost', () => {
+    const isDigit = (node: Node) =>
+      node instanceof Nonterminal && node.rule() === DIGIT;
+
+    it('must yield the matching nodes in document order', () => {
+      const first = new Nonterminal(DIGIT, A);
+      const second = new Nonterminal(DIGIT, B);
+
+      expect(
+        Array.from(new Sequence([first, new Option(second)]).outermost(isDigit))
+      ).toEqual([first, second]);
+    });
+
+    it('must not look inside a matching node', () => {
+      const outer = new Nonterminal(DIGIT, new Nonterminal(DIGIT, A));
+
+      expect(Array.from(new Sequence([outer]).outermost(isDigit))).toEqual([
+        outer,
+      ]);
+    });
+
+    it('must yield the node itself when it matches', () => {
+      const digit = new Nonterminal(DIGIT, A);
+
+      expect(Array.from(digit.outermost(isDigit))).toEqual([digit]);
+    });
+
+    it('must yield nothing when no node matches', () => {
+      expect(Array.from(new Sequence([A, B]).outermost(isDigit))).toEqual([]);
+    });
+
+    it('must explore the children of a node only once pulled past it', () => {
+      const digit = new Nonterminal(DIGIT, A);
+      const iterator = new Sequence([digit, new Unexplored()]).outermost(
+        isDigit
+      );
+
+      expect(iterator.next().value).toBe(digit);
+      expect(() => iterator.next()).toThrow('Children were explored');
     });
   });
 

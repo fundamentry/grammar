@@ -39,6 +39,12 @@ export class Sequence<out T extends readonly Node[]> extends Node {
     return new Sequence<readonly Node[]>(this.#elements.with(index, element));
   }
 
+  override map(transform: Node.Transform): Sequence<T>;
+
+  override map(transform: Node.Transform): Sequence<readonly Node[]> {
+    return new Sequence(this.#elements.map(transform));
+  }
+
   elements(): T {
     return this.#elements;
   }

@@ -15,6 +15,14 @@ describe('Character', () => {
     });
   });
 
+  describe('map', () => {
+    it('must return itself, having no children to transform', () => {
+      const character = new Character(A);
+
+      expect(character.map()).toBe(character);
+    });
+  });
+
   describe('children', () => {
     it('must have no children', () => {
       expect(new Character(A).children()).toEqual([]);

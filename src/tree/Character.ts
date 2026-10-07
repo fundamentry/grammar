@@ -15,6 +15,10 @@ export class Character extends Node {
     return this.#codePoint;
   }
 
+  override map(): this {
+    return this;
+  }
+
   override children(): readonly [] {
     return Object.freeze<[]>([]);
   }

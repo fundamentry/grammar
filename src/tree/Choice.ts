@@ -55,6 +55,12 @@ export class Choice<T extends readonly Node[]> extends Node {
     );
   }
 
+  override map(transform: Node.Transform): Choice<T>;
+
+  override map(transform: Node.Transform): Choice<readonly Node[]> {
+    return new Choice(this.#index, transform(this.#value));
+  }
+
   index(): number {
     return this.#index;
   }

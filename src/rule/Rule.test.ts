@@ -9,6 +9,7 @@ import {
   type Nonterminal,
   type Option,
   Repetition,
+  type Selection,
   Sequence,
   type Literal,
 } from '#project/tree';
@@ -147,6 +148,45 @@ describe('Rule', () => {
     });
   });
 
+  describe('in', () => {
+    it('must select every outermost node of the rule', () => {
+      const parsed = LIST.parse('1,2,3');
+
+      assert(parsed.ok());
+
+      const changed = DIGIT.in(parsed.value()).set(DIGIT.node(seven));
+
+      expect(String(changed)).toBe('7,7,7');
+    });
+
+    it('must hand only the outermost node of a nested rule to the update', () => {
+      const parsed = LIST.parse('1,2,3');
+
+      assert(parsed.ok());
+
+      const updated: string[] = [];
+
+      LIST.in(parsed.value()).modify(list => {
+        updated.push(String(list));
+
+        return list;
+      });
+
+      expect(updated).toEqual(['1,2,3']);
+    });
+
+    it('must type the selection by the rule and the tree', () => {
+      const tree = new Sequence([DIGIT.node(seven), seven] as const);
+
+      expectTypeOf(DIGIT.in(tree)).toEqualTypeOf<
+        Selection<
+          Sequence<readonly [Nonterminal<'DIGIT', Character>, Character]>,
+          Nonterminal<'DIGIT', Character>
+        >
+      >();
+    });
+  });
+
   describe('find', () => {
     it('must find the first node of the rule in document order', () => {
       const parsed = LIST.parse('1,2,3');
@@ -201,6 +241,10 @@ describe('Rule', () => {
 
     it('must explore the tree only as far as the nodes pulled', () => {
       class Unexplored extends Node {
+        override map(): Node {
+          return this;
+        }
+
         override children(): readonly Node[] {
           throw new Error('Children were explored');
         }

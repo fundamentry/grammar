@@ -3,6 +3,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { CodePoint } from '@fundamentry/scalar';
 
 import { Character } from './Character.js';
+import { type Node } from './Node.js';
 import { Option } from './Option.js';
 import { Repetition } from './Repetition.js';
 import { Sequence } from './Sequence.js';
@@ -44,6 +45,33 @@ describe('Sequence', () => {
       const elements = [A, B] as const;
 
       expect(new Sequence(elements).children()).toBe(elements);
+    });
+  });
+
+  describe('map', () => {
+    it('must transform every element in order', () => {
+      const rewritten: Node[] = [];
+      const record: Node.Transform = node => {
+        rewritten.push(node);
+
+        return node;
+      };
+
+      new Sequence([A, B] as const).map(record);
+
+      expect(rewritten).toEqual([A, B]);
+    });
+
+    it('must keep the rewritten elements', () => {
+      function toB<N extends Node>(node: N): N;
+
+      function toB(node: Node): Node {
+        return node instanceof Character ? B : node;
+      }
+
+      expect(new Sequence([A, new Option(A)] as const).map(toB)).toEqual(
+        new Sequence([B, new Option(A)])
+      );
     });
   });
 
