@@ -30,6 +30,18 @@ export class Routes implements Expression.Visitor<
     return expression.accept(this, new Set());
   }
 
+  only(expression: Expression<CodePoint>): Steps.Step {
+    const routes = this.from(expression);
+    const [route] = routes;
+
+    if (!route || routes.length > 1)
+      throw new RangeError(
+        `${String(routes.length)} routes lead to ${this.#target.name()}`
+      );
+
+    return route;
+  }
+
   terminal(): readonly Steps.Step[] {
     return [];
   }

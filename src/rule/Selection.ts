@@ -1,7 +1,7 @@
 import { type Optic, Prism } from '@fundamentry/category';
 import { Success } from '@fundamentry/coproduct';
 
-import { type Codec, Steps } from '#project/codec';
+import { type Codec, route, Steps } from '#project/codec';
 import {
   Choice,
   Focus,
@@ -13,6 +13,8 @@ import {
 } from '#project/tree';
 
 import { type Rule } from './Rule.js';
+
+export const select: unique symbol = Symbol('select');
 
 export class Selection<T extends Node, A extends Node> implements Iterable<A> {
   readonly #focus: Focus<T, A>;
@@ -31,7 +33,7 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
     this.#place = place;
   }
 
-  static of<T extends Node, Name extends string, Elements extends Node>(
+  static [select]<T extends Node, Name extends string, Elements extends Node>(
     tree: T,
     rule: Rule<Name, Elements>
   ): Selection<T, Nonterminal<Name, Elements>> {
@@ -162,7 +164,7 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
   to<Name extends string, Elements extends Node>(
     rule: Rule<Name, Elements>
   ): Selection<T, Nonterminal<Name, Elements>> {
-    const place = this.#place.focus(this.#codec.route(rule));
+    const place = this.#place.focus(this.#codec[route](rule));
 
     return new Selection(
       place.focus(

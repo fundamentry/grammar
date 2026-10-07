@@ -145,4 +145,25 @@ describe('Routes', () => {
       expect(routes(letter)).toEqual([]);
     });
   });
+
+  describe('only', () => {
+    const only = (expression: Expression<CodePoint>) =>
+      new Routes(TARGET, () => new Failure(undefined)).only(expression);
+
+    it('must return the one route to the target', () => {
+      expect(only(target).preview(found).ok()).toBe(true);
+    });
+
+    it('must refuse an expression without a route to the target', () => {
+      expect(() => only(letter)).toThrow(
+        new RangeError('0 routes lead to target')
+      );
+    });
+
+    it('must refuse an expression with several routes to the target', () => {
+      expect(() => only(new Concatenation([target, target]))).toThrow(
+        new RangeError('2 routes lead to target')
+      );
+    });
+  });
 });

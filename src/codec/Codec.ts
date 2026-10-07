@@ -43,6 +43,8 @@ import { Parts } from './Parts.js';
 import { Routes } from './Routes.js';
 import { type Steps } from './Steps.js';
 
+export const route: unique symbol = Symbol('route');
+
 export namespace Codec {
   export type CodePointLike = string | number | CodePoint;
 
@@ -227,19 +229,10 @@ export class Codec<in out Value extends Node> {
       });
   }
 
-  route(target: Nonterminal.Rule<string>): Steps.Step {
-    const routes = new Routes(target, expression =>
+  [route](target: Nonterminal.Rule<string>): Steps.Step {
+    return new Routes(target, expression =>
       new Codec(expression).default()
-    ).from(this.#expression);
-
-    const [route] = routes;
-
-    if (!route || routes.length > 1)
-      throw new RangeError(
-        `${String(routes.length)} routes lead to ${target.name()}`
-      );
-
-    return route;
+    ).only(this.#expression);
   }
 
   definition(): Definition {

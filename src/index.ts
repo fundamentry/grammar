@@ -1,4 +1,4 @@
-export * from '#project/codec';
+export { Codec } from '#project/codec';
 export { Definition } from '#project/definition';
 export * from '#project/expectation';
 export * from '#project/mismatch';
