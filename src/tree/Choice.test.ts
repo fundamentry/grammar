@@ -82,6 +82,36 @@ describe('Choice', () => {
     });
   });
 
+  describe('alternativeOr lens', () => {
+    const lens = Choice.alternativeOr<[Character, Character], 1>(1, B);
+
+    it('must get the value of the alternative when taken', () => {
+      expect(lens.get(new Choice<[Character, Character]>(1, A))).toBe(A);
+    });
+
+    it('must get the fallback when another alternative is taken', () => {
+      expect(lens.get(new Choice<[Character, Character]>(0, A))).toBe(B);
+    });
+
+    it('must set a value, taking the alternative', () => {
+      expect(lens.set(new Choice<[Character, Character]>(0, A), A)).toEqual(
+        new Choice<[Character, Character]>(1, A)
+      );
+    });
+
+    it('must keep another alternative when set to the fallback', () => {
+      const other = new Choice<[Character, Character]>(0, A);
+
+      expect(lens.set(other, B)).toBe(other);
+    });
+
+    it('must keep the alternative taken when set to the fallback', () => {
+      expect(lens.set(new Choice<[Character, Character]>(1, A), B)).toEqual(
+        new Choice<[Character, Character]>(1, B)
+      );
+    });
+  });
+
   describe('value', () => {
     it('must return the value of the alternative taken', () => {
       expect(new Choice<[Character, Character]>(1, B).value()).toBe(B);

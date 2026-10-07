@@ -86,6 +86,32 @@ describe('Option', () => {
     });
   });
 
+  describe('valueOr lens', () => {
+    it('must get the value when present', () => {
+      expect(Option.valueOr(B).get(new Option(A))).toBe(A);
+    });
+
+    it('must get the fallback when absent', () => {
+      expect(Option.valueOr(B).get(new Option<Character>())).toBe(B);
+    });
+
+    it('must set a value, making the option present', () => {
+      expect(Option.valueOr(B).set(new Option<Character>(), A)).toEqual(
+        new Option(A)
+      );
+    });
+
+    it('must leave an absent option absent when set to the fallback', () => {
+      const absent = new Option<Character>();
+
+      expect(Option.valueOr(B).set(absent, B)).toBe(absent);
+    });
+
+    it('must keep a present option present when set to the fallback', () => {
+      expect(Option.valueOr(B).set(new Option(A), B)).toEqual(new Option(B));
+    });
+  });
+
   describe('elements', () => {
     it('must return its value as the only element when present', () => {
       expect(new Option(A).elements()).toEqual([A]);
