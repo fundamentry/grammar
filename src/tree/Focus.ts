@@ -2,6 +2,7 @@ import { Morphism, type Optic, Optional, Prism } from '@fundamentry/category';
 
 import { type Node } from './Node.js';
 import { Option } from './Option.js';
+import { Repetition } from './Repetition.js';
 
 export class Focus<T extends Node, A> implements Iterable<A> {
   readonly #tree: T;
@@ -69,17 +70,33 @@ export class Focus<T extends Node, A> implements Iterable<A> {
   remove(): T {
     const targets = new Set<unknown>(this.values());
 
-    const leads = (node: Node): boolean =>
-      !(node instanceof Option) &&
-      (targets.has(node) || node.children().some(leads));
+    const holds = (node: Node): boolean =>
+      targets.has(node) ||
+      (!(node instanceof Option || node instanceof Repetition) &&
+        node.children().some(holds));
 
-    const removable = (node: Node) =>
-      node instanceof Option &&
-      (targets.has(node) || node.children().some(leads));
+    const option = (node: Option<Node>, rewrite: Node.Transform) =>
+      targets.has(node) || node.children().some(holds)
+        ? new Option()
+        : node.map(rewrite);
 
-    return Focus.#rewrite(this.#tree, (node, rewrite) =>
-      removable(node) ? new Option() : node.map(rewrite)
-    );
+    const repetition = (node: Repetition<Node>, rewrite: Node.Transform) =>
+      new Repetition(
+        targets.has(node)
+          ? []
+          : node
+              .elements()
+              .filter(element => !holds(element))
+              .map(element => rewrite(element))
+      );
+
+    return Focus.#rewrite(this.#tree, (node, rewrite) => {
+      if (node instanceof Option) return option(node, rewrite);
+
+      return node instanceof Repetition
+        ? repetition(node, rewrite)
+        : node.map(rewrite);
+    });
   }
 
   static #rewrite<T extends Node>(

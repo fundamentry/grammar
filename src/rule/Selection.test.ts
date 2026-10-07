@@ -151,8 +151,8 @@ describe('Selection', () => {
   });
 
   describe('remove', () => {
-    it('must make absent the optional part around the selection', () => {
-      expect(String(DIGIT.in(parsed(PORT, 'h:12')).remove())).toBe('h');
+    it('must remove the elements of a repetition it selects', () => {
+      expect(String(DIGIT.in(parsed(PORT, 'h:12')).remove())).toBe('h:');
     });
 
     it('must remove a part reached by its rule, with what surrounds it', () => {

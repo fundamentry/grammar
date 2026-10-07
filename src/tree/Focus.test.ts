@@ -7,6 +7,7 @@ import { Focus } from './Focus.js';
 import { Node } from './Node.js';
 import { Nonterminal } from './Nonterminal.js';
 import { Option } from './Option.js';
+import { Repetition } from './Repetition.js';
 import { Sequence } from './Sequence.js';
 
 const A = new Character(CodePoint.of('a'));
@@ -178,6 +179,36 @@ describe('Focus', () => {
           isDigit
         ).remove()
       ).toEqual(new Option(new Sequence([A, new Option()])));
+    });
+
+    it('must remove the elements of a repetition that hold a focused node', () => {
+      expect(
+        Focus.of(
+          new Repetition([
+            new Sequence([A, digit(A)]),
+            new Sequence([A]),
+            digit(B),
+          ]),
+          isDigit
+        ).remove()
+      ).toEqual(new Repetition([new Sequence([A])]));
+    });
+
+    it('must empty a focused repetition itself', () => {
+      expect(
+        Focus.of(new Sequence([digit(new Repetition([A, B]))]), isDigit)
+          .focus(Nonterminal.elements())
+          .remove()
+      ).toEqual(new Sequence([digit(new Repetition([]))]));
+    });
+
+    it('must remove from the innermost of an option and a repetition', () => {
+      expect(
+        Focus.of(new Option(new Repetition([digit(A), A])), isDigit).remove()
+      ).toEqual(new Option(new Repetition([A])));
+      expect(
+        Focus.of(new Repetition([new Option(digit(A)), A]), isDigit).remove()
+      ).toEqual(new Repetition([new Option(), A]));
     });
 
     it('must leave a focused node no option holds as it is', () => {
