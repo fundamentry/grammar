@@ -1,3 +1,5 @@
+import { Prism } from '@fundamentry/category';
+
 import { Codec } from '#project/codec';
 import { type Node, Nonterminal } from '#project/tree';
 
@@ -43,6 +45,13 @@ export class Rule<
 
   is(node: Node): node is Nonterminal<Name, Elements> {
     return node instanceof Nonterminal && node.rule() === this;
+  }
+
+  prism(): Prism<Node, Nonterminal<Name, Elements>, undefined> {
+    return Prism.fromPredicate(
+      node => this.is(node),
+      () => undefined
+    );
   }
 
   in<T extends Node>(tree: T): Selection<T, Nonterminal<Name, Elements>> {

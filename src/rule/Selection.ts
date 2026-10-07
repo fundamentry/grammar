@@ -1,4 +1,4 @@
-import { type Optic, Prism } from '@fundamentry/category';
+import { type Optic } from '@fundamentry/category';
 import { Success } from '@fundamentry/coproduct';
 
 import { type Codec, route, Steps } from '#project/codec';
@@ -166,16 +166,7 @@ export class Selection<T extends Node, A extends Node> implements Iterable<A> {
   ): Selection<T, Nonterminal<Name, Elements>> {
     const place = this.#place.focus(this.#codec[route](rule));
 
-    return new Selection(
-      place.focus(
-        Prism.fromPredicate(
-          node => rule.is(node),
-          () => undefined
-        )
-      ),
-      rule,
-      place
-    );
+    return new Selection(place.focus(rule.prism()), rule, place);
   }
 
   elements<Name extends string, Elements extends Node>(

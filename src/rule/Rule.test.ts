@@ -148,6 +148,20 @@ describe('Rule', () => {
     });
   });
 
+  describe('prism', () => {
+    it('must preview a node of the rule', () => {
+      const node = DIGIT.node(character('1'));
+
+      expect(DIGIT.prism().preview(node).ok()).toBe(true);
+    });
+
+    it('must not preview a node of another rule', () => {
+      const node = NUMBER.node(new Choice(1, literal('-')));
+
+      expect(DIGIT.prism().preview(node).ok()).toBe(false);
+    });
+  });
+
   describe('elements', () => {
     it('must parse with the body of the rule', () => {
       const body = LIST.elements();
