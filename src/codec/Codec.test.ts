@@ -14,10 +14,11 @@ import {
   Option,
   Repetition,
   Sequence,
+  Focus,
   type Literal,
 } from '#project/tree';
 
-import { Codec } from './Codec.js';
+import { Codec, write } from './Codec.js';
 
 class Exposed extends Codec<never> {
   static readonly build = Codec.builder;
@@ -693,6 +694,25 @@ describe('Codec', () => {
 
       assert(!defaulted.ok());
       expect(String(defaulted.error())).toBe('a digit');
+    });
+  });
+
+  describe('write', () => {
+    it('must write text parsed by the codec', () => {
+      const tree = digit.many().parse('12');
+
+      assert(tree.ok());
+
+      const written = digit[write](
+        Focus.of(
+          tree.value(),
+          (node): node is Node => node instanceof Character
+        ),
+        () => '7'
+      );
+
+      assert(written.ok());
+      expect(String(written.value())).toBe('77');
     });
   });
 

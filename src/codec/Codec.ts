@@ -29,6 +29,7 @@ import { Printer } from '#project/printer';
 import {
   type Choice,
   Character,
+  type Focus,
   type Literal,
   type Node,
   type Nonterminal,
@@ -42,8 +43,11 @@ import { Defaults } from './Defaults.js';
 import { Parts } from './Parts.js';
 import { Routes } from './Routes.js';
 import { type Steps } from './Steps.js';
+import { Writer } from './Writer.js';
 
 export const route: unique symbol = Symbol('route');
+
+export const write: unique symbol = Symbol('write');
 
 export namespace Codec {
   export type CodePointLike = string | number | CodePoint;
@@ -233,6 +237,13 @@ export class Codec<in out Value extends Node> {
     return new Routes(target, expression =>
       new Codec(expression).default()
     ).only(this.#expression);
+  }
+
+  [write]<T extends Node>(
+    place: Focus<T, Node>,
+    update: (text: string) => string
+  ): Codec.Parsed<T> {
+    return new Writer(text => this.parse(text)).write(place, update);
   }
 
   definition(): Definition {

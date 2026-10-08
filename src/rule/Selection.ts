@@ -1,7 +1,6 @@
 import { type Optic } from '@fundamentry/category';
-import { Failure, Success } from '@fundamentry/coproduct';
 
-import { type Codec, route, Steps } from '#project/codec';
+import { type Codec, route, Steps, write } from '#project/codec';
 import {
   Choice,
   Focus,
@@ -17,22 +16,31 @@ import { type Rule } from './Rule.js';
 
 export const select: unique symbol = Symbol('select');
 
-export class Selection<T extends Node, A extends Node> extends View<A> {
+export namespace Selection {
+  export interface Grammar {
+    [write]<T extends Node>(
+      place: Focus<T, Node>,
+      update: (text: string) => string
+    ): Codec.Parsed<T>;
+  }
+}
+
+export class Selection<
+  T extends Node,
+  A extends Node,
+  G extends Selection.Grammar = Codec<A>,
+> extends View<A> {
   readonly #focus: Focus<T, A>;
 
-  readonly #codec: Codec<A>;
+  readonly #grammar: G;
 
   readonly #place: Focus<T, Node>;
 
-  private constructor(
-    focus: Focus<T, A>,
-    codec: Codec<A>,
-    place: Focus<T, Node>
-  ) {
+  private constructor(focus: Focus<T, A>, grammar: G, place: Focus<T, Node>) {
     super(() => focus.values());
 
     this.#focus = focus;
-    this.#codec = codec;
+    this.#grammar = grammar;
     this.#place = place;
   }
 
@@ -40,7 +48,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
     tree: T,
     rule: Rule<Name, Elements>
   ): Selection<T, Nonterminal<Name, Elements>> {
-    return new Selection(
+    return new Selection<T, Nonterminal<Name, Elements>>(
       Focus.of(tree, node => rule.is(node)),
       rule,
       Focus.of(tree, (node): node is Node => rule.is(node))
@@ -53,7 +61,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
 
   set(value: A | string): T | Codec.Parsed<T> {
     return typeof value === 'string'
-      ? this.#codec.parse(value).map(node => this.#focus.set(node))
+      ? this.#grammar[write](this.#place, () => value)
       : this.#focus.set(value);
   }
 
@@ -62,24 +70,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
   }
 
   edit(update: (text: string) => string): Codec.Parsed<T> {
-    const failures: Exclude<Codec.Parsed<A>, Success<A>>[] = [];
-
-    const edited = this.#focus.modify(value => {
-      const parsed = this.#codec.parse(update(String(value)));
-
-      return parsed.match({
-        onSuccess: node => node,
-        onFailure: mismatch => {
-          failures.push(new Failure(mismatch));
-
-          return value;
-        },
-      });
-    });
-
-    const [failure] = failures;
-
-    return failure ?? new Success(edited);
+    return this.#grammar[write](this.#place, update);
   }
 
   remove(): T {
@@ -115,7 +106,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
         .modify(elements => elements.toSpliced(index, 0, value));
 
     return typeof element === 'string'
-      ? this.#codec.element().parse(element).map(inserted)
+      ? this.#grammar.element().parse(element).map(inserted)
       : inserted(element);
   }
 
@@ -152,9 +143,10 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
   }
 
   to<Name extends string, Elements extends Node>(
+    this: Selection<T, A>,
     rule: Rule<Name, Elements>
   ): Selection<T, Nonterminal<Name, Elements>> {
-    const place = this.#place.focus(this.#codec[route](rule));
+    const place = this.#place.focus(this.#grammar[route](rule));
 
     return new Selection(place.focus(rule.prism()), rule, place);
   }
@@ -164,7 +156,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
   ): Selection<T, Elements> {
     return new Selection(
       this.#focus.focus(Nonterminal.elements()),
-      this.#codec.elements(),
+      this.#grammar.elements(),
       this.#place.focus(Steps.elements())
     );
   }
@@ -175,7 +167,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
   ): Selection<T, U[I]> {
     return new Selection(
       this.#focus.focus(Sequence.at<U, I>(index)),
-      this.#codec.at<U, I>(index),
+      this.#grammar.at<U, I>(index),
       this.#place.focus(Steps.at(index))
     );
   }
@@ -186,7 +178,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
   ): Selection<T, E> {
     return new Selection(
       this.#focus.focus(Repetition.at<E>(index)),
-      this.#codec.element(),
+      this.#grammar.element(),
       this.#place.focus(Steps.element(index))
     );
   }
@@ -200,7 +192,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
   }
 
   value<U extends Node>(this: Selection<T, Option<U>>): Selection<T, U> {
-    const codec = this.#codec.value();
+    const codec = this.#grammar.value();
     const fallback = codec.default();
 
     return new Selection(
@@ -219,7 +211,7 @@ export class Selection<T extends Node, A extends Node> extends View<A> {
     this: Selection<T, Choice<U>>,
     index: I
   ): Selection<T, U[I]> {
-    const codec = this.#codec.alternative<U, I>(index);
+    const codec = this.#grammar.alternative<U, I>(index);
     const fallback = codec.default();
 
     return new Selection(
