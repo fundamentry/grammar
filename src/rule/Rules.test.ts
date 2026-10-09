@@ -7,6 +7,7 @@ import { Character, Focus, type Node, type Nonterminal } from '#project/tree';
 
 import { Rule } from './Rule.js';
 import { Rules } from './Rules.js';
+import { Selection } from './Selection.js';
 
 const DIGIT = new Rule('DIGIT', codec => codec.character(['0', '9']));
 const ALPHA = new Rule('ALPHA', codec => codec.character(['a', 'z']));
@@ -52,11 +53,20 @@ describe('Rules', () => {
   });
 
   describe('in', () => {
-    it('must focus on the outermost nodes of any of its rules', () => {
-      expect(new Rules([DIGIT]).in(parsed('a1b2'))).toBeInstanceOf(Focus);
+    it('must select the outermost nodes of any of its rules', () => {
+      expect(new Rules([DIGIT]).in(parsed('a1b2'))).toBeInstanceOf(Selection);
       expect(
         new Rules([DIGIT]).in(parsed('a1b2')).map(String).values().toArray()
       ).toEqual(['1', '2']);
+    });
+
+    it('must edit the text of each node with its own rule', () => {
+      const edited = new Rules([DIGIT, ALPHA])
+        .in(parsed('a1'))
+        .edit(text => (/\d/u.test(text) ? '9' : 'z'));
+
+      assert(edited.ok());
+      expect(String(edited.value())).toBe('z9');
     });
   });
 

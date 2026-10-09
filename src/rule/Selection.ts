@@ -74,13 +74,14 @@ export class Selection<
     this.#focus = focus;
   }
 
-  static [select]<T extends Node, Name extends string, Elements extends Node>(
-    tree: T,
-    rule: Rule<Name, Elements>
-  ): Selection<T, Nonterminal<Name, Elements>> {
+  static [select]<
+    T extends Node,
+    B extends Node,
+    H extends Selection.Target<B>,
+  >(tree: T, target: H): Selection<T, B, H> {
     return new Selection(
-      Focus.of(tree, (node): node is Node => rule.is(node)),
-      rule
+      Focus.of(tree, (node): node is Node => target.is(node)),
+      target
     );
   }
 

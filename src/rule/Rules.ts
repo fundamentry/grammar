@@ -9,10 +9,10 @@ import {
   write,
   Writer,
 } from '#project/codec';
-import { Focus, type Node } from '#project/tree';
+import { type Focus, type Node } from '#project/tree';
 
 import { type Rule } from './Rule.js';
-import { reach, type Selection } from './Selection.js';
+import { reach, select, Selection } from './Selection.js';
 
 export class Rules<const R extends readonly Rule.Any[]> {
   readonly #rules: R;
@@ -32,8 +32,10 @@ export class Rules<const R extends readonly Rule.Any[]> {
     );
   }
 
-  in<T extends Node>(tree: T): Focus<T, Rule.Selected<R[number]>> {
-    return Focus.of(tree, node => this.is(node));
+  in<T extends Node>(
+    tree: T
+  ): Selection<T, Rule.Selected<R[number]>, Rules<R>> {
+    return Selection[select](tree, this);
   }
 
   [members](): readonly Union.Member[] {
