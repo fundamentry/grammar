@@ -249,7 +249,7 @@ export class Selection<
   ): Selection<T, Rule.Selected<R[number]>, Union<Rule.Selected<R[number]>>> {
     return new Selection(
       this.#place,
-      this.#grammar[union](rules[members](), rules.prism())
+      this.#grammar[union](rules[members](), rules.optic())
     );
   }
 }

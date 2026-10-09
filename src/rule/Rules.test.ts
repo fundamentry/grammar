@@ -30,14 +30,14 @@ describe('Rules', () => {
     });
   });
 
-  describe('prism', () => {
+  describe('optic', () => {
     it('must match the nodes of any of its rules', () => {
       const seven = new Character(CodePoint.of('7'));
       const digit = DIGIT.node(seven);
-      const prism = new Rules([DIGIT]).prism();
+      const optic = new Rules([DIGIT]).optic();
 
-      expect(prism.preview(digit).ok()).toBe(true);
-      expect(prism.preview(ALPHA.node(seven)).ok()).toBe(false);
+      expect(optic.preview(digit).ok()).toBe(true);
+      expect(optic.preview(ALPHA.node(seven)).ok()).toBe(false);
     });
   });
 

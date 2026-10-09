@@ -18,7 +18,7 @@ export class Rules<const R extends readonly Rule.Any[]> {
     return this.#rules.some(rule => rule.is(node));
   }
 
-  prism(): Prism<Node, Rule.Selected<R[number]>, undefined> {
+  optic(): Prism<Node, Rule.Selected<R[number]>, undefined> {
     return Prism.fromPredicate(
       node => this.is(node),
       () => undefined

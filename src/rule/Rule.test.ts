@@ -149,17 +149,17 @@ describe('Rule', () => {
     });
   });
 
-  describe('prism', () => {
+  describe('optic', () => {
     it('must preview a node of the rule', () => {
       const node = DIGIT.node(character('1'));
 
-      expect(DIGIT.prism().preview(node).ok()).toBe(true);
+      expect(DIGIT.optic().preview(node).ok()).toBe(true);
     });
 
     it('must not preview a node of another rule', () => {
       const node = NUMBER.node(new Choice(1, literal('-')));
 
-      expect(DIGIT.prism().preview(node).ok()).toBe(false);
+      expect(DIGIT.optic().preview(node).ok()).toBe(false);
     });
   });
 
