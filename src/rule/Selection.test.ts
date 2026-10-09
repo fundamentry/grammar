@@ -1,5 +1,7 @@
 import { assert, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
+import { type Result } from '@fundamentry/coproduct';
+
 import { type Codec } from '#project/codec';
 import { Focus, type Node, Repetition, Sequence } from '#project/tree';
 
@@ -28,6 +30,12 @@ const SIGNED = new Rule('signed', codec =>
 const parsed = <T extends Node>(codec: Codec<T>, input: string) => {
   const result = codec.parse(input);
 
+  assert(result.ok());
+
+  return result.value();
+};
+
+const removed = <T>(result: Result<T, readonly Node[]>) => {
   assert(result.ok());
 
   return result.value();
@@ -555,7 +563,9 @@ describe('Selection', () => {
 
       expect(
         String(
-          ADDRESS.in(parsed(ADDRESS, 'h:12')).to(Rule.any(NUMBER)).remove()
+          removed(
+            ADDRESS.in(parsed(ADDRESS, 'h:12')).to(Rule.any(NUMBER)).remove()
+          )
         )
       ).toBe('h');
     });
@@ -631,7 +641,7 @@ describe('Selection', () => {
     });
 
     it('must remove only within the values', () => {
-      expect(String(second('h:12,h:34').within(DIGIT).remove())).toBe(
+      expect(String(removed(second('h:12,h:34').within(DIGIT).remove()))).toBe(
         'h:12,h:'
       );
     });
@@ -690,7 +700,9 @@ describe('Selection', () => {
       });
 
       it('must remove the nodes of any of the rules', () => {
-        expect(String(right('a1:b2').within(CHARACTERS).remove())).toBe('a1:');
+        expect(
+          String(removed(right('a1:b2').within(CHARACTERS).remove()))
+        ).toBe('a1:');
       });
 
       it('must type the selection as the nodes of any of the rules', () => {
@@ -775,7 +787,9 @@ describe('Selection', () => {
 
   describe('remove', () => {
     it('must remove the elements of a repetition it selects', () => {
-      expect(String(DIGIT.in(parsed(PORT, 'h:12')).remove())).toBe('h:');
+      expect(String(removed(DIGIT.in(parsed(PORT, 'h:12')).remove()))).toBe(
+        'h:'
+      );
     });
 
     it('must remove a part reached by its rule, with what surrounds it', () => {
@@ -788,14 +802,48 @@ describe('Selection', () => {
       );
 
       expect(
-        String(ADDRESS.in(parsed(ADDRESS, 'h:80')).to(NUMBER).remove())
+        String(removed(ADDRESS.in(parsed(ADDRESS, 'h:80')).to(NUMBER).remove()))
       ).toBe('h');
+    });
+
+    describe('of a list', () => {
+      const PARAM = new Rule('param', codec =>
+        codec.character(['a', 'z']).oneOrMore()
+      );
+
+      const LIST = new Rule('list', codec =>
+        codec
+          .sequence(PARAM, codec.sequence(codec.literal('&'), PARAM).many())
+          .optional()
+      );
+
+      const params = (input: string) =>
+        LIST.in(parsed(LIST, input)).elements().value();
+
+      it('must refuse to remove the first of several elements', () => {
+        const result = params('a&b&c').at(0).remove();
+
+        assert(!result.ok());
+        expect(result.error().map(String)).toEqual(['&b&c']);
+      });
+
+      it('must remove the only element', () => {
+        expect(String(removed(params('a').at(0).remove()))).toBe('');
+      });
+
+      it('must remove a later element with its separator', () => {
+        expect(String(removed(params('a&b&c').at(1).element(0).remove()))).toBe(
+          'a&c'
+        );
+      });
     });
 
     it('must leave a missing part missing', () => {
       const tree = parsed(PORT, 'h');
 
-      expect(PORT.in(tree).elements().at(1).value().remove()).toEqual(tree);
+      expect(removed(PORT.in(tree).elements().at(1).value().remove())).toEqual(
+        tree
+      );
     });
   });
 
@@ -885,7 +933,7 @@ describe('Selection', () => {
     });
 
     it('must remove the element', () => {
-      expect(String(digits('h:123').first().remove())).toBe('h:23');
+      expect(String(removed(digits('h:123').first().remove()))).toBe('h:23');
     });
 
     it('must select nothing past the last element', () => {
@@ -895,7 +943,9 @@ describe('Selection', () => {
         PORT.in(tree).elements().at(1).value().at(1).element(1).find()
       ).toBeUndefined();
       expect(
-        PORT.in(tree).elements().at(1).value().at(1).element(1).remove()
+        removed(
+          PORT.in(tree).elements().at(1).value().at(1).element(1).remove()
+        )
       ).toEqual(tree);
     });
   });

@@ -1,5 +1,6 @@
 import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
+import { type Result } from '@fundamentry/coproduct';
 import { CodePoint } from '@fundamentry/scalar';
 
 import { members, write } from '#project/codec';
@@ -17,6 +18,12 @@ const WORD = new Rule('word', codec => codec.choice(DIGIT, ALPHA).many());
 const parsed = (input: string) => {
   const result = WORD.parse(input);
 
+  assert(result.ok());
+
+  return result.value();
+};
+
+const removed = <T>(result: Result<T, readonly Node[]>) => {
   assert(result.ok());
 
   return result.value();
@@ -146,7 +153,9 @@ describe('Rule.any', () => {
   });
 
   it('must remove the nodes of any of the rules', () => {
-    expect(String(Rule.any(DIGIT).in(parsed('a1b2')).remove())).toBe('ab');
+    expect(String(removed(Rule.any(DIGIT).in(parsed('a1b2')).remove()))).toBe(
+      'ab'
+    );
   });
 
   it('must type the selection as the union of the nodes of the rules', () => {

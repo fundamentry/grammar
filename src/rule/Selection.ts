@@ -1,4 +1,5 @@
 import { type Optic } from '@fundamentry/category';
+import { type Result } from '@fundamentry/coproduct';
 
 import {
   type Codec,
@@ -142,7 +143,7 @@ export class Selection<
     return this.#grammar[write](this.#place, update, Slots.edit);
   }
 
-  remove(): T {
+  remove(): Result<T, readonly Node[]> {
     return this.#focus.remove();
   }
 

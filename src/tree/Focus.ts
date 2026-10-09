@@ -1,4 +1,5 @@
 import { Morphism, type Optic, Optional } from '@fundamentry/category';
+import { Failure, type Result, Success } from '@fundamentry/coproduct';
 
 import { type Node } from './Node.js';
 import { Option } from './Option.js';
@@ -70,18 +71,40 @@ export class Focus<T extends Node, A> extends View<A> {
     return this.#modify(Morphism.of(update));
   }
 
-  remove(): T {
+  remove(): Result<T, readonly Node[]> {
     const targets = new Set<unknown>(this.values());
+    const lost: Node[] = [];
 
     const holds = (node: Node): boolean =>
       targets.has(node) ||
       (!(node instanceof Option || node instanceof Repetition) &&
         node.children().some(holds));
 
-    const option = (node: Option<Node>, rewrite: Node.Transform) =>
-      targets.has(node) || node.children().some(holds)
-        ? new Option()
-        : node.map(rewrite);
+    const loose = (node: Node): readonly Node[] => {
+      if (targets.has(node)) return [];
+
+      return node instanceof Option || node instanceof Repetition
+        ? [node].filter(part => part.children().length > 0)
+        : node.children().flatMap(loose);
+    };
+
+    const option = (node: Option<Node>, rewrite: Node.Transform) => {
+      if (targets.has(node)) return new Option();
+
+      if (!node.children().some(holds)) return node.map(rewrite);
+
+      lost.push(...node.children().flatMap(loose));
+
+      return new Option();
+    };
+
+    const kept = (element: Node) => {
+      if (!holds(element)) return true;
+
+      lost.push(...loose(element));
+
+      return false;
+    };
 
     const repetition = (node: Repetition<Node>, rewrite: Node.Transform) =>
       new Repetition(
@@ -89,17 +112,19 @@ export class Focus<T extends Node, A> extends View<A> {
           ? []
           : node
               .elements()
-              .filter(element => !holds(element))
+              .filter(kept)
               .map(element => rewrite(element))
       );
 
-    return Focus.#rewrite(this.#tree, (node, rewrite) => {
+    const tree = Focus.#rewrite(this.#tree, (node, rewrite) => {
       if (node instanceof Option) return option(node, rewrite);
 
       return node instanceof Repetition
         ? repetition(node, rewrite)
         : node.map(rewrite);
     });
+
+    return lost.length > 0 ? new Failure(lost) : new Success(tree);
   }
 
   static #root<T extends Node>(tree: T): Focus<T, Node> {

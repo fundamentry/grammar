@@ -1,5 +1,6 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
+import { type Result } from '@fundamentry/coproduct';
 import { CodePoint } from '@fundamentry/scalar';
 
 import { Character } from './Character.js';
@@ -9,6 +10,12 @@ import { Nonterminal } from './Nonterminal.js';
 import { Option } from './Option.js';
 import { Repetition } from './Repetition.js';
 import { Sequence } from './Sequence.js';
+
+const removed = <T>(result: Result<T, readonly Node[]>) => {
+  assert(result.ok());
+
+  return result.value();
+};
 
 const A = new Character(CodePoint.of('a'));
 const B = new Character(CodePoint.of('b'));
@@ -177,70 +184,130 @@ describe('Focus', () => {
   describe('remove', () => {
     it('must make absent the option that holds a focused node', () => {
       expect(
-        Focus.of(
-          new Sequence([A, new Option(new Sequence([B, digit(A)]))]),
-          isDigit
-        ).remove()
+        removed(
+          Focus.of(
+            new Sequence([A, new Option(new Sequence([B, digit(A)]))]),
+            isDigit
+          ).remove()
+        )
       ).toEqual(new Sequence([A, new Option()]));
     });
 
     it('must make absent a focused option itself', () => {
       expect(
-        Focus.of(new Sequence([digit(new Option(A))]), isDigit)
-          .focus(Nonterminal.elements())
-          .remove()
+        removed(
+          Focus.of(new Sequence([digit(new Option(A))]), isDigit)
+            .focus(Nonterminal.elements())
+            .remove()
+        )
       ).toEqual(new Sequence([digit(new Option())]));
     });
 
     it('must make absent only the innermost option', () => {
       expect(
-        Focus.of(
-          new Option(new Sequence([A, new Option(digit(B))])),
-          isDigit
-        ).remove()
+        removed(
+          Focus.of(
+            new Option(new Sequence([A, new Option(digit(B))])),
+            isDigit
+          ).remove()
+        )
       ).toEqual(new Option(new Sequence([A, new Option()])));
     });
 
     it('must remove the elements of a repetition that hold a focused node', () => {
       expect(
-        Focus.of(
-          new Repetition([
-            new Sequence([A, digit(A)]),
-            new Sequence([A]),
-            digit(B),
-          ]),
-          isDigit
-        ).remove()
+        removed(
+          Focus.of(
+            new Repetition([
+              new Sequence([A, digit(A)]),
+              new Sequence([A]),
+              digit(B),
+            ]),
+            isDigit
+          ).remove()
+        )
       ).toEqual(new Repetition([new Sequence([A])]));
     });
 
     it('must empty a focused repetition itself', () => {
       expect(
-        Focus.of(new Sequence([digit(new Repetition([A, B]))]), isDigit)
-          .focus(Nonterminal.elements())
-          .remove()
+        removed(
+          Focus.of(new Sequence([digit(new Repetition([A, B]))]), isDigit)
+            .focus(Nonterminal.elements())
+            .remove()
+        )
       ).toEqual(new Sequence([digit(new Repetition([]))]));
     });
 
     it('must remove from the innermost of an option and a repetition', () => {
       expect(
-        Focus.of(new Option(new Repetition([digit(A), A])), isDigit).remove()
+        removed(
+          Focus.of(new Option(new Repetition([digit(A), A])), isDigit).remove()
+        )
       ).toEqual(new Option(new Repetition([A])));
       expect(
-        Focus.of(new Repetition([new Option(digit(A)), A]), isDigit).remove()
+        removed(
+          Focus.of(new Repetition([new Option(digit(A)), A]), isDigit).remove()
+        )
       ).toEqual(new Repetition([new Option(), A]));
     });
 
     it('must leave a focused node no option holds as it is', () => {
       const tree = new Sequence([digit(A)]);
 
-      expect(Focus.of(tree, isDigit).remove()).toEqual(tree);
+      expect(removed(Focus.of(tree, isDigit).remove())).toEqual(tree);
+    });
+
+    it('must refuse to make absent an option that holds another part with content', () => {
+      const rest = new Repetition([B]);
+      const result = Focus.of(
+        new Option(new Sequence([digit(A), rest])),
+        isDigit
+      ).remove();
+
+      assert(!result.ok());
+      expect(result.error()).toEqual([rest]);
+    });
+
+    it('must make absent an option whose other parts are empty', () => {
+      expect(
+        removed(
+          Focus.of(
+            new Option(
+              new Sequence([digit(A), new Repetition([]), new Option()])
+            ),
+            isDigit
+          ).remove()
+        )
+      ).toEqual(new Option());
+    });
+
+    it('must refuse to remove an element of a repetition that holds another part with content', () => {
+      const rest = new Option(B);
+      const result = Focus.of(
+        new Repetition([new Sequence([digit(A), rest])]),
+        isDigit
+      ).remove();
+
+      assert(!result.ok());
+      expect(result.error()).toEqual([rest]);
+    });
+
+    it('must not count the parts of a focused node as lost', () => {
+      expect(
+        removed(
+          Focus.of(
+            new Option(new Sequence([A, digit(new Repetition([B]))])),
+            isDigit
+          ).remove()
+        )
+      ).toEqual(new Option());
     });
 
     it('must leave options that hold no focused node as they are', () => {
       const tree = new Sequence([new Option(A), new Option(digit(B))]);
 
-      expect(Focus.of(tree, isDigit).remove()).toEqual(
+      expect(removed(Focus.of(tree, isDigit).remove())).toEqual(
         new Sequence([new Option(A), new Option()])
       );
     });
@@ -354,12 +421,14 @@ describe('Focus', () => {
 
     it('must remove the nodes within the focused nodes', () => {
       expect(
-        Focus.of(
-          new Sequence([new Option(digit(A)), pair(new Option(digit(B)))]),
-          isPair
+        removed(
+          Focus.of(
+            new Sequence([new Option(digit(A)), pair(new Option(digit(B)))]),
+            isPair
+          )
+            .within(isDigit)
+            .remove()
         )
-          .within(isDigit)
-          .remove()
       ).toEqual(new Sequence([new Option(digit(A)), pair(new Option())]));
     });
 
