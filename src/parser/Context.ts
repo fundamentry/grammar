@@ -18,7 +18,7 @@ export class Context<in out Token> {
 
   readonly #agenda: Agenda<Failures<Token>>;
 
-  readonly #columns = new Cache<number, Column<Token>>();
+  readonly #columns = new Cache<number, Column<Token>>(new Map());
 
   #parsed?: Success<Node>;
 

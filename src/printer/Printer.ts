@@ -29,7 +29,9 @@ export class Printer<Token> implements Expression.Visitor<
   undefined,
   Printer.Print<Token>
 > {
-  readonly #compiled = new Cache<Expression<Token>, Printer.Print<Token>>();
+  readonly #compiled = new Cache<Expression<Token>, Printer.Print<Token>>(
+    new Map()
+  );
 
   readonly #root: Printer.Print<Token>;
 

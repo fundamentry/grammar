@@ -51,9 +51,11 @@ export class Parser<in out Token> implements Expression.Composites<
   undefined,
   Parser.Draft<Token>
 > {
-  readonly #compiled = new Cache<Expression<Token>, Parser.Compiled<Token>>();
+  readonly #compiled = new Cache<Expression<Token>, Parser.Compiled<Token>>(
+    new Map()
+  );
 
-  readonly #rules = new Cache<Expression<Token>, Column.Rule<Token>>();
+  readonly #rules = new Cache<Expression<Token>, Column.Rule<Token>>(new Map());
 
   readonly #visitor = new Fallback(new Singles<Token>(), Parser.#single, this);
 

@@ -23,7 +23,7 @@ export class Repetitions {
     element: Parser.Parse<Token>,
     continuation: Continuation<Token, readonly Node[]>
   ): void {
-    const states = new Cache<number, Spans<Token>>();
+    const states = new Cache<number, Spans<Token>>(new Map());
 
     const state = (count: Integer, satisfied: boolean) =>
       satisfied && !this.#bounds.hasUpperBound() ? Infinity : count.value();
