@@ -27,6 +27,7 @@ const character = (text: string) => new Character(CodePoint.of(text));
 const member = (name: string, accepts: RegExp): Union.Member => {
   const rule = {
     name: () => name,
+    is: (node: Node) => node instanceof Nonterminal && node.rule() === rule,
     parse: (text: string) =>
       accepts.test(text)
         ? new Success(new Nonterminal(rule, character(text)))

@@ -2,8 +2,8 @@ import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
-import { members } from '#project/codec';
-import { Character, Focus, type Nonterminal } from '#project/tree';
+import { members, write } from '#project/codec';
+import { Character, Focus, type Node, type Nonterminal } from '#project/tree';
 
 import { Rule } from './Rule.js';
 import { Rules } from './Rules.js';
@@ -57,6 +57,55 @@ describe('Rules', () => {
       expect(
         new Rules([DIGIT]).in(parsed('a1b2')).map(String).values().toArray()
       ).toEqual(['1', '2']);
+    });
+  });
+
+  describe('write', () => {
+    const place = <T extends Node>(rules: Rule.Any, tree: T) =>
+      Focus.of(tree, (node): node is Node => rules.is(node));
+
+    const letters = (text: string) => (/\d/u.test(text) ? text : 'z');
+
+    it('must parse the text of each node with its own rule', () => {
+      const written = Rule.any(DIGIT, ALPHA)[write](
+        place(Rule.any(DIGIT, ALPHA), parsed('a1')),
+        letters
+      );
+
+      assert(written.ok());
+      expect(String(written.value())).toBe('z1');
+    });
+
+    it('must parse the text of a node with a rule of a union of unions', () => {
+      const written = Rule.any(Rule.any(ALPHA), DIGIT)[write](
+        place(Rule.any(ALPHA), parsed('a1')),
+        letters
+      );
+
+      assert(written.ok());
+      expect(String(written.value())).toBe('z1');
+    });
+
+    it('must report text the rule of a node does not accept', () => {
+      const written = Rule.any(DIGIT, ALPHA)[write](
+        place(Rule.any(DIGIT, ALPHA), parsed('a1')),
+        () => 'b'
+      );
+
+      assert(!written.ok());
+      expect(String(written.error())).toBe("Expected DIGIT, got 'b'");
+    });
+
+    it('must leave a node of none of its rules as it is', () => {
+      const tree = parsed('a1');
+
+      const written = Rule.any(DIGIT)[write](
+        place(Rule.any(ALPHA), tree),
+        letters
+      );
+
+      assert(written.ok());
+      expect(written.value()).toEqual(tree);
     });
   });
 });

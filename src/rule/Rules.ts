@@ -1,6 +1,7 @@
 import { Prism } from '@fundamentry/category';
+import { Success } from '@fundamentry/coproduct';
 
-import { members, type Union } from '#project/codec';
+import { type Codec, members, type Union, write, Writer } from '#project/codec';
 import { Focus, type Node } from '#project/tree';
 
 import { type Rule } from './Rule.js';
@@ -29,5 +30,18 @@ export class Rules<const R extends readonly Rule.Any[]> {
 
   [members](): readonly Union.Member[] {
     return this.#rules.flatMap(rule => rule[members]());
+  }
+
+  [write]<T extends Node>(
+    place: Focus<T, Node>,
+    update: (text: string) => string
+  ): Codec.Parsed<T> {
+    const rules = this[members]();
+
+    return new Writer(
+      node =>
+        rules.find(rule => rule.is(node))?.parse(update(String(node))) ??
+        new Success(node)
+    ).write(place);
   }
 }

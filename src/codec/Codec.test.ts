@@ -742,6 +742,7 @@ describe('Codec', () => {
     it('must find the route to a target once', () => {
       const target: Union.Member = {
         name: () => 'target',
+        is: () => false,
         parse: () => new Failure(new Mismatch(0, [], 'nothing')),
       };
       const codec = build.sequence(digit, Exposed.rule(target, letter));
@@ -754,6 +755,7 @@ describe('Codec', () => {
     it('must find the routes to its targets once', () => {
       const target: Union.Member = {
         name: () => 'target',
+        is: () => false,
         parse: () => new Failure(new Mismatch(0, [], 'nothing')),
       };
       const targets = {

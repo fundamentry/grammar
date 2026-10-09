@@ -12,6 +12,8 @@ export const members: unique symbol = Symbol('members');
 
 export namespace Union {
   export interface Member extends Nonterminal.Rule<string> {
+    is(node: Node): boolean;
+
     parse(input: string): Result<Node, Mismatch>;
   }
 

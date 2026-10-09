@@ -33,6 +33,10 @@ export namespace Selection {
       update: (text: string) => string
     ): Codec.Parsed<T>;
   }
+
+  export interface Target<A> extends Grammar<A> {
+    is(node: Node): node is A & Node;
+  }
 }
 
 export class Selection<
@@ -180,10 +184,18 @@ export class Selection<
 
   within<Name extends string, Elements extends Node>(
     rule: Rule<Name, Elements>
-  ): Selection<T, Nonterminal<Name, Elements>> {
+  ): Selection<T, Nonterminal<Name, Elements>>;
+
+  within<const R extends readonly Rule.Any[]>(
+    rules: Rules<R>
+  ): Selection<T, Rule.Selected<R[number]>, Rules<R>>;
+
+  within<B extends Node, H extends Selection.Target<B>>(
+    target: H
+  ): Selection<T, B, H> {
     return new Selection(
-      this.#focus.within((node): node is Node => rule.is(node)),
-      rule
+      this.#focus.within((node): node is Node => target.is(node)),
+      target
     );
   }
 

@@ -507,6 +507,58 @@ describe('Selection', () => {
         Rule.Value<typeof DIGIT> | undefined
       >();
     });
+
+    describe('several rules', () => {
+      const ALPHA = new Rule('ALPHA', codec => codec.character(['a', 'z']));
+
+      const WORD = new Rule('word', codec => codec.choice(DIGIT, ALPHA).many());
+
+      const LABEL = new Rule('label', codec =>
+        codec.sequence(WORD, codec.literal(':'), WORD)
+      );
+
+      const CHARACTERS = Rule.any(DIGIT, ALPHA);
+
+      const right = (input: string) =>
+        LABEL.in(parsed(LABEL, input)).elements().at(2);
+
+      it('must select the nodes of any of the rules within each value', () => {
+        expect(
+          right('a1:b2').within(CHARACTERS).values().map(String).toArray()
+        ).toEqual(['b', '2']);
+      });
+
+      it('must parse the text of each node with its own rule', () => {
+        const edited = right('a1:b2')
+          .within(CHARACTERS)
+          .edit(text => (/\d/u.test(text) ? '9' : 'z'));
+
+        assert(edited.ok());
+        expect(String(edited.value())).toBe('a1:z9');
+      });
+
+      it('must refuse text the rule of a node does not accept', () => {
+        const set = right('a1:b2').within(CHARACTERS).set('c');
+
+        assert(!set.ok());
+        expect(String(set.error())).toBe("Expected DIGIT, got 'c'");
+      });
+
+      it('must remove the nodes of any of the rules', () => {
+        expect(String(right('a1:b2').within(CHARACTERS).remove())).toBe('a1:');
+      });
+
+      it('must type the selection as the nodes of any of the rules', () => {
+        expectTypeOf(right('a:b').within(CHARACTERS).find()).toEqualTypeOf<
+          Rule.Value<typeof DIGIT> | Rule.Value<typeof ALPHA> | undefined
+        >();
+      });
+
+      it('must not step into the parts of the rules', () => {
+        // @ts-expect-error the rules have no parts in common
+        expect(() => right('a:b').within(CHARACTERS).elements()).toThrow();
+      });
+    });
   });
 
   describe('edit', () => {
