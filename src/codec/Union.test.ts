@@ -1,6 +1,6 @@
 import { assert, describe, expect, it } from 'vitest';
 
-import { Morphism } from '@fundamentry/category';
+import { Morphism, Prism } from '@fundamentry/category';
 import { Failure, Success } from '@fundamentry/coproduct';
 import { CodePoint } from '@fundamentry/scalar';
 
@@ -36,6 +36,15 @@ const member = (name: string, accepts: RegExp): Union.Member => {
 const FIRST = member('first', /^[ac]$/u);
 const SECOND = member('second', /^[bc]$/u);
 
+const among = (routes: readonly Route<Union.Member>[]) =>
+  new Union(
+    routes,
+    Prism.fromPredicate(
+      (node: Node): node is Node => node instanceof Nonterminal,
+      () => undefined
+    )
+  );
+
 const choice = (index: number) => Move.choice(index, new Failure(undefined));
 
 const first = Route.to(FIRST).after(choice(0));
@@ -44,7 +53,11 @@ const second = Route.to(SECOND).after(choice(1));
 const taken = (text: string) =>
   new Choice(0, new Nonterminal(FIRST, character(text)));
 
-const written = (union: Union, tree: Node, update: (text: string) => string) =>
+const written = (
+  union: Union<Node>,
+  tree: Node,
+  update: (text: string) => string
+) =>
   union[write](
     Focus.of(tree, (node): node is Node => node instanceof Choice),
     update
@@ -54,14 +67,23 @@ describe('Union', () => {
   describe('optic', () => {
     it('must preview the member on the route the tree takes', () => {
       const tree = new Choice(1, new Nonterminal(SECOND, character('b')));
-      const previewed = new Union([first, second]).optic().preview(tree);
+      const previewed = among([first, second]).optic().preview(tree);
 
       assert(previewed.ok());
       expect(String(previewed.value())).toBe('b');
     });
 
     it('must preview nothing where the tree takes none of the routes', () => {
-      expect(new Union([first]).optic().preview(character('a')).ok()).toBe(
+      expect(among([first]).optic().preview(character('a')).ok()).toBe(false);
+    });
+
+    it('must preview nothing its witness refuses', () => {
+      const witness = Prism.fromPredicate(
+        (node: Node): node is Node => !(node instanceof Nonterminal),
+        () => undefined
+      );
+
+      expect(new Union([first], witness).optic().preview(taken('a')).ok()).toBe(
         false
       );
     });
@@ -70,7 +92,7 @@ describe('Union', () => {
       const replaced = new Nonterminal(FIRST, character('c'));
 
       expect(
-        new Union([first, second])
+        among([first, second])
           .optic()
           .modify(Morphism.of((): Node => replaced))
           .apply(taken('a'))
@@ -81,7 +103,7 @@ describe('Union', () => {
       const replaced = new Nonterminal(SECOND, character('b'));
 
       expect(
-        new Union([first, second])
+        among([first, second])
           .optic()
           .modify(Morphism.of((): Node => replaced))
           .apply(taken('a'))
@@ -89,7 +111,7 @@ describe('Union', () => {
     });
 
     it('must refuse a node that none of the alternatives admits', () => {
-      const replace = new Union([first])
+      const replace = among([first])
         .optic()
         .modify(
           Morphism.of((): Node => new Nonterminal(SECOND, character('b')))
@@ -104,7 +126,7 @@ describe('Union', () => {
       const tree = character('a');
 
       expect(
-        new Union([first])
+        among([first])
           .optic()
           .modify(Morphism.of((): Node => character('b')))
           .apply(tree)
@@ -114,7 +136,7 @@ describe('Union', () => {
 
   describe('write', () => {
     it('must keep the member taken when it accepts the text', () => {
-      const result = written(new Union([first, second]), taken('a'), () => 'c');
+      const result = written(among([first, second]), taken('a'), () => 'c');
 
       assert(result.ok());
       expect(result.value()).toEqual(
@@ -123,7 +145,7 @@ describe('Union', () => {
     });
 
     it('must take an alternative member when the one taken refuses the text', () => {
-      const result = written(new Union([first, second]), taken('a'), () => 'b');
+      const result = written(among([first, second]), taken('a'), () => 'b');
 
       assert(result.ok());
       expect(result.value()).toEqual(
@@ -132,7 +154,7 @@ describe('Union', () => {
     });
 
     it('must hand the update the text of the member taken', () => {
-      const result = written(new Union([first, second]), taken('a'), text =>
+      const result = written(among([first, second]), taken('a'), text =>
         text === 'a' ? 'b' : 'x'
       );
 
@@ -141,7 +163,7 @@ describe('Union', () => {
     });
 
     it('must report why the member taken refuses text that no member accepts', () => {
-      const result = written(new Union([first, second]), taken('a'), () => 'x');
+      const result = written(among([first, second]), taken('a'), () => 'x');
 
       assert(!result.ok());
       expect(result.error()).toEqual(
@@ -155,13 +177,13 @@ describe('Union', () => {
         .after(choice(1));
 
       expect(
-        written(new Union([first, elsewhere]), taken('a'), () => 'b').ok()
+        written(among([first, elsewhere]), taken('a'), () => 'b').ok()
       ).toBe(false);
     });
 
     it('must leave a tree that takes none of the routes as it is', () => {
       const tree = new Choice(1, character('b'));
-      const result = written(new Union([first]), tree, () => 'a');
+      const result = written(among([first]), tree, () => 'a');
 
       assert(result.ok());
       expect(result.value()).toBe(tree);

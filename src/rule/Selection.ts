@@ -9,13 +9,13 @@ import {
   write,
 } from '#project/codec';
 import {
-  Choice,
+  type Choice,
   Focus,
   type Node,
-  Nonterminal,
-  Option,
+  type Nonterminal,
+  type Option,
   Repetition,
-  Sequence,
+  type Sequence,
   View,
 } from '#project/tree';
 
@@ -25,7 +25,9 @@ import { members, Rules } from './Rules.js';
 export const select: unique symbol = Symbol('select');
 
 export namespace Selection {
-  export interface Grammar {
+  export interface Grammar<A> {
+    optic(): Optic<Optic.Kind, Node, A, unknown>;
+
     [write]<T extends Node>(
       place: Focus<T, Node>,
       update: (text: string) => string
@@ -36,30 +38,31 @@ export namespace Selection {
 export class Selection<
   T extends Node,
   A extends Node,
-  G extends Selection.Grammar = Codec<A>,
+  G extends Selection.Grammar<A> = Codec<A>,
 > extends View<A> {
-  readonly #focus: Focus<T, A>;
+  readonly #place: Focus<T, Node>;
 
   readonly #grammar: G;
 
-  readonly #place: Focus<T, Node>;
+  readonly #focus: Focus<T, A>;
 
-  private constructor(focus: Focus<T, A>, grammar: G, place: Focus<T, Node>) {
+  private constructor(place: Focus<T, Node>, grammar: G) {
+    const focus = place.focus(grammar.optic());
+
     super(() => focus.values());
 
-    this.#focus = focus;
-    this.#grammar = grammar;
     this.#place = place;
+    this.#grammar = grammar;
+    this.#focus = focus;
   }
 
   static [select]<T extends Node, Name extends string, Elements extends Node>(
     tree: T,
     rule: Rule<Name, Elements>
   ): Selection<T, Nonterminal<Name, Elements>> {
-    return new Selection<T, Nonterminal<Name, Elements>>(
-      Focus.of(tree, node => rule.is(node)),
-      rule,
-      Focus.of(tree, (node): node is Node => rule.is(node))
+    return new Selection(
+      Focus.of(tree, (node): node is Node => rule.is(node)),
+      rule
     );
   }
 
@@ -158,7 +161,7 @@ export class Selection<
   to<const R extends readonly Rule.Any[]>(
     this: Selection<T, A>,
     rules: Rules<R>
-  ): Selection<T, Rule.Selected<R[number]>, Union>;
+  ): Selection<T, Rule.Selected<R[number]>, Union<Rule.Selected<R[number]>>>;
 
   to<
     Name extends string,
@@ -169,7 +172,7 @@ export class Selection<
     target: Rule<Name, Elements> | Rules<R>
   ):
     | Selection<T, Nonterminal<Name, Elements>>
-    | Selection<T, Rule.Selected<R[number]>, Union> {
+    | Selection<T, Rule.Selected<R[number]>, Union<Rule.Selected<R[number]>>> {
     return target instanceof Rules
       ? this.#among(target)
       : this.#through(target);
@@ -179,9 +182,8 @@ export class Selection<
     this: Selection<T, Nonterminal<Name, Elements>>
   ): Selection<T, Elements> {
     return new Selection(
-      this.#focus.focus(Nonterminal.elements()),
-      this.#grammar.elements(),
-      this.#place.focus(Steps.elements())
+      this.#place.focus(Steps.elements()),
+      this.#grammar.elements()
     );
   }
 
@@ -190,9 +192,8 @@ export class Selection<
     index: I
   ): Selection<T, U[I]> {
     return new Selection(
-      this.#focus.focus(Sequence.at<U, I>(index)),
-      this.#grammar.at<U, I>(index),
-      this.#place.focus(Steps.at(index))
+      this.#place.focus(Steps.at(index)),
+      this.#grammar.at<U, I>(index)
     );
   }
 
@@ -201,9 +202,8 @@ export class Selection<
     index: number
   ): Selection<T, E> {
     return new Selection(
-      this.#focus.focus(Repetition.at<E>(index)),
-      this.#grammar.element(),
-      this.#place.focus(Steps.element(index))
+      this.#place.focus(Steps.element(index)),
+      this.#grammar.element()
     );
   }
 
@@ -217,17 +217,10 @@ export class Selection<
 
   value<U extends Node>(this: Selection<T, Option<U>>): Selection<T, U> {
     const codec = this.#grammar.value();
-    const fallback = codec.default();
 
     return new Selection(
-      this.#focus.focus(
-        fallback.match<Optic<Optic.Kind, Option<U>, U, unknown>>({
-          onSuccess: initial => Option.valueFrom(initial),
-          onFailure: () => Option.value(),
-        })
-      ),
-      codec,
-      this.#place.focus(Steps.value(fallback))
+      this.#place.focus(Steps.value(codec.default())),
+      codec
     );
   }
 
@@ -236,17 +229,10 @@ export class Selection<
     index: I
   ): Selection<T, U[I]> {
     const codec = this.#grammar.alternative<U, I>(index);
-    const fallback = codec.default();
 
     return new Selection(
-      this.#focus.focus(
-        fallback.match<Optic<Optic.Kind, Choice<U>, U[I], unknown>>({
-          onSuccess: initial => Choice.alternativeFrom<U, I>(index, initial),
-          onFailure: () => Choice.alternative<U, I>(index),
-        })
-      ),
-      codec,
-      this.#place.focus(Steps.alternative(index, fallback))
+      this.#place.focus(Steps.alternative(index, codec.default())),
+      codec
     );
   }
 
@@ -254,21 +240,16 @@ export class Selection<
     this: Selection<T, A>,
     rule: Rule<Name, Elements>
   ): Selection<T, Nonterminal<Name, Elements>> {
-    const place = this.#place.focus(this.#grammar[route](rule));
-
-    return new Selection(place.focus(rule.prism()), rule, place);
+    return new Selection(this.#place.focus(this.#grammar[route](rule)), rule);
   }
 
   #among<const R extends readonly Rule.Any[]>(
     this: Selection<T, A>,
     rules: Rules<R>
-  ): Selection<T, Rule.Selected<R[number]>, Union> {
-    const grammar = this.#grammar[union](rules[members]());
-
+  ): Selection<T, Rule.Selected<R[number]>, Union<Rule.Selected<R[number]>>> {
     return new Selection(
-      this.#place.focus(grammar.optic()).focus(rules.prism()),
-      grammar,
-      this.#place
+      this.#place,
+      this.#grammar[union](rules[members](), rules.prism())
     );
   }
 }

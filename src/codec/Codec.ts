@@ -238,8 +238,14 @@ export class Codec<in out Value extends Node> {
     return Codec.#routes([target]).only(this.#expression).optic();
   }
 
-  [union](members: readonly Union.Member[]): Union {
-    return new Union(Codec.#routes(members).exclusive(this.#expression));
+  [union]<A extends Node>(
+    members: readonly Union.Member[],
+    witness: Prism<Node, A, unknown>
+  ): Union<A> {
+    return new Union(
+      Codec.#routes(members).exclusive(this.#expression),
+      witness
+    );
   }
 
   [write]<T extends Node>(

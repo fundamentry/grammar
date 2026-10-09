@@ -1,4 +1,9 @@
-import { FallibleMorphism, Morphism, Optional } from '@fundamentry/category';
+import {
+  FallibleMorphism,
+  Morphism,
+  Optional,
+  type Prism,
+} from '@fundamentry/category';
 import { Failure, type Result, Success } from '@fundamentry/coproduct';
 
 import { type Mismatch } from '#project/mismatch';
@@ -14,14 +19,24 @@ export namespace Union {
   }
 }
 
-export class Union {
+export class Union<A extends Node> {
   readonly #routes: readonly Route<Union.Member>[];
 
-  constructor(routes: readonly Route<Union.Member>[]) {
+  readonly #witness: Prism<Node, A, unknown>;
+
+  constructor(
+    routes: readonly Route<Union.Member>[],
+    witness: Prism<Node, A, unknown>
+  ) {
     this.#routes = routes;
+    this.#witness = witness;
   }
 
-  optic(): Steps.Step {
+  optic(): Optional<Node, A, unknown> {
+    return this.#routed().andThen(this.#witness);
+  }
+
+  #routed(): Steps.Step {
     const replace = (node: Node, taken: Route<Union.Member>, value: Node) => {
       const form = [taken, ...this.#alternates(taken)].find(
         (route: Route<Union.Member>) => route.admits(value)
