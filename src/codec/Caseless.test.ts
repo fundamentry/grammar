@@ -49,6 +49,12 @@ const visit = (expression: Expression<CodePoint>): unknown =>
         String(bounds),
         visit(element),
       ],
+      separated: (element, separator, bounds) => [
+        'separated',
+        String(bounds),
+        visit(element),
+        visit(separator),
+      ],
       label: (element, expectation) => [
         'label',
         String(expectation),

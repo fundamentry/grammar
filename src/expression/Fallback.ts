@@ -90,6 +90,26 @@ export class Fallback<
       : this.#otherwise.repetition(element, bounds, input);
   }
 
+  separated(
+    element: Expression<Token>,
+    separator: Expression<Token>,
+    bounds: Range<Integer>,
+    expansion: Expression<Token>,
+    input: Input
+  ): Output {
+    const preferred = this.#preferred.separated(
+      element,
+      separator,
+      bounds,
+      expansion,
+      input
+    );
+
+    return preferred
+      ? this.#lift(preferred)
+      : this.#otherwise.separated(element, separator, bounds, expansion, input);
+  }
+
   label(
     element: Expression<Token>,
     expectation: Expectation,

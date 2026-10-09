@@ -92,6 +92,10 @@ export class Routes<
     return [];
   }
 
+  separated(): readonly Route<R>[] {
+    return [];
+  }
+
   label(
     element: Expression<CodePoint>,
     _: unknown,

@@ -45,6 +45,13 @@ export class Parts implements Expression.Visitor<
     return [element];
   }
 
+  separated(
+    element: Expression<CodePoint>,
+    separator: Expression<CodePoint>
+  ): readonly Expression<CodePoint>[] {
+    return [element, separator];
+  }
+
   label(element: Expression<CodePoint>): readonly Expression<CodePoint>[] {
     return element.accept(this, undefined);
   }

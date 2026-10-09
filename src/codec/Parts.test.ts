@@ -14,6 +14,7 @@ import {
   Reference,
   Repetition,
   Rule,
+  Separated,
   Terminal,
 } from '#project/expression';
 import { Character } from '#project/tree';
@@ -57,6 +58,17 @@ describe('Parts', () => {
       expect(
         new Parts(new Repetition(a, Range.atLeast(Integer.of(0)))).at(0)
       ).toBe(a);
+    });
+
+    it('must find the element and the separator of a list', () => {
+      const a = letter('a');
+      const b = letter('b');
+      const parts = new Parts(
+        new Separated(a, b, Range.atLeast(Integer.of(0)))
+      );
+
+      expect(parts.at(0)).toBe(a);
+      expect(parts.at(1)).toBe(b);
     });
 
     it('must find the body of a rule', () => {

@@ -75,6 +75,15 @@ export class Definitions
     return this.#term(element).repeated(bounds);
   }
 
+  separated(
+    _: unknown,
+    __: unknown,
+    ___: unknown,
+    expansion: Expression<CodePoint>
+  ): Term {
+    return this.#term(expansion);
+  }
+
   label(element: Expression<CodePoint>, expectation: Expectation): Term {
     return expectation instanceof Quoted
       ? Term.element(String(expectation))

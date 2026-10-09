@@ -15,6 +15,7 @@ import {
   Reference,
   Repetition,
   Rule,
+  Separated,
   Terminal,
 } from '#project/expression';
 import { Character } from '#project/tree';
@@ -47,6 +48,14 @@ describe('LeftCorners', () => {
         new Optional(digit),
       ]);
       const full = new Concatenation([new Optional(digit), digit]);
+
+      expect(new LeftCorners(empty).of(empty).nullable).toBe(true);
+      expect(new LeftCorners(full).of(full).nullable).toBe(false);
+    });
+
+    it('must let a list match empty input only when it allows no elements', () => {
+      const empty = new Separated(digit, digit, Range.atLeast(Integer.of(0)));
+      const full = new Separated(digit, digit, Range.atLeast(Integer.of(1)));
 
       expect(new LeftCorners(empty).of(empty).nullable).toBe(true);
       expect(new LeftCorners(full).of(full).nullable).toBe(false);

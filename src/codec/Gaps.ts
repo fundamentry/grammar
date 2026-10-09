@@ -54,6 +54,10 @@ export class Gaps implements Expression.Visitor<
     return Gaps.#here;
   }
 
+  separated(): readonly string[] {
+    return Gaps.#here;
+  }
+
   label(
     element: Expression<CodePoint>,
     _: unknown,

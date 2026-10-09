@@ -10,6 +10,7 @@ import {
   Label,
   Optional,
   Repetition,
+  Separated,
 } from '#project/expression';
 import { type Node } from '#project/tree';
 
@@ -63,6 +64,18 @@ export class Caseless implements Expression.Visitor<
     bounds: Range<Integer>
   ): Expression<CodePoint> {
     return new Repetition(this.rewrite(element), bounds);
+  }
+
+  separated(
+    element: Expression<CodePoint>,
+    separator: Expression<CodePoint>,
+    bounds: Range<Integer>
+  ): Expression<CodePoint> {
+    return new Separated(
+      this.rewrite(element),
+      this.rewrite(separator),
+      bounds
+    );
   }
 
   label(

@@ -718,6 +718,15 @@ describe('Codec', () => {
     });
   });
 
+  describe('separator', () => {
+    it('must parse with what separates the elements of a list', () => {
+      const separator = digit.many(build.literal('&')).separator();
+
+      expect(parse(separator, '&').ok()).toBe(true);
+      expect(parse(separator, '1').ok()).toBe(false);
+    });
+  });
+
   describe('default', () => {
     it('must parse the default text of the codec', () => {
       const defaulted = build
@@ -814,6 +823,14 @@ describe('Codec', () => {
       expect(String(build.character(['0', '9']).many().definition())).toBe(
         '*%x30-39'
       );
+    });
+
+    it('must define a list as its first element and the separated rest', () => {
+      expect(
+        String(
+          build.character(['0', '9']).many(build.literal('&')).definition()
+        )
+      ).toBe('[%x30-39 *("&" %x30-39)]');
     });
 
     it('must define a literal as a quoted string', () => {
@@ -1105,9 +1122,100 @@ describe('Codec', () => {
     });
   });
 
+  describe('many with a separator', () => {
+    const list = () => digit.many(build.literal('&'));
+
+    it('must collect the elements and the separators between them', () => {
+      expect(parse(list(), '1&2&3')).toEqual(
+        new Success(
+          new Repetition(characters('123'), [
+            new Sequence(characters('&')),
+            new Sequence(characters('&')),
+          ])
+        )
+      );
+    });
+
+    it('must succeed with an empty list when there are no matches', () => {
+      expect(parse(list(), '')).toEqual(new Success(new Repetition([], [])));
+    });
+
+    it('must refuse a separator without an element after it', () => {
+      expect(parse(list(), '1&').ok()).toBe(false);
+      expect(parse(list(), '&1').ok()).toBe(false);
+    });
+
+    it('must print the elements with the separators between them', () => {
+      const printed = print(
+        list(),
+        new Repetition(characters('12'), [new Sequence(characters('&'))])
+      );
+
+      assert(printed.ok());
+      expect(printed.value()).toBe('1&2');
+    });
+
+    it('must refuse to print a list without a separator between each element', () => {
+      const printed = print(list(), new Repetition(characters('12'), []));
+
+      assert(!printed.ok());
+      expect(printed.error().message()).toBe('Expected 1 separators, got 0');
+    });
+
+    it('must refuse to print a list with a count out of its bounds', () => {
+      const printed = print(
+        digit.oneOrMore(build.literal('&')),
+        new Repetition([], [])
+      );
+
+      assert(!printed.ok());
+      expect(printed.error().message()).toBe(
+        'Expected a count in [1..+∞), got 0'
+      );
+    });
+
+    it('must default to as few elements as its bounds allow', () => {
+      const defaulted = build
+        .literal('a')
+        .repeat(Range.closed(Integer.of(2), Integer.of(3)), build.literal('&'))
+        .default();
+
+      assert(defaulted.ok());
+      expect(String(defaulted.value())).toBe('a&a');
+    });
+
+    it('must hold exactly the number of elements its bounds allow', () => {
+      const pairs = digit.repeat(
+        Range.closed(Integer.of(2), Integer.of(2)),
+        build.literal('&')
+      );
+
+      expect(parse(pairs, '1&2').ok()).toBe(true);
+      expect(parse(pairs, '1').ok()).toBe(false);
+      expect(parse(pairs, '1&2&3').ok()).toBe(false);
+    });
+
+    it('must refuse bounds that allow no element', () => {
+      expect(() =>
+        digit.repeat(Range.singleton(Integer.of(0)), build.literal('&'))
+      ).toThrow(new RangeError('Invalid list bounds: [0..0]'));
+    });
+
+    it('must widen its elements and separators to both cases', () => {
+      const caseless = build.literal('a').many(build.literal('x')).caseless();
+
+      expect(parse(caseless, 'aXA').ok()).toBe(true);
+    });
+  });
+
   describe('oneOrMore', () => {
     it('must fail when there are no matches', () => {
       expect(parse(digit.oneOrMore(), '').ok()).toBe(false);
+    });
+
+    it('must refuse an empty list with a separator', () => {
+      expect(parse(digit.oneOrMore(build.literal('&')), '').ok()).toBe(false);
+      expect(parse(digit.oneOrMore(build.literal('&')), '1').ok()).toBe(true);
     });
 
     it('must collect one or more matches', () => {

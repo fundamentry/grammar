@@ -21,6 +21,7 @@ import {
   Reference,
   Repetition as Repeated,
   Rule as Naming,
+  Separated,
   Terminal,
 } from '#project/expression';
 import { type Mismatch } from '#project/mismatch';
@@ -326,8 +327,16 @@ export class Codec<in out Value extends Node> {
     return this.#part(0);
   }
 
-  element<A extends Node>(this: Codec<Repetition<A>>): Codec<A> {
+  element<A extends Node, S extends Node = never>(
+    this: Codec<Repetition<A, S>>
+  ): Codec<A> {
     return this.#part(0);
+  }
+
+  separator<A extends Node, S extends Node>(
+    this: Codec<Repetition<A, S>>
+  ): Codec<S> {
+    return this.#part(1);
   }
 
   or<Alternative extends Node>(
@@ -340,20 +349,31 @@ export class Codec<in out Value extends Node> {
     return new Codec(new Optional(this.#expression));
   }
 
-  repeat(bounds: Range<Integer>): Codec<Repetition<Value>> {
-    return new Codec(new Repeated(this.#expression, bounds));
+  repeat<S extends Node = never>(
+    bounds: Range<Integer>,
+    separator?: Codec<S>
+  ): Codec<Repetition<Value, S>> {
+    return new Codec(
+      separator
+        ? new Separated(this.#expression, separator.#expression, bounds)
+        : new Repeated(this.#expression, bounds)
+    );
   }
 
   times(count: number): Codec<Repetition<Value>> {
     return this.repeat(Range.singleton(Integer.of(count)));
   }
 
-  many(): Codec<Repetition<Value>> {
-    return this.repeat(Range.atLeast(Integer.of(0)));
+  many<S extends Node = never>(
+    separator?: Codec<S>
+  ): Codec<Repetition<Value, S>> {
+    return this.repeat(Range.atLeast(Integer.of(0)), separator);
   }
 
-  oneOrMore(): Codec<Repetition<Value>> {
-    return this.repeat(Range.atLeast(Integer.of(1)));
+  oneOrMore<S extends Node = never>(
+    separator?: Codec<S>
+  ): Codec<Repetition<Value, S>> {
+    return this.repeat(Range.atLeast(Integer.of(1)), separator);
   }
 
   caseless(): Codec<Value> {

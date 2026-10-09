@@ -5,7 +5,7 @@ import { Integer } from '@fundamentry/scalar';
 import { Point } from '@fundamentry/stream';
 
 import { Cache } from '#project/cache';
-import { type Expression } from '#project/expression';
+import { type Expression, Separated } from '#project/expression';
 import { Misprint } from '#project/misprint';
 import {
   Choice,
@@ -147,6 +147,41 @@ export class Printer<Token> implements Expression.Visitor<
           ),
         new Success(Rope.empty())
       );
+    };
+  }
+
+  separated(
+    _: unknown,
+    __: unknown,
+    bounds: Range<Integer>,
+    expansion: Expression<Token>
+  ): Printer.Print<Token> {
+    const print = this.#compile(expansion);
+
+    return value => {
+      if (!(value instanceof Repetition))
+        return Printer.#unexpected('a repetition', value);
+
+      const count = Integer.of(value.elements().length);
+      const separators = Math.max(count.value() - 1, 0);
+
+      if (!bounds.contains(count))
+        return new Failure(
+          new Misprint(
+            [],
+            `Expected a count in ${String(bounds)}, got ${String(count)}`
+          )
+        );
+
+      if (value.separators().length !== separators)
+        return new Failure(
+          new Misprint(
+            [],
+            `Expected ${String(separators)} separators, got ${String(value.separators().length)}`
+          )
+        );
+
+      return print(Separated.spread(value, bounds));
     };
   }
 

@@ -15,6 +15,7 @@ import {
   Reference,
   Repetition,
   Rule,
+  Separated,
   Terminal,
 } from '#project/expression';
 import {
@@ -163,6 +164,12 @@ describe('Routes', () => {
     it('must not lead through a repetition', () => {
       expect(
         routes(new Repetition(target, Range.atLeast(Integer.of(0))))
+      ).toEqual([]);
+    });
+
+    it('must not lead through a list', () => {
+      expect(
+        routes(new Separated(target, letter, Range.atLeast(Integer.of(0))))
       ).toEqual([]);
     });
 

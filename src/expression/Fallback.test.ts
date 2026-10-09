@@ -16,6 +16,7 @@ import { Optional } from './Optional.js';
 import { Reference } from './Reference.js';
 import { Repetition } from './Repetition.js';
 import { Rule } from './Rule.js';
+import { Separated } from './Separated.js';
 import { Terminal } from './Terminal.js';
 
 type Visit = readonly unknown[];
@@ -51,6 +52,7 @@ const composite = (kind: string): Expression<Character> => {
     alternation: new Alternation([element]),
     optional: new Optional(element),
     repetition: new Repetition(element, Range.singleton(Integer.of(1))),
+    separated: new Separated(element, element, Range.singleton(Integer.of(1))),
     label: new Label(element, new Named('a label')),
     rule: new Rule(element, () => rule),
     reference: new Reference(() => element),
@@ -64,6 +66,7 @@ const kinds = [
   'alternation',
   'optional',
   'repetition',
+  'separated',
   'label',
   'rule',
   'reference',

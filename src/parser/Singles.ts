@@ -86,6 +86,10 @@ export class Singles<in out Token> implements Expression.Visitor<
     return undefined;
   }
 
+  separated(): undefined {
+    return undefined;
+  }
+
   label(
     element: Expression<Token>,
     expectation: Expectation

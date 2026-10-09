@@ -15,6 +15,7 @@ import {
   Reference,
   Repetition,
   Rule,
+  Separated,
   Terminal,
 } from '#project/expression';
 import { Character, Choice, Nonterminal, Sequence } from '#project/tree';
@@ -105,6 +106,14 @@ describe('Singles', () => {
       expect(
         new Singles<CodePoint>().of(
           new Repetition(digit, Range.singleton(Integer.of(1)))
+        )
+      ).toBeUndefined();
+    });
+
+    it('must not match a token by a list', () => {
+      expect(
+        new Singles<CodePoint>().of(
+          new Separated(digit, letter, Range.singleton(Integer.of(1)))
         )
       ).toBeUndefined();
     });

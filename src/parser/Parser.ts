@@ -5,7 +5,7 @@ import { type Point } from '@fundamentry/stream';
 
 import { Cache } from '#project/cache';
 import { EndOfInput, type Expectation, Named } from '#project/expectation';
-import { type Expression, Fallback } from '#project/expression';
+import { type Expression, Fallback, Separated } from '#project/expression';
 import { type Mismatch } from '#project/mismatch';
 import {
   type Node,
@@ -176,6 +176,27 @@ export class Parser<in out Token> implements Expression.Composites<
       ),
       starts: token => iterates && starts(token),
       expected: iterates ? expected : [],
+    };
+  }
+
+  separated(
+    _: unknown,
+    __: unknown,
+    ___: unknown,
+    expansion: Expression<Token>
+  ): Parser.Draft<Token> {
+    const { parse, starts, expected } = this.#compile(expansion);
+
+    return {
+      parse: (point, context, continuation) => {
+        parse(
+          point,
+          context,
+          continuation.map((value: Node) => Separated.collect(value))
+        );
+      },
+      starts,
+      expected,
     };
   }
 

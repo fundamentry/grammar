@@ -22,6 +22,7 @@
         "alternation",
         "optional",
         "repetition",
+        "separated",
         "label",
         "rule",
         "reference"
@@ -34,6 +35,7 @@
         "alternation",
         "optional",
         "repetition",
+        "separated",
         "label",
         "rule",
         "reference"

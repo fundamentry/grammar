@@ -15,6 +15,7 @@ import {
   Reference,
   Repetition,
   Rule,
+  Separated,
   Terminal,
 } from '#project/expression';
 import { Character } from '#project/tree';
@@ -79,6 +80,12 @@ describe('Gaps', () => {
     it('must find a repetition, even of the target', () => {
       expect(
         gaps(new Repetition(target, Range.closed(Integer.of(1), Integer.of(2))))
+      ).toEqual(['/']);
+    });
+
+    it('must find a list, even of the target', () => {
+      expect(
+        gaps(new Separated(target, letter, Range.atLeast(Integer.of(1))))
       ).toEqual(['/']);
     });
 

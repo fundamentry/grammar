@@ -79,6 +79,16 @@ export class Defaults implements Expression.Visitor<
       : new Success('');
   }
 
+  separated(
+    _: unknown,
+    __: unknown,
+    ___: unknown,
+    expansion: Expression<CodePoint>,
+    rules: Defaults.Rules
+  ): Defaults.Text {
+    return expansion.accept(this, rules);
+  }
+
   label(
     element: Expression<CodePoint>,
     _: unknown,

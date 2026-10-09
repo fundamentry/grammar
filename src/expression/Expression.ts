@@ -43,6 +43,14 @@ export namespace Expression {
       input: Input
     ): Output;
 
+    separated(
+      element: Expression<Token>,
+      separator: Expression<Token>,
+      bounds: Range<Integer>,
+      expansion: Expression<Token>,
+      input: Input
+    ): Output;
+
     label(
       element: Expression<Token>,
       expectation: Expectation,

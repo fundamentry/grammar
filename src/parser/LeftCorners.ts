@@ -90,6 +90,15 @@ export class LeftCorners<in out Token> implements Expression.Visitor<
     };
   }
 
+  separated(
+    _: unknown,
+    __: unknown,
+    ___: unknown,
+    expansion: Expression<Token>
+  ): LeftCorners.Facts<Token> {
+    return this.of(expansion);
+  }
+
   label(element: Expression<Token>): LeftCorners.Facts<Token> {
     return this.of(element);
   }
