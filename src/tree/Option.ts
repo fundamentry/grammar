@@ -1,9 +1,4 @@
-import {
-  FallibleMorphism,
-  Morphism,
-  Optional,
-  Prism,
-} from '@fundamentry/category';
+import { Prism } from '@fundamentry/category';
 import { Failure, Success } from '@fundamentry/coproduct';
 import { Equatable } from '@fundamentry/trait';
 
@@ -34,25 +29,6 @@ export class Option<out T extends Node = never> extends Node {
       (option: Option<T>) =>
         option.#value ? new Success(option.#value) : new Failure(undefined),
       (value: T) => new Option(value)
-    );
-  }
-
-  static valueFrom<T extends Node>(
-    initial: T
-  ): Optional<Option<T>, T, undefined> {
-    return Optional.of(
-      FallibleMorphism.of(option =>
-        option.#value ? new Success(option.#value) : new Failure(undefined)
-      ),
-      Morphism.of(update =>
-        Morphism.of(option => {
-          const updated = update.apply(option.#value ?? initial);
-
-          return option.#value || !updated.equals(initial)
-            ? new Option(updated)
-            : option;
-        })
-      )
     );
   }
 

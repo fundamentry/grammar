@@ -86,37 +86,6 @@ describe('Option', () => {
     });
   });
 
-  describe('valueFrom', () => {
-    it('must preview the value when present', () => {
-      const previewed = Option.valueFrom(B).preview(new Option(A));
-
-      assert(previewed.ok());
-      expect(previewed.value()).toBe(A);
-    });
-
-    it('must not preview an absent value', () => {
-      expect(Option.valueFrom(B).preview(new Option<Character>()).ok()).toBe(
-        false
-      );
-    });
-
-    it('must create an absent option from the initial value when set', () => {
-      expect(Option.valueFrom(B).set(new Option<Character>(), A)).toEqual(
-        new Option(A)
-      );
-    });
-
-    it('must leave an absent option absent when set to the initial value', () => {
-      const absent = new Option<Character>();
-
-      expect(Option.valueFrom(B).set(absent, B)).toBe(absent);
-    });
-
-    it('must keep a present option present when set to the initial value', () => {
-      expect(Option.valueFrom(B).set(new Option(A), B)).toEqual(new Option(B));
-    });
-  });
-
   describe('elements', () => {
     it('must return its value as the only element when present', () => {
       expect(new Option(A).elements()).toEqual([A]);

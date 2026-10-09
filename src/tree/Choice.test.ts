@@ -82,43 +82,6 @@ describe('Choice', () => {
     });
   });
 
-  describe('alternativeFrom', () => {
-    const optional = Choice.alternativeFrom<[Character, Character], 1>(1, B);
-
-    it('must preview the value of the alternative when taken', () => {
-      const previewed = optional.preview(
-        new Choice<[Character, Character]>(1, A)
-      );
-
-      assert(previewed.ok());
-      expect(previewed.value()).toBe(A);
-    });
-
-    it('must not preview another alternative', () => {
-      expect(
-        optional.preview(new Choice<[Character, Character]>(0, A)).ok()
-      ).toBe(false);
-    });
-
-    it('must take the alternative from the initial value when set', () => {
-      expect(optional.set(new Choice<[Character, Character]>(0, A), A)).toEqual(
-        new Choice<[Character, Character]>(1, A)
-      );
-    });
-
-    it('must keep another alternative when set to the initial value', () => {
-      const other = new Choice<[Character, Character]>(0, A);
-
-      expect(optional.set(other, B)).toBe(other);
-    });
-
-    it('must keep the alternative taken when set to the initial value', () => {
-      expect(optional.set(new Choice<[Character, Character]>(1, A), B)).toEqual(
-        new Choice<[Character, Character]>(1, B)
-      );
-    });
-  });
-
   describe('value', () => {
     it('must return the value of the alternative taken', () => {
       expect(new Choice<[Character, Character]>(1, B).value()).toBe(B);
