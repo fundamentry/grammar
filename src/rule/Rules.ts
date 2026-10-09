@@ -53,7 +53,7 @@ export class Rules<const R extends readonly Rule.Any[]> {
   [reach](
     routes: Selection.Routes
   ): Selection.Reached<Union<Rule.Selected<R[number]>>> {
-    return { step: Optional.id(), grammar: routes[union](this) };
+    return { step: () => Optional.id(), grammar: routes[union](this) };
   }
 
   [write]<T extends Node>(

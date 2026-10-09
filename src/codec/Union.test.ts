@@ -17,6 +17,7 @@ import {
 
 import { Move } from './Move.js';
 import { Route } from './Route.js';
+import { Slots } from './Slots.js';
 import { Union } from './Union.js';
 import { write } from './Writer.js';
 
@@ -70,14 +71,15 @@ const written = (
 ) =>
   union[write](
     Focus.of(tree, (node): node is Node => node instanceof Choice),
-    update
+    update,
+    Slots.edit
   );
 
 describe('Union', () => {
   describe('optic', () => {
     it('must preview the member on the route the tree takes', () => {
       const tree = new Choice(1, new Nonterminal(SECOND, character('b')));
-      const previewed = among([first, second]).optic().preview(tree);
+      const previewed = among([first, second]).optic(Slots.edit).preview(tree);
 
       assert(previewed.ok());
       expect(String(previewed.value())).toBe('b');
@@ -89,9 +91,9 @@ describe('Union', () => {
         () => undefined
       );
 
-      expect(new Union([first], witness).optic().preview(taken('a')).ok()).toBe(
-        false
-      );
+      expect(
+        new Union([first], witness).optic(Slots.edit).preview(taken('a')).ok()
+      ).toBe(false);
     });
   });
 
@@ -153,7 +155,8 @@ describe('Union', () => {
     it('must create the member along the route that fits a missing place', () => {
       const result = among([optional(FIRST)])[write](
         Focus.of(new Option(), (node): node is Node => node instanceof Option),
-        text => (text === 'a' ? 'c' : 'x')
+        text => (text === 'a' ? 'c' : 'x'),
+        Slots.edit
       );
 
       assert(result.ok());
@@ -162,10 +165,36 @@ describe('Union', () => {
       );
     });
 
+    it('must leave a missing place missing when its default text stays', () => {
+      const missing = new Option();
+      const result = among([optional(FIRST)])[write](
+        Focus.of(missing, (node): node is Node => node instanceof Option),
+        () => 'a',
+        Slots.edit
+      );
+
+      assert(result.ok());
+      expect(result.value()).toBe(missing);
+    });
+
+    it('must create the member from its default text when the slots fill it', () => {
+      const result = among([optional(FIRST)])[write](
+        Focus.of(new Option(), (node): node is Node => node instanceof Option),
+        () => 'a',
+        Slots.fill
+      );
+
+      assert(result.ok());
+      expect(result.value()).toEqual(
+        new Option(new Nonterminal(FIRST, character('a')))
+      );
+    });
+
     it('must report text the member it creates refuses', () => {
       const result = among([optional(FIRST)])[write](
         Focus.of(new Option(), (node): node is Node => node instanceof Option),
-        () => 'x'
+        () => 'x',
+        Slots.edit
       );
 
       assert(!result.ok());

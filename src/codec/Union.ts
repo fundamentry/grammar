@@ -6,7 +6,7 @@ import { type Focus, type Node, type Nonterminal } from '#project/tree';
 
 import { Junction } from './Junction.js';
 import { type Route } from './Route.js';
-import { Slots } from './Slots.js';
+import { type Slots } from './Slots.js';
 import { write, Writer } from './Writer.js';
 
 export const members: unique symbol = Symbol('members');
@@ -38,21 +38,22 @@ export class Union<A extends Node> {
     this.#witness = witness;
   }
 
-  optic(): Optional<Node, A, unknown> {
-    return this.#junction.optic(Slots.edit).andThen(this.#witness);
+  optic(slots: Slots): Optional<Node, A, unknown> {
+    return this.#junction.optic(slots).andThen(this.#witness);
   }
 
   [write]<T extends Node>(
     place: Focus<T, Node>,
-    update: (text: string) => string
+    update: (text: string) => string,
+    slots: Slots
   ): Result<T, Mismatch> {
     return new Writer(
       node =>
         this.#junction.along(node, (taken, value) =>
-          this.#put(node, taken, update(String(value)))
+          this.#put(node, taken, update(String(value)), slots)
         ) ??
         this.#junction.fitting(node, route =>
-          Union.#create(node, route, update)
+          Union.#create(node, route, update, slots)
         ) ??
         new Success(node)
     ).write(place);
@@ -61,40 +62,45 @@ export class Union<A extends Node> {
   #put(
     node: Node,
     taken: Route<Union.Member>,
-    text: string
+    text: string,
+    slots: Slots
   ): Result<Node, Mismatch> {
     return this.#junction
       .alternates(taken)
       .reduce(
         (result, route) =>
           result.orElse(mismatch =>
-            Union.#take(node, route, text).orElse(() => new Failure(mismatch))
+            Union.#take(node, route, text, slots).orElse(
+              () => new Failure(mismatch)
+            )
           ),
-        Union.#take(node, taken, text)
+        Union.#take(node, taken, text, slots)
       );
   }
 
   static #create(
     node: Node,
     route: Route<Union.Member>,
-    update: (text: string) => string
+    update: (text: string) => string,
+    slots: Slots
   ): Result<Node, Mismatch> {
     return new Writer(value =>
       route.target().parse(update(String(value)))
     ).write({
       modify: rewrite =>
-        route.optic(Slots.edit).modify(Morphism.of(rewrite)).apply(node),
+        route.optic(slots).modify(Morphism.of(rewrite)).apply(node),
     });
   }
 
   static #take(
     node: Node,
     route: Route<Union.Member>,
-    text: string
+    text: string,
+    slots: Slots
   ): Result<Node, Mismatch> {
     return route
       .target()
       .parse(text)
-      .map(parsed => route.choose(Slots.edit).set(node, parsed));
+      .map(parsed => route.choose(slots).set(node, parsed));
   }
 }

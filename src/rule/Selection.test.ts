@@ -1,7 +1,7 @@
 import { assert, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import { type Codec } from '#project/codec';
-import { Focus, type Node, Sequence } from '#project/tree';
+import { Focus, type Node, Repetition, Sequence } from '#project/tree';
 
 import { Rule } from './Rule.js';
 
@@ -114,6 +114,38 @@ describe('Selection', () => {
       assert(set.ok());
       expect(String(set.value())).toBe('h:80');
     });
+
+    it('must create a missing part even from its default text', () => {
+      const set = PORT.in(parsed(PORT, 'h'))
+        .elements()
+        .at(1)
+        .value()
+        .at(1)
+        .set('');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:');
+    });
+
+    it('must create a missing part even from its default value', () => {
+      expect(
+        String(
+          PORT.in(parsed(PORT, 'h'))
+            .elements()
+            .at(1)
+            .value()
+            .at(1)
+            .set(new Repetition([]))
+        )
+      ).toBe('h:');
+    });
+
+    it('must take another alternative even from its default text', () => {
+      const set = SIGN.in(parsed(SIGN, '+')).elements().alternative(1).set('-');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('-');
+    });
   });
 
   describe('to', () => {
@@ -143,6 +175,13 @@ describe('Selection', () => {
 
       assert(set.ok());
       expect(String(set.value())).toBe('h:80');
+    });
+
+    it('must create a missing place even from its default text', () => {
+      const set = ADDRESS.in(parsed(ADDRESS, 'h')).to(NUMBER).set('');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:');
     });
 
     it('must leave a missing place missing when nothing changes', () => {
@@ -379,6 +418,24 @@ describe('Selection', () => {
 
       assert(result.ok());
       expect(String(result.value())).toBe('h:80');
+    });
+
+    it('must create a missing place on the way to it even from its default text', () => {
+      const NUMBER = new Rule('number', () => DIGIT.many());
+
+      const ADDRESS = new Rule('address', codec =>
+        codec.sequence(
+          codec.literal('h'),
+          codec.sequence(codec.literal(':'), NUMBER).optional()
+        )
+      );
+
+      const result = ADDRESS.in(parsed(ADDRESS, 'h'))
+        .to(Rule.any(NUMBER))
+        .set('');
+
+      assert(result.ok());
+      expect(String(result.value())).toBe('h:');
     });
 
     it('must not take another alternative to create a missing place', () => {

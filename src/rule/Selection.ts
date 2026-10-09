@@ -30,11 +30,12 @@ export const reach: unique symbol = Symbol('reach');
 
 export namespace Selection {
   export interface Grammar<A> {
-    optic(): Optic<Optic.Kind, Node, A, unknown>;
+    optic(slots: Slots): Optic<Optic.Kind, Node, A, unknown>;
 
     [write]<T extends Node>(
       place: Focus<T, Node>,
-      update: (text: string) => string
+      update: (text: string) => string,
+      slots: Slots
     ): Codec.Parsed<T>;
   }
 
@@ -45,7 +46,7 @@ export namespace Selection {
   export type Routes = Pick<Codec<Node>, typeof route | typeof union>;
 
   export interface Reached<H> {
-    readonly step: Steps.Step;
+    readonly step: (slots: Slots) => Steps.Step;
 
     readonly grammar: H;
   }
@@ -60,17 +61,21 @@ export class Selection<
   A extends Node,
   G extends Selection.Grammar<A> = Codec<A>,
 > extends View<A> {
+  readonly #path: (slots: Slots) => Focus<T, Node>;
+
   readonly #place: Focus<T, Node>;
 
   readonly #grammar: G;
 
   readonly #focus: Focus<T, A>;
 
-  private constructor(place: Focus<T, Node>, grammar: G) {
-    const focus = place.focus(grammar.optic());
+  private constructor(path: (slots: Slots) => Focus<T, Node>, grammar: G) {
+    const place = path(Slots.edit);
+    const focus = place.focus(grammar.optic(Slots.edit));
 
     super(() => focus.values());
 
+    this.#path = path;
     this.#place = place;
     this.#grammar = grammar;
     this.#focus = focus;
@@ -82,7 +87,7 @@ export class Selection<
     H extends Selection.Target<B>,
   >(tree: T, target: H): Selection<T, B, H> {
     return new Selection(
-      Focus.of(tree, (node): node is Node => target.is(node)),
+      () => Focus.of(tree, (node): node is Node => target.is(node)),
       target
     );
   }
@@ -92,9 +97,11 @@ export class Selection<
   set(text: string): Codec.Parsed<T>;
 
   set(value: A | string): T | Codec.Parsed<T> {
+    const place = this.#path(Slots.fill);
+
     return typeof value === 'string'
-      ? this.#grammar[write](this.#place, () => value)
-      : this.#focus.set(value);
+      ? this.#grammar[write](place, () => value, Slots.fill)
+      : place.focus(this.#grammar.optic(Slots.fill)).set(value);
   }
 
   modify(update: (value: A) => A): T {
@@ -102,7 +109,7 @@ export class Selection<
   }
 
   edit(update: (text: string) => string): Codec.Parsed<T> {
-    return this.#grammar[write](this.#place, update);
+    return this.#grammar[write](this.#place, update, Slots.edit);
   }
 
   remove(): T {
@@ -190,7 +197,10 @@ export class Selection<
   ): Selection<T, B, H> {
     const { step, grammar } = target[reach](this.#grammar);
 
-    return new Selection(this.#place.focus(step), grammar);
+    return new Selection(
+      slots => this.#path(slots).focus(step(slots)),
+      grammar
+    );
   }
 
   within<Name extends string, Elements extends Node>(
@@ -205,7 +215,10 @@ export class Selection<
     target: H
   ): Selection<T, B, H> {
     return new Selection(
-      this.#focus.within((node): node is Node => target.is(node)),
+      slots =>
+        this.#path(slots)
+          .focus(this.#grammar.optic(slots))
+          .within((node): node is Node => target.is(node)),
       target
     );
   }
@@ -214,7 +227,7 @@ export class Selection<
     this: Selection<T, Nonterminal<Name, Elements>>
   ): Selection<T, Elements> {
     return new Selection(
-      this.#place.focus(Steps.elements()),
+      slots => this.#path(slots).focus(Steps.elements()),
       this.#grammar.elements()
     );
   }
@@ -224,7 +237,7 @@ export class Selection<
     index: I
   ): Selection<T, U[I]> {
     return new Selection(
-      this.#place.focus(Steps.at(index)),
+      slots => this.#path(slots).focus(Steps.at(index)),
       this.#grammar.at<U, I>(index)
     );
   }
@@ -234,7 +247,7 @@ export class Selection<
     index: number
   ): Selection<T, E> {
     return new Selection(
-      this.#place.focus(Steps.element(index)),
+      slots => this.#path(slots).focus(Steps.element(index)),
       this.#grammar.element()
     );
   }
@@ -251,7 +264,7 @@ export class Selection<
     const codec = this.#grammar.value();
 
     return new Selection(
-      this.#place.focus(Slot.value(codec).step(Slots.edit)),
+      slots => this.#path(slots).focus(Slot.value(codec).step(slots)),
       codec
     );
   }
@@ -263,7 +276,8 @@ export class Selection<
     const codec = this.#grammar.alternative<U, I>(index);
 
     return new Selection(
-      this.#place.focus(Slot.alternative(index, codec).step(Slots.edit)),
+      slots =>
+        this.#path(slots).focus(Slot.alternative(index, codec).step(slots)),
       codec
     );
   }

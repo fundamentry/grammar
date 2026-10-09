@@ -73,6 +73,6 @@ export class Rule<
   }
 
   [reach](routes: Selection.Routes): Selection.Reached<this> {
-    return { step: routes[route](this), grammar: this };
+    return { step: slots => routes[route](this).optic(slots), grammar: this };
   }
 }

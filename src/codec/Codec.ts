@@ -45,8 +45,6 @@ import { Junction } from './Junction.js';
 import { Parts } from './Parts.js';
 import { type Route } from './Route.js';
 import { Routes } from './Routes.js';
-import { Slots } from './Slots.js';
-import { type Steps } from './Steps.js';
 import { members, Union } from './Union.js';
 import { write, Writer } from './Writer.js';
 
@@ -87,9 +85,10 @@ export class Codec<in out Value extends Node> {
 
   #printer?: Printer<CodePoint>;
 
-  readonly #routed = new Cache<Nonterminal.Rule<string>, Steps.Step>(
-    new WeakMap()
-  );
+  readonly #routed = new Cache<
+    Nonterminal.Rule<string>,
+    Junction<Nonterminal.Rule<string>>
+  >(new WeakMap());
 
   readonly #unions = new Cache<object, readonly Route<Union.Member>[]>(
     new WeakMap()
@@ -244,11 +243,12 @@ export class Codec<in out Value extends Node> {
       });
   }
 
-  [route](target: Nonterminal.Rule<string>): Steps.Step {
-    return this.#routed.get(target, () =>
-      new Junction(Codec.#routes([target]).exclusive(this.#expression)).optic(
-        Slots.edit
-      )
+  [route](
+    target: Nonterminal.Rule<string>
+  ): Junction<Nonterminal.Rule<string>> {
+    return this.#routed.get(
+      target,
+      () => new Junction(Codec.#routes([target]).exclusive(this.#expression))
     );
   }
 
