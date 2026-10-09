@@ -1,3 +1,26 @@
+# 7.0.0
+
+### 🚀 Features
+
+- route selections to whichever of several rules a place holds ([7fa37ac](https://github.com/fundamentry/grammar/commit/7fa37ac))
+- let a codec witness the nodes it can print ([c6548fc](https://github.com/fundamentry/grammar/commit/c6548fc))
+- let a cache keep its entries in a store of the caller's choosing ([028cc2d](https://github.com/fundamentry/grammar/commit/028cc2d))
+- create a missing place on the route a union fits ([5b731ad](https://github.com/fundamentry/grammar/commit/5b731ad))
+- ⚠️  route to a rule along whichever of its exclusive routes a tree takes ([0981867](https://github.com/fundamentry/grammar/commit/0981867))
+- let a focus select the nodes of a rule within each value it holds ([b35d045](https://github.com/fundamentry/grammar/commit/b35d045))
+- let a selection select the nodes of a rule within each node it holds ([686522c](https://github.com/fundamentry/grammar/commit/686522c))
+- let a selection select the nodes of several rules within each node it holds ([a2d2ebe](https://github.com/fundamentry/grammar/commit/a2d2ebe))
+- let a union of rules select its nodes with text edits ([99a727f](https://github.com/fundamentry/grammar/commit/99a727f))
+
+### 🔥 Performance
+
+- create the defaults of routes only when an edit needs them ([e98551a](https://github.com/fundamentry/grammar/commit/e98551a))
+- remember the routes a codec finds to each target ([cc8c316](https://github.com/fundamentry/grammar/commit/cc8c316))
+
+### ⚠️  Breaking Changes
+
+- route to a rule along whichever of its exclusive routes a tree takes  ([0981867](https://github.com/fundamentry/grammar/commit/0981867))
+
 ## 6.1.0
 
 ### 🚀 Features
