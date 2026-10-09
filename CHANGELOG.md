@@ -1,3 +1,19 @@
+# 8.0.0
+
+### 🚀 Features
+
+- let set create a missing part even from its default text ([66e450c](https://github.com/fundamentry/grammar/commit/66e450c))
+- let a selection return the only node every tree holds ([130dede](https://github.com/fundamentry/grammar/commit/130dede))
+- ⚠️  refuse a removal that would lose another part ([34964fb](https://github.com/fundamentry/grammar/commit/34964fb))
+- let a repetition hold separators between its elements ([9a26787](https://github.com/fundamentry/grammar/commit/9a26787))
+- let a repetition separate its elements ([49f35d9](https://github.com/fundamentry/grammar/commit/49f35d9))
+- separate the elements a list gains ([16fdef7](https://github.com/fundamentry/grammar/commit/16fdef7))
+- let a selection narrow to the values that pass a predicate ([e398fea](https://github.com/fundamentry/grammar/commit/e398fea))
+
+### ⚠️  Breaking Changes
+
+- refuse a removal that would lose another part  ([34964fb](https://github.com/fundamentry/grammar/commit/34964fb))
+
 # 7.0.0
 
 ### 🚀 Features
