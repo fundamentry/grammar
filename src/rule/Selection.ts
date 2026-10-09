@@ -2,9 +2,9 @@ import { type Optic } from '@fundamentry/category';
 
 import {
   type Codec,
-  route,
+  type route,
   Steps,
-  union,
+  type union,
   type Union,
   write,
 } from '#project/codec';
@@ -20,9 +20,11 @@ import {
 } from '#project/tree';
 
 import { type Rule } from './Rule.js';
-import { Rules } from './Rules.js';
+import { type Rules } from './Rules.js';
 
 export const select: unique symbol = Symbol('select');
+
+export const reach: unique symbol = Symbol('reach');
 
 export namespace Selection {
   export interface Grammar<A> {
@@ -36,6 +38,18 @@ export namespace Selection {
 
   export interface Target<A> extends Grammar<A> {
     is(node: Node): node is A & Node;
+  }
+
+  export type Routes = Pick<Codec<Node>, typeof route | typeof union>;
+
+  export interface Reached<H> {
+    readonly step: Steps.Step;
+
+    readonly grammar: H;
+  }
+
+  export interface Destination<H> {
+    [reach](routes: Routes): Reached<H>;
   }
 }
 
@@ -167,19 +181,13 @@ export class Selection<
     rules: Rules<R>
   ): Selection<T, Rule.Selected<R[number]>, Union<Rule.Selected<R[number]>>>;
 
-  to<
-    Name extends string,
-    Elements extends Node,
-    const R extends readonly Rule.Any[],
-  >(
+  to<B extends Node, H extends Selection.Grammar<B>>(
     this: Selection<T, A>,
-    target: Rule<Name, Elements> | Rules<R>
-  ):
-    | Selection<T, Nonterminal<Name, Elements>>
-    | Selection<T, Rule.Selected<R[number]>, Union<Rule.Selected<R[number]>>> {
-    return target instanceof Rules
-      ? this.#among(target)
-      : this.#through(target);
+    target: Selection.Destination<H>
+  ): Selection<T, B, H> {
+    const { step, grammar } = target[reach](this.#grammar);
+
+    return new Selection(this.#place.focus(step), grammar);
   }
 
   within<Name extends string, Elements extends Node>(
@@ -252,19 +260,5 @@ export class Selection<
       this.#place.focus(Steps.alternative(index, codec)),
       codec
     );
-  }
-
-  #through<Name extends string, Elements extends Node>(
-    this: Selection<T, A>,
-    rule: Rule<Name, Elements>
-  ): Selection<T, Nonterminal<Name, Elements>> {
-    return new Selection(this.#place.focus(this.#grammar[route](rule)), rule);
-  }
-
-  #among<const R extends readonly Rule.Any[]>(
-    this: Selection<T, A>,
-    rules: Rules<R>
-  ): Selection<T, Rule.Selected<R[number]>, Union<Rule.Selected<R[number]>>> {
-    return new Selection(this.#place, this.#grammar[union](rules));
   }
 }

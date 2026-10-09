@@ -1,8 +1,8 @@
-import { Codec, members, type Union } from '#project/codec';
+import { Codec, members, route, type Union } from '#project/codec';
 import { type Node, Nonterminal, type View } from '#project/tree';
 
 import { Rules } from './Rules.js';
-import { select, Selection } from './Selection.js';
+import { reach, select, Selection } from './Selection.js';
 
 export namespace Rule {
   export interface Any {
@@ -70,5 +70,9 @@ export class Rule<
 
   [members](): readonly Union.Member[] {
     return [this];
+  }
+
+  [reach](routes: Selection.Routes): Selection.Reached<this> {
+    return { step: routes[route](this), grammar: this };
   }
 }

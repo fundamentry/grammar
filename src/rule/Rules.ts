@@ -1,10 +1,18 @@
-import { Prism } from '@fundamentry/category';
+import { Optional, Prism } from '@fundamentry/category';
 import { Success } from '@fundamentry/coproduct';
 
-import { type Codec, members, type Union, write, Writer } from '#project/codec';
+import {
+  type Codec,
+  members,
+  union,
+  type Union,
+  write,
+  Writer,
+} from '#project/codec';
 import { Focus, type Node } from '#project/tree';
 
 import { type Rule } from './Rule.js';
+import { reach, type Selection } from './Selection.js';
 
 export class Rules<const R extends readonly Rule.Any[]> {
   readonly #rules: R;
@@ -30,6 +38,12 @@ export class Rules<const R extends readonly Rule.Any[]> {
 
   [members](): readonly Union.Member[] {
     return this.#rules.flatMap(rule => rule[members]());
+  }
+
+  [reach](
+    routes: Selection.Routes
+  ): Selection.Reached<Union<Rule.Selected<R[number]>>> {
+    return { step: Optional.id(), grammar: routes[union](this) };
   }
 
   [write]<T extends Node>(
