@@ -166,6 +166,67 @@ describe('Selection', () => {
       expect(String(set.value())).toBe('h:80');
     });
 
+    it('must not take another alternative to create a missing place', () => {
+      const AMOUNT = new Rule('amount', codec =>
+        codec.choice(
+          codec.literal('+'),
+          codec.sequence(codec.literal('-'), NUMBER)
+        )
+      );
+
+      const tree = parsed(AMOUNT, '+');
+      const result = AMOUNT.in(tree).to(NUMBER).set('5');
+
+      assert(result.ok());
+      expect(result.value()).toBe(tree);
+    });
+
+    describe('on routes that cannot meet in one tree', () => {
+      const PATH = new Rule('path', codec =>
+        codec.sequence(codec.literal('/'), NUMBER.optional())
+      );
+
+      const LOCATION = new Rule('location', codec =>
+        codec.choice(
+          codec.sequence(codec.literal('h'), codec.literal(':'), PATH),
+          PATH
+        )
+      );
+
+      const number = (input: string) =>
+        LOCATION.in(parsed(LOCATION, input)).to(NUMBER);
+
+      const set = (input: string, text: string) => {
+        const result = number(input).set(text);
+
+        assert(result.ok());
+
+        return String(result.value());
+      };
+
+      it('must narrow to the place on whichever route the tree takes', () => {
+        expect(String(number('h:/12').find())).toBe('12');
+        expect(String(number('/34').find())).toBe('34');
+      });
+
+      it('must set the place on whichever route the tree takes', () => {
+        expect(set('h:/12', '7')).toBe('h:/7');
+        expect(set('/34', '7')).toBe('/7');
+      });
+
+      it('must create a missing place on the route the tree takes', () => {
+        expect(set('h:/', '7')).toBe('h:/7');
+        expect(set('/', '7')).toBe('/7');
+      });
+
+      it('must step into the place on whichever route the tree takes', () => {
+        const result = number('/34').elements().element(-1).set('5');
+
+        assert(result.ok());
+        expect(String(result.value())).toBe('/35');
+      });
+    });
+
     it('must refuse a rule found in more than one place', () => {
       const RANGE = new Rule('range', codec =>
         codec.sequence(NUMBER, codec.literal('-'), NUMBER)

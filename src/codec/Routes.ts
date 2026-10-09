@@ -33,18 +33,6 @@ export class Routes<
     return expression.accept(this, new Set());
   }
 
-  only(expression: Expression<CodePoint>): Route<R> {
-    const routes = this.exclusive(expression);
-    const [route] = routes;
-
-    if (!route || routes.length > 1)
-      throw new RangeError(
-        `${String(routes.length)} routes lead to ${this.#names()}`
-      );
-
-    return route;
-  }
-
   exclusive(expression: Expression<CodePoint>): readonly Route<R>[] {
     const routes = this.from(expression);
     const [first] = routes;

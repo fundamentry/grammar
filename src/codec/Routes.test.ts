@@ -175,37 +175,6 @@ describe('Routes', () => {
     });
   });
 
-  describe('only', () => {
-    const only = (expression: Expression<CodePoint>) =>
-      new Routes([TARGET], () => fallback(new Failure(undefined))).only(
-        expression
-      );
-
-    it('must return the one route to the target', () => {
-      expect(String(only(target))).toBe('/target');
-    });
-
-    it('must refuse an expression without a route to the target', () => {
-      expect(() => only(letter)).toThrow(
-        new RangeError('0 routes lead to target')
-      );
-    });
-
-    it('must refuse an expression with several routes to the target', () => {
-      expect(() => only(new Alternation([target, target]))).toThrow(
-        new RangeError('2 routes lead to target')
-      );
-    });
-
-    it('must refuse routes to the target that can meet in one tree', () => {
-      expect(() => only(new Concatenation([target, target]))).toThrow(
-        new RangeError(
-          'Routes /sequence[0]/target and /sequence[1]/target can meet in one tree'
-        )
-      );
-    });
-  });
-
   describe('exclusive', () => {
     const SECOND = { name: () => 'second' };
     const second = new Rule(letter, () => SECOND);

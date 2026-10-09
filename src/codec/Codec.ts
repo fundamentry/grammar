@@ -41,6 +41,7 @@ import {
 
 import { Caseless } from './Caseless.js';
 import { Defaults } from './Defaults.js';
+import { Junction } from './Junction.js';
 import { Parts } from './Parts.js';
 import { type Route } from './Route.js';
 import { Routes } from './Routes.js';
@@ -244,7 +245,7 @@ export class Codec<in out Value extends Node> {
 
   [route](target: Nonterminal.Rule<string>): Steps.Step {
     return this.#routed.get(target, () =>
-      Codec.#routes([target]).only(this.#expression).optic()
+      new Junction(Codec.#routes([target]).exclusive(this.#expression)).optic()
     );
   }
 
