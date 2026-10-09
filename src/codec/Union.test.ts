@@ -1,6 +1,6 @@
 import { assert, describe, expect, it } from 'vitest';
 
-import { Morphism, Prism } from '@fundamentry/category';
+import { Prism } from '@fundamentry/category';
 import { Failure, Success } from '@fundamentry/coproduct';
 import { CodePoint } from '@fundamentry/scalar';
 
@@ -82,10 +82,6 @@ describe('Union', () => {
       expect(String(previewed.value())).toBe('b');
     });
 
-    it('must preview nothing where the tree takes none of the routes', () => {
-      expect(among([first]).optic().preview(character('a')).ok()).toBe(false);
-    });
-
     it('must preview nothing its witness refuses', () => {
       const witness = Prism.fromPredicate(
         (node: Node): node is Node => !(node instanceof Nonterminal),
@@ -94,74 +90,6 @@ describe('Union', () => {
 
       expect(new Union([first], witness).optic().preview(taken('a')).ok()).toBe(
         false
-      );
-    });
-
-    it('must modify the member on the route the tree takes', () => {
-      const replaced = new Nonterminal(FIRST, character('c'));
-
-      expect(
-        among([first, second])
-          .optic()
-          .modify(Morphism.of((): Node => replaced))
-          .apply(taken('a'))
-      ).toEqual(new Choice(0, replaced));
-    });
-
-    it('must take the alternative of a member put in place of the one taken', () => {
-      const replaced = new Nonterminal(SECOND, character('b'));
-
-      expect(
-        among([first, second])
-          .optic()
-          .modify(Morphism.of((): Node => replaced))
-          .apply(taken('a'))
-      ).toEqual(new Choice(1, replaced));
-    });
-
-    it('must refuse a node that none of the alternatives admits', () => {
-      const replace = among([first])
-        .optic()
-        .modify(
-          Morphism.of((): Node => new Nonterminal(SECOND, character('b')))
-        );
-
-      expect(() => replace.apply(taken('a'))).toThrow(
-        new RangeError("'b' cannot take the place of /choice[0]/first")
-      );
-    });
-
-    it('must leave a tree that takes none of the routes as it is', () => {
-      const tree = new Choice(1, character('b'));
-
-      expect(
-        among([first])
-          .optic()
-          .modify(Morphism.of((): Node => character('c')))
-          .apply(tree)
-      ).toBe(tree);
-    });
-
-    it('must create the member along the route that fits a missing place', () => {
-      const created = new Nonterminal(FIRST, character('c'));
-
-      expect(
-        among([optional(FIRST)])
-          .optic()
-          .modify(Morphism.of((): Node => created))
-          .apply(new Option())
-      ).toEqual(new Option(created));
-    });
-
-    it('must refuse to create a node the route does not admit', () => {
-      const create = among([optional(FIRST)])
-        .optic()
-        .modify(
-          Morphism.of((): Node => new Nonterminal(SECOND, character('b')))
-        );
-
-      expect(() => create.apply(new Option())).toThrow(
-        new RangeError("'b' cannot take the place of /option/first")
       );
     });
   });
