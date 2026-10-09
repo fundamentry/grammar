@@ -847,6 +847,80 @@ describe('Selection', () => {
     });
   });
 
+  describe('where', () => {
+    it('must narrow to the values that pass', () => {
+      expect(
+        DIGIT.in(parsed(PORT, 'h:123'))
+          .where(digit => String(digit) !== '2')
+          .values()
+          .map(String)
+          .toArray()
+      ).toEqual(['1', '3']);
+    });
+
+    it('must write only the values that pass', () => {
+      const set = DIGIT.in(parsed(PORT, 'h:123'))
+        .where(digit => String(digit) !== '2')
+        .set('9');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:929');
+    });
+
+    it('must remove the elements of a list that pass, with their separators', () => {
+      const PARAM = new Rule('param', codec =>
+        codec.character(['a', 'z']).oneOrMore()
+      );
+
+      const QUERY = new Rule('query', codec => PARAM.many(codec.literal('&')));
+
+      const without = (input: string, name: string) =>
+        String(
+          removed(
+            PARAM.in(parsed(QUERY, input))
+              .where(param => String(param) === name)
+              .remove()
+          )
+        );
+
+      expect(without('a&b&a', 'a')).toBe('b');
+      expect(without('a&b&c', 'b')).toBe('a&c');
+    });
+
+    it('must narrow the values its routes reach', () => {
+      const NUMBER = new Rule('number', () => DIGIT.many());
+
+      const ADDRESS = new Rule('address', codec =>
+        codec.sequence(codec.literal('h'), codec.literal(':'), NUMBER)
+      );
+
+      const tree = parsed(ADDRESS, 'h:12');
+
+      expect(
+        ADDRESS.in(tree)
+          .to(Rule.any(NUMBER))
+          .where(number => String(number) === '34')
+          .find()
+      ).toBeUndefined();
+      expect(
+        String(
+          ADDRESS.in(tree)
+            .to(Rule.any(NUMBER))
+            .where(number => String(number) === '12')
+            .find()
+        )
+      ).toBe('12');
+    });
+
+    it('must not guarantee exactly one value', () => {
+      expect(() =>
+        PORT.in(parsed(PORT, 'h'))
+          .where(() => true)
+          .only()
+      ).toThrow(new RangeError('Exactly one node is not guaranteed at /where'));
+    });
+  });
+
   describe('focus', () => {
     it('must narrow to a part with any optic, leaving the grammar behind', () => {
       const focus = PORT.in(parsed(PORT, 'h:1'))

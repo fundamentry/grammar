@@ -1,4 +1,4 @@
-import { type Optic } from '@fundamentry/category';
+import { type Optic, Optional, Prism } from '@fundamentry/category';
 import { type Result } from '@fundamentry/coproduct';
 
 import {
@@ -223,6 +223,27 @@ export class Selection<
     element: E | string
   ): T | Codec.Parsed<T> {
     return this.insert(0, element);
+  }
+
+  where(predicate: (value: A) => boolean): Selection<T, A, G> {
+    const passes = (slots: Slots) => {
+      const values = Optional.id<Node>().andThen(this.#grammar.optic(slots));
+
+      return (node: Node): node is Node =>
+        values.preview(node).match({
+          onSuccess: predicate,
+          onFailure: () => false,
+        });
+    };
+
+    return new Selection(
+      slots =>
+        this.#path(slots).focus(
+          Prism.fromPredicate(passes(slots), () => undefined)
+        ),
+      this.#grammar,
+      [...this.#gaps, '/where']
+    );
   }
 
   focus<B>(optic: Optic<Optic.Kind, A, B, unknown>): Focus<T, B> {
