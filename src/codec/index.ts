@@ -1,4 +1,4 @@
-export { Codec, route, union } from './Codec.js';
+export { Codec, gaps, route, union } from './Codec.js';
 export { Slot } from './Slot.js';
 export { Slots } from './Slots.js';
 export { Steps } from './Steps.js';

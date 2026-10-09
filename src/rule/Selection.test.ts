@@ -88,6 +88,94 @@ describe('Selection', () => {
     });
   });
 
+  describe('only', () => {
+    const NUMBER = new Rule('number', () => DIGIT.many());
+
+    const NAME = new Rule('name', codec => codec.character(['a', 'z']).many());
+
+    const ADDRESS = new Rule('address', codec =>
+      codec.choice(
+        codec.sequence(codec.literal('h'), codec.literal(':'), NUMBER),
+        codec.sequence(codec.literal('/'), NAME)
+      )
+    );
+
+    const PARTS = Rule.any(NUMBER, NAME);
+
+    it('must return the one node every tree holds on whichever route it takes', () => {
+      expect(String(ADDRESS.in(parsed(ADDRESS, 'h:80')).to(PARTS).only())).toBe(
+        '80'
+      );
+      expect(String(ADDRESS.in(parsed(ADDRESS, '/ab')).to(PARTS).only())).toBe(
+        'ab'
+      );
+    });
+
+    it('must return the one node of a rule every tree holds', () => {
+      expect(String(PORT.in(parsed(PORT, 'h')).elements().at(0).only())).toBe(
+        'h'
+      );
+    });
+
+    it('must refuse a rule that not every tree holds, even when this one does', () => {
+      expect(() =>
+        ADDRESS.in(parsed(ADDRESS, 'h:80')).to(NUMBER).only()
+      ).toThrow(
+        new RangeError(
+          'Exactly one node is not guaranteed at /address/choice[1]'
+        )
+      );
+    });
+
+    it('must return the only node of a rule in a tree', () => {
+      expect(String(DIGIT.in(parsed(PORT, 'h:1')).only())).toBe('1');
+    });
+
+    it('must refuse a tree with several nodes of the rule', () => {
+      expect(() => DIGIT.in(parsed(PORT, 'h:12')).only()).toThrow(
+        new RangeError('Expected exactly one node, found 2')
+      );
+    });
+
+    it('must refuse a tree without a node of the rule', () => {
+      expect(() => DIGIT.in(parsed(PORT, 'h')).only()).toThrow(
+        new RangeError('Expected exactly one node, found 0')
+      );
+    });
+
+    it('must refuse an alternative that may not be taken', () => {
+      expect(() =>
+        SIGN.in(parsed(SIGN, '+')).elements().alternative(0).only()
+      ).toThrow(
+        new RangeError('Exactly one node is not guaranteed at /choice[0]')
+      );
+    });
+
+    it('must refuse an element that may be missing', () => {
+      const DIGITS = new Rule('digits', () => DIGIT.many());
+
+      expect(() =>
+        DIGITS.in(parsed(DIGITS, '1')).elements().element(0).only()
+      ).toThrow(
+        new RangeError('Exactly one node is not guaranteed at /element[0]')
+      );
+    });
+
+    it('must refuse the nodes within a node', () => {
+      expect(() => PORT.in(parsed(PORT, 'h:1')).within(DIGIT).only()).toThrow(
+        new RangeError('Exactly one node is not guaranteed at /within')
+      );
+    });
+
+    it('must refuse a part that may be missing', () => {
+      expect(() =>
+        PORT.in(parsed(PORT, 'h:1')).elements().at(1).value().only()
+      ).toThrow(
+        new RangeError('Exactly one node is not guaranteed at /option')
+      );
+    });
+  });
+
   describe('set', () => {
     it('must parse text with the codec of the focus and set it', () => {
       const set = DIGIT.in(parsed(PORT, 'h:12')).set('7');

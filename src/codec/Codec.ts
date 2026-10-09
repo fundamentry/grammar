@@ -41,6 +41,7 @@ import {
 
 import { Caseless } from './Caseless.js';
 import { Defaults } from './Defaults.js';
+import { Gaps } from './Gaps.js';
 import { Junction } from './Junction.js';
 import { Parts } from './Parts.js';
 import { type Route } from './Route.js';
@@ -51,6 +52,8 @@ import { write, Writer } from './Writer.js';
 export const route: unique symbol = Symbol('route');
 
 export const union: unique symbol = Symbol('union');
+
+export const gaps: unique symbol = Symbol('gaps');
 
 export namespace Codec {
   export type CodePointLike = string | number | CodePoint;
@@ -93,6 +96,8 @@ export class Codec<in out Value extends Node> {
   readonly #unions = new Cache<object, readonly Route<Union.Member>[]>(
     new WeakMap()
   );
+
+  readonly #gaps = new Cache<object, readonly string[]>(new WeakMap());
 
   protected constructor(
     expression: Expression<CodePoint>,
@@ -249,6 +254,14 @@ export class Codec<in out Value extends Node> {
     return this.#routed.get(
       target,
       () => new Junction(Codec.#routes([target]).exclusive(this.#expression))
+    );
+  }
+
+  [gaps](
+    targets: Pick<Union.Targets<Node>, typeof members>
+  ): readonly string[] {
+    return this.#gaps.get(targets, () =>
+      new Gaps(targets[members]()).from(this.#expression)
     );
   }
 

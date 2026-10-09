@@ -1,4 +1,4 @@
-import { Codec, members, route, type Union } from '#project/codec';
+import { Codec, gaps, members, route, type Union } from '#project/codec';
 import { type Node, Nonterminal, type View } from '#project/tree';
 
 import { Rules } from './Rules.js';
@@ -73,6 +73,10 @@ export class Rule<
   }
 
   [reach](routes: Selection.Routes): Selection.Reached<this> {
-    return { step: slots => routes[route](this).optic(slots), grammar: this };
+    return {
+      step: slots => routes[route](this).optic(slots),
+      grammar: this,
+      gaps: routes[gaps](this),
+    };
   }
 }

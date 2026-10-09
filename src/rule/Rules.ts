@@ -3,6 +3,7 @@ import { Failure, Success } from '@fundamentry/coproduct';
 
 import {
   type Codec,
+  gaps,
   members,
   union,
   type Union,
@@ -53,7 +54,11 @@ export class Rules<const R extends readonly Rule.Any[]> {
   [reach](
     routes: Selection.Routes
   ): Selection.Reached<Union<Rule.Selected<R[number]>>> {
-    return { step: () => Optional.id(), grammar: routes[union](this) };
+    return {
+      step: () => Optional.id(),
+      grammar: routes[union](this),
+      gaps: routes[gaps](this),
+    };
   }
 
   [write]<T extends Node>(

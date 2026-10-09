@@ -2,6 +2,7 @@ import { type Optic } from '@fundamentry/category';
 
 import {
   type Codec,
+  type gaps,
   type route,
   Slot,
   Slots,
@@ -43,12 +44,17 @@ export namespace Selection {
     is(node: Node): node is A & Node;
   }
 
-  export type Routes = Pick<Codec<Node>, typeof route | typeof union>;
+  export type Routes = Pick<
+    Codec<Node>,
+    typeof gaps | typeof route | typeof union
+  >;
 
   export interface Reached<H> {
     readonly step: (slots: Slots) => Steps.Step;
 
     readonly grammar: H;
+
+    readonly gaps: readonly string[];
   }
 
   export interface Destination<H> {
@@ -69,7 +75,13 @@ export class Selection<
 
   readonly #focus: Focus<T, A>;
 
-  private constructor(path: (slots: Slots) => Focus<T, Node>, grammar: G) {
+  readonly #gaps: readonly string[];
+
+  private constructor(
+    path: (slots: Slots) => Focus<T, Node>,
+    grammar: G,
+    gaps: readonly string[]
+  ) {
     const place = path(Slots.edit);
     const focus = place.focus(grammar.optic(Slots.edit));
 
@@ -79,6 +91,7 @@ export class Selection<
     this.#place = place;
     this.#grammar = grammar;
     this.#focus = focus;
+    this.#gaps = gaps;
   }
 
   static [select]<
@@ -88,7 +101,24 @@ export class Selection<
   >(tree: T, target: H): Selection<T, B, H> {
     return new Selection(
       () => Focus.of(tree, (node): node is Node => target.is(node)),
-      target
+      target,
+      []
+    );
+  }
+
+  only(): A {
+    if (this.#gaps.length > 0)
+      throw new RangeError(
+        `Exactly one node is not guaranteed at ${this.#gaps.join(', ')}`
+      );
+
+    const values = this.values().toArray();
+    const [value] = values;
+
+    if (value && values.length === 1) return value;
+
+    throw new RangeError(
+      `Expected exactly one node, found ${String(values.length)}`
     );
   }
 
@@ -195,11 +225,12 @@ export class Selection<
     this: Selection<T, A>,
     target: Selection.Destination<H>
   ): Selection<T, B, H> {
-    const { step, grammar } = target[reach](this.#grammar);
+    const { step, grammar, gaps } = target[reach](this.#grammar);
 
     return new Selection(
       slots => this.#path(slots).focus(step(slots)),
-      grammar
+      grammar,
+      [...this.#gaps, ...gaps]
     );
   }
 
@@ -219,7 +250,8 @@ export class Selection<
         this.#path(slots)
           .focus(this.#grammar.optic(slots))
           .within((node): node is Node => target.is(node)),
-      target
+      target,
+      [...this.#gaps, '/within']
     );
   }
 
@@ -228,7 +260,8 @@ export class Selection<
   ): Selection<T, Elements> {
     return new Selection(
       slots => this.#path(slots).focus(Steps.elements()),
-      this.#grammar.elements()
+      this.#grammar.elements(),
+      this.#gaps
     );
   }
 
@@ -238,7 +271,8 @@ export class Selection<
   ): Selection<T, U[I]> {
     return new Selection(
       slots => this.#path(slots).focus(Steps.at(index)),
-      this.#grammar.at<U, I>(index)
+      this.#grammar.at<U, I>(index),
+      this.#gaps
     );
   }
 
@@ -248,7 +282,8 @@ export class Selection<
   ): Selection<T, E> {
     return new Selection(
       slots => this.#path(slots).focus(Steps.element(index)),
-      this.#grammar.element()
+      this.#grammar.element(),
+      [...this.#gaps, `/element[${String(index)}]`]
     );
   }
 
@@ -265,7 +300,8 @@ export class Selection<
 
     return new Selection(
       slots => this.#path(slots).focus(Slot.value(codec).step(slots)),
-      codec
+      codec,
+      [...this.#gaps, '/option']
     );
   }
 
@@ -278,7 +314,8 @@ export class Selection<
     return new Selection(
       slots =>
         this.#path(slots).focus(Slot.alternative(index, codec).step(slots)),
-      codec
+      codec,
+      [...this.#gaps, `/choice[${String(index)}]`]
     );
   }
 }

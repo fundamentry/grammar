@@ -19,7 +19,7 @@ import {
   type Literal,
 } from '#project/tree';
 
-import { Codec, route, union } from './Codec.js';
+import { Codec, gaps, route, union } from './Codec.js';
 import { members, type Union } from './Union.js';
 import { write } from './Writer.js';
 
@@ -748,6 +748,21 @@ describe('Codec', () => {
       const codec = build.sequence(digit, Exposed.rule(target, letter));
 
       expect(codec[route](target)).toBe(codec[route](target));
+    });
+  });
+
+  describe('gaps', () => {
+    it('must find where trees can lack its targets, once', () => {
+      const target: Union.Member = {
+        name: () => 'target',
+        is: () => false,
+        parse: () => new Failure(new Mismatch(0, [], 'nothing')),
+      };
+      const targets = { [members]: () => [target] };
+      const codec = build.choice(digit, Exposed.rule(target, letter));
+
+      expect(codec[gaps](targets)).toEqual(['/choice[0]']);
+      expect(codec[gaps](targets)).toBe(codec[gaps](targets));
     });
   });
 
