@@ -5,41 +5,61 @@ import { Option } from './Option.js';
 import { Repetition } from './Repetition.js';
 import { View } from './View.js';
 
-export namespace Focus {
-  export type Narrow<T extends Node, A> = <B>(
-    optic: Optic<Optic.Kind, A, B, unknown>
-  ) => Focus<T, B>;
-}
-
 export class Focus<T extends Node, A> extends View<A> {
   readonly #tree: T;
 
   readonly #modify: (update: Morphism<A, A>) => T;
 
-  readonly #narrow: Focus.Narrow<T, A>;
-
   private constructor(
     tree: T,
     values: () => IteratorObject<A>,
-    modify: (update: Morphism<A, A>) => T,
-    narrow: Focus.Narrow<T, A>
+    modify: (update: Morphism<A, A>) => T
   ) {
     super(values);
 
     this.#tree = tree;
     this.#modify = modify;
-    this.#narrow = narrow;
   }
 
   static of<T extends Node, F extends Node>(
     tree: T,
     is: (node: Node) => node is F
   ): Focus<T, F> {
-    return Focus.#over(tree, is, Optional.id<F>());
+    return Focus.#root(tree).within(is);
   }
 
   focus<B>(optic: Optic<Optic.Kind, A, B, unknown>): Focus<T, B> {
-    return this.#narrow(optic);
+    const optional = Optional.id<A>().andThen(optic);
+
+    return new Focus(
+      this.#tree,
+      () =>
+        this.values().flatMap(value =>
+          optional.preview(value).match<readonly B[]>({
+            onSuccess: part => [part],
+            onFailure: () => [],
+          })
+        ),
+      update => this.#modify(optional.modify(update))
+    );
+  }
+
+  within<N extends Node, F extends Node>(
+    this: Focus<T, N>,
+    is: (node: Node) => node is F
+  ): Focus<T, F> {
+    return new Focus(
+      this.#tree,
+      () => this.values().flatMap(value => value.outermost(is)),
+      update =>
+        this.#modify(
+          Morphism.of(value =>
+            Focus.#rewrite(value, (node, rewrite) =>
+              is(node) ? update.apply(node) : node.map(rewrite)
+            )
+          )
+        )
+    );
   }
 
   set(value: A): T {
@@ -82,28 +102,11 @@ export class Focus<T extends Node, A> extends View<A> {
     });
   }
 
-  static #over<T extends Node, F extends Node, A>(
-    tree: T,
-    is: (node: Node) => node is F,
-    optic: Optional<F, A, unknown>
-  ): Focus<T, A> {
-    return new Focus(
+  static #root<T extends Node>(tree: T): Focus<T, Node> {
+    return new Focus<T, Node>(
       tree,
-      () =>
-        tree.outermost(is).flatMap(found =>
-          optic.preview(found).match<readonly A[]>({
-            onSuccess: value => [value],
-            onFailure: () => [],
-          })
-        ),
-      update => {
-        const modified = optic.modify(update);
-
-        return Focus.#rewrite(tree, (node, rewrite) =>
-          is(node) ? modified.apply(node) : node.map(rewrite)
-        );
-      },
-      next => Focus.#over(tree, is, optic.andThen(next))
+      () => [tree].values(),
+      update => Focus.#rewrite(tree, node => update.apply(node))
     );
   }
 

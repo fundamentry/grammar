@@ -22,6 +22,15 @@ const isDigit = (node: Node): node is Digit =>
 
 const digit = (elements: Node): Digit => new Nonterminal(DIGIT, elements);
 
+const PAIR = { name: (): 'pair' => 'pair' };
+
+type Pair = Nonterminal<'pair', Node>;
+
+const isPair = (node: Node): node is Pair =>
+  node instanceof Nonterminal && node.rule() === PAIR;
+
+const pair = (elements: Node): Pair => new Nonterminal(PAIR, elements);
+
 class Unexplored extends Node {
   override map(): Node {
     return this;
@@ -271,6 +280,106 @@ describe('Focus', () => {
           .focus(Nonterminal.elements())
           .set(B)
       ).toEqual(new Sequence([digit(B), A, digit(B)]));
+    });
+  });
+
+  describe('within', () => {
+    it('must yield the outermost nodes within each focused node in document order', () => {
+      const first = digit(digit(A));
+      const second = digit(B);
+
+      expect(
+        Focus.of(
+          new Sequence([pair(new Sequence([first, A])), pair(second)]),
+          isPair
+        )
+          .within(isDigit)
+          .values()
+          .toArray()
+      ).toEqual([first, second]);
+    });
+
+    it('must yield nothing outside the focused nodes', () => {
+      expect(
+        Focus.of(new Sequence([digit(A), pair(B)]), isPair)
+          .within(isDigit)
+          .values()
+          .toArray()
+      ).toEqual([]);
+    });
+
+    it('must yield a focused node that is itself a match', () => {
+      const tree = pair(A);
+
+      expect(Focus.of(tree, isPair).within(isPair).values().toArray()).toEqual([
+        tree,
+      ]);
+    });
+
+    it('must explore the focused nodes only as far as the values pulled', () => {
+      const first = digit(A);
+      const values = Focus.of(
+        new Sequence([pair(first), pair(new Unexplored())]),
+        isPair
+      )
+        .within(isDigit)
+        .values();
+
+      expect(values.next().value).toBe(first);
+      expect(() => values.next()).toThrow('Children were explored');
+    });
+
+    it('must set only the nodes within the focused nodes', () => {
+      expect(
+        Focus.of(new Sequence([digit(A), pair(digit(A))]), isPair)
+          .within(isDigit)
+          .set(digit(B))
+      ).toEqual(new Sequence([digit(A), pair(digit(B))]));
+    });
+
+    it('must hand each outermost node to the update as found', () => {
+      const outer = digit(digit(A));
+      const updated: Node[] = [];
+
+      Focus.of(pair(outer), isPair)
+        .within(isDigit)
+        .modify(node => {
+          updated.push(node);
+
+          return node;
+        });
+
+      expect(updated).toEqual([outer]);
+    });
+
+    it('must remove the nodes within the focused nodes', () => {
+      expect(
+        Focus.of(
+          new Sequence([new Option(digit(A)), pair(new Option(digit(B)))]),
+          isPair
+        )
+          .within(isDigit)
+          .remove()
+      ).toEqual(new Sequence([new Option(digit(A)), pair(new Option())]));
+    });
+
+    it('must narrow the nodes within to a part of them', () => {
+      expect(
+        Focus.of(pair(new Sequence([digit(A), digit(B)])), isPair)
+          .within(isDigit)
+          .focus(Nonterminal.elements())
+          .set(B)
+      ).toEqual(pair(new Sequence([digit(B), digit(B)])));
+    });
+
+    it('must descend within the part of the focused nodes', () => {
+      expect(
+        Focus.of(new Sequence([digit(A), digit(digit(B))]), isDigit)
+          .focus(Nonterminal.elements())
+          .within(isDigit)
+          .values()
+          .toArray()
+      ).toEqual([digit(B)]);
     });
   });
 });
