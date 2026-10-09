@@ -19,6 +19,8 @@ import { Route } from './Route.js';
 import { Union } from './Union.js';
 import { write } from './Writer.js';
 
+const fallback = <T>(result: T) => ({ default: () => result });
+
 const character = (text: string) => new Character(CodePoint.of(text));
 
 const member = (name: string, accepts: RegExp): Union.Member => {
@@ -45,7 +47,8 @@ const among = (routes: readonly Route<Union.Member>[]) =>
     )
   );
 
-const choice = (index: number) => Move.choice(index, new Failure(undefined));
+const choice = (index: number) =>
+  Move.choice(index, fallback(new Failure(undefined)));
 
 const first = Route.to(FIRST).after(choice(0));
 const second = Route.to(SECOND).after(choice(1));

@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest';
+import { assert, describe, expect, it, vi } from 'vitest';
 
 import { Morphism } from '@fundamentry/category';
 import { Failure, Success } from '@fundamentry/coproduct';
@@ -15,6 +15,8 @@ import {
 } from '#project/tree';
 
 import { Steps } from './Steps.js';
+
+const fallback = <T>(result: T) => ({ default: () => result });
 
 const A = new Character(CodePoint.of('a'));
 const B = new Character(CodePoint.of('b'));
@@ -91,42 +93,62 @@ describe('Steps', () => {
 
   describe('value', () => {
     it('must preview and update the value of a present option', () => {
-      const step = Steps.value(new Failure(undefined));
+      const step = Steps.value(fallback(new Failure(undefined)));
 
       expect(previewed(step, new Option(A))).toBe(A);
       expect(step.modify(toB).apply(new Option(A))).toEqual(new Option(B));
     });
 
     it('must not preview an absent option, even with a fallback', () => {
-      expect(Steps.value(new Success(A)).preview(new Option()).ok()).toBe(
-        false
-      );
+      expect(
+        Steps.value(fallback(new Success(A)))
+          .preview(new Option())
+          .ok()
+      ).toBe(false);
     });
 
     it('must create an absent option from its fallback when updated', () => {
       expect(
-        Steps.value(new Success(A)).modify(toB).apply(new Option())
+        Steps.value(fallback(new Success(A)))
+          .modify(toB)
+          .apply(new Option())
       ).toEqual(new Option(B));
     });
 
     it('must leave an absent option absent when its fallback is kept', () => {
       const absent = new Option();
 
-      expect(Steps.value(new Success(B)).modify(toB).apply(absent)).toBe(
-        absent
-      );
+      expect(
+        Steps.value(fallback(new Success(B)))
+          .modify(toB)
+          .apply(absent)
+      ).toBe(absent);
     });
 
     it('must pass over an absent option without a fallback', () => {
       const absent = new Option();
-      const step = Steps.value(new Failure(undefined));
+      const step = Steps.value(fallback(new Failure(undefined)));
 
       expect(step.preview(absent).ok()).toBe(false);
       expect(step.modify(toB).apply(absent)).toBe(absent);
     });
 
+    it('must ask for its fallback only to create an absent option', () => {
+      const create = vi.fn(() => new Success(A));
+      const step = Steps.value({ default: create });
+
+      step.preview(new Option());
+      step.modify(toB).apply(new Option(A));
+
+      expect(create).not.toHaveBeenCalled();
+
+      step.modify(toB).apply(new Option());
+
+      expect(create).toHaveBeenCalledOnce();
+    });
+
     it('must pass over anything but an option', () => {
-      const step = Steps.value(new Success(A));
+      const step = Steps.value(fallback(new Success(A)));
 
       expect(step.preview(A).ok()).toBe(false);
       expect(step.modify(toB).apply(A)).toBe(A);
@@ -136,7 +158,7 @@ describe('Steps', () => {
   describe('alternative', () => {
     it('must preview and update the alternative taken', () => {
       const node = new Choice(1, A);
-      const step = Steps.alternative(1, new Failure(undefined));
+      const step = Steps.alternative(1, fallback(new Failure(undefined)));
 
       expect(previewed(step, node)).toBe(A);
       expect(step.modify(toB).apply(node)).toEqual(new Choice(1, B));
@@ -144,7 +166,9 @@ describe('Steps', () => {
 
     it('must take the alternative from its fallback when updated', () => {
       expect(
-        Steps.alternative(1, new Success(A)).modify(toB).apply(new Choice(0, A))
+        Steps.alternative(1, fallback(new Success(A)))
+          .modify(toB)
+          .apply(new Choice(0, A))
       ).toEqual(new Choice(1, B));
     });
 
@@ -152,20 +176,26 @@ describe('Steps', () => {
       const other = new Choice(0, A);
 
       expect(
-        Steps.alternative(1, new Success(B)).modify(toB).apply(other)
+        Steps.alternative(1, fallback(new Success(B)))
+          .modify(toB)
+          .apply(other)
       ).toBe(other);
     });
 
     it('must pass over another alternative without a fallback', () => {
       const other = new Choice(0, A);
-      const step = Steps.alternative(1, new Failure(undefined));
+      const step = Steps.alternative(1, fallback(new Failure(undefined)));
 
       expect(step.preview(other).ok()).toBe(false);
       expect(step.modify(toB).apply(other)).toBe(other);
     });
 
     it('must pass over anything but a choice', () => {
-      expect(Steps.alternative(0, new Success(A)).preview(A).ok()).toBe(false);
+      expect(
+        Steps.alternative(0, fallback(new Success(A)))
+          .preview(A)
+          .ok()
+      ).toBe(false);
     });
   });
 

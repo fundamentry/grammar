@@ -8,6 +8,8 @@ import { Character, Choice, Nonterminal, Sequence } from '#project/tree';
 import { Move } from './Move.js';
 import { Route } from './Route.js';
 
+const fallback = <T>(result: T) => ({ default: () => result });
+
 const A = new Character(CodePoint.of('a'));
 
 const TARGET = { name: () => 'target' };
@@ -15,7 +17,8 @@ const TARGET = { name: () => 'target' };
 const through = (...moves: readonly Move[]) =>
   moves.reduceRight((route, move) => route.after(move), Route.to(TARGET));
 
-const choice = (index: number) => Move.choice(index, new Failure(undefined));
+const choice = (index: number) =>
+  Move.choice(index, fallback(new Failure(undefined)));
 
 describe('Route', () => {
   describe('to', () => {
@@ -33,7 +36,7 @@ describe('Route', () => {
     it('must take the move first, then the route', () => {
       const route = Route.to(TARGET)
         .after(Move.sequence(1))
-        .after(Move.choice(0, new Failure(undefined)));
+        .after(Move.choice(0, fallback(new Failure(undefined))));
       const found = new Nonterminal(TARGET, A);
       const previewed = route
         .optic()

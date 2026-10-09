@@ -369,7 +369,7 @@ export class Codec<in out Value extends Node> {
   static #routes<R extends Nonterminal.Rule<string>>(
     targets: readonly R[]
   ): Routes<R> {
-    return new Routes(targets, expression => new Codec(expression).default());
+    return new Routes(targets, expression => new Codec(expression));
   }
 
   static #verified<Source, Value, Reason>(

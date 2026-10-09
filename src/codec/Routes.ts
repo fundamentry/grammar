@@ -10,7 +10,7 @@ import { type Steps } from './Steps.js';
 export namespace Routes {
   export type Rules = ReadonlySet<Nonterminal.Rule<string>>;
 
-  export type Defaults = (expression: Expression<CodePoint>) => Steps.Fallback;
+  export type Fallbacks = (expression: Expression<CodePoint>) => Steps.Fallback;
 }
 
 export class Routes<
@@ -22,11 +22,11 @@ export class Routes<
 
   readonly #targets: readonly R[];
 
-  readonly #defaults: Routes.Defaults;
+  readonly #fallbacks: Routes.Fallbacks;
 
-  constructor(targets: readonly R[], defaults: Routes.Defaults) {
+  constructor(targets: readonly R[], fallbacks: Routes.Fallbacks) {
     this.#targets = targets;
-    this.#defaults = defaults;
+    this.#fallbacks = fallbacks;
   }
 
   from(expression: Expression<CodePoint>): readonly Route<R>[] {
@@ -86,7 +86,7 @@ export class Routes<
       alternative
         .accept(this, rules)
         .map(route =>
-          route.after(Move.choice(index, this.#defaults(alternative)))
+          route.after(Move.choice(index, this.#fallbacks(alternative)))
         )
     );
   }
@@ -97,7 +97,7 @@ export class Routes<
   ): readonly Route<R>[] {
     return element
       .accept(this, rules)
-      .map(route => route.after(Move.option(this.#defaults(element))));
+      .map(route => route.after(Move.option(this.#fallbacks(element))));
   }
 
   repetition(): readonly Route<R>[] {

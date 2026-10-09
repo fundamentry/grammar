@@ -13,6 +13,8 @@ import {
 
 import { Move } from './Move.js';
 
+const fallback = <T>(result: T) => ({ default: () => result });
+
 const A = new Character(CodePoint.of('a'));
 
 describe('Move', () => {
@@ -42,7 +44,7 @@ describe('Move', () => {
 
   describe('choice', () => {
     it('must move to the alternative of a choice at the index', () => {
-      const move = Move.choice(1, new Failure(undefined));
+      const move = Move.choice(1, fallback(new Failure(undefined)));
 
       expect(move.step().preview(new Choice(1, A)).ok()).toBe(true);
       expect(move.step().preview(new Choice(0, A)).ok()).toBe(false);
@@ -53,7 +55,9 @@ describe('Move', () => {
   describe('choose', () => {
     it('must take the alternative of a move to an alternative', () => {
       expect(
-        Move.choice(1, new Failure(undefined)).choose().set(new Choice(0, A), A)
+        Move.choice(1, fallback(new Failure(undefined)))
+          .choose()
+          .set(new Choice(0, A), A)
       ).toEqual(new Choice(1, A));
     });
 
@@ -67,7 +71,7 @@ describe('Move', () => {
   describe('option', () => {
     it('must move to the value of an option, creating it from the fallback', () => {
       const B = new Character(CodePoint.of('b'));
-      const move = Move.option(new Success(A));
+      const move = Move.option(fallback(new Success(A)));
 
       expect(move.step().set(new Option(), B)).toEqual(new Option(B));
       expect(String(move)).toBe('option');
@@ -76,23 +80,25 @@ describe('Move', () => {
 
   describe('excludes', () => {
     it('must hold for moves to different alternatives', () => {
-      const first = Move.choice(0, new Failure(undefined));
-      const second = Move.choice(1, new Failure(undefined));
+      const first = Move.choice(0, fallback(new Failure(undefined)));
+      const second = Move.choice(1, fallback(new Failure(undefined)));
 
       expect(first.excludes(second)).toBe(true);
       expect(second.excludes(first)).toBe(true);
-      expect(first.excludes(Move.choice(0, new Failure(undefined)))).toBe(
-        false
-      );
+      expect(
+        first.excludes(Move.choice(0, fallback(new Failure(undefined))))
+      ).toBe(false);
     });
 
     it('must not hold for moves that are not both to alternatives', () => {
-      const choice = Move.choice(0, new Failure(undefined));
+      const choice = Move.choice(0, fallback(new Failure(undefined)));
 
       expect(choice.excludes(Move.sequence(0))).toBe(false);
       expect(Move.sequence(0).excludes(choice)).toBe(false);
       expect(Move.sequence(0).excludes(Move.sequence(1))).toBe(false);
-      expect(Move.option(new Failure(undefined)).excludes(choice)).toBe(false);
+      expect(
+        Move.option(fallback(new Failure(undefined))).excludes(choice)
+      ).toBe(false);
       expect(Move.rule('rule').excludes(choice)).toBe(false);
       expect(choice.excludes(undefined)).toBe(false);
     });
@@ -103,7 +109,9 @@ describe('Move', () => {
       expect(Move.sequence(1).equals(Move.sequence(1))).toBe(true);
       expect(Move.sequence(1).equals(Move.sequence(0))).toBe(false);
       expect(
-        Move.sequence(0).equals(Move.choice(0, new Failure(undefined)))
+        Move.sequence(0).equals(
+          Move.choice(0, fallback(new Failure(undefined)))
+        )
       ).toBe(false);
       expect(Move.sequence(0).equals('sequence[0]')).toBe(false);
     });

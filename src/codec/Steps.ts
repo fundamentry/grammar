@@ -18,7 +18,9 @@ import {
 export namespace Steps {
   export type Step = Optional<Node, Node, unknown>;
 
-  export type Fallback = Result<Node, unknown>;
+  export interface Fallback {
+    default(): Result<Node, unknown>;
+  }
 }
 
 export class Steps {
@@ -112,7 +114,7 @@ export class Steps {
     wrap: (value: Node) => Node,
     fallback: Steps.Fallback
   ): Steps.Step {
-    const preview = (slot: S): Steps.Fallback => {
+    const preview = (slot: S): Result<Node, undefined> => {
       const value = read(slot);
 
       return value ? new Success(value) : new Failure(undefined);
@@ -130,7 +132,7 @@ export class Steps {
 
       return value
         ? wrap(update.apply(value))
-        : fallback.match({
+        : fallback.default().match({
             onSuccess: created(slot, update),
             onFailure: () => slot,
           });

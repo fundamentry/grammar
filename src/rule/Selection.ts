@@ -218,10 +218,7 @@ export class Selection<
   value<U extends Node>(this: Selection<T, Option<U>>): Selection<T, U> {
     const codec = this.#grammar.value();
 
-    return new Selection(
-      this.#place.focus(Steps.value(codec.default())),
-      codec
-    );
+    return new Selection(this.#place.focus(Steps.value(codec)), codec);
   }
 
   alternative<U extends readonly Node[], const I extends Node.Index<U>>(
@@ -231,7 +228,7 @@ export class Selection<
     const codec = this.#grammar.alternative<U, I>(index);
 
     return new Selection(
-      this.#place.focus(Steps.alternative(index, codec.default())),
+      this.#place.focus(Steps.alternative(index, codec)),
       codec
     );
   }
