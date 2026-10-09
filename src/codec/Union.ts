@@ -45,18 +45,40 @@ export class Union<A extends Node> {
   }
 
   #routed(): Steps.Step {
-    const replace = (node: Node, taken: Route<Union.Member>, value: Node) => {
-      const form = [taken, ...this.#alternates(taken)].find(
-        (route: Route<Union.Member>) => route.admits(value)
-      );
+    const admitted = (routes: readonly Route<Union.Member>[], value: Node) => {
+      const [taken] = routes;
+      const form = routes.find(route => route.admits(value));
 
       if (!form)
         throw new RangeError(
           `'${String(value)}' cannot take the place of ${String(taken)}`
         );
 
-      return form.choose().set(node, value);
+      return form;
     };
+
+    const replace = (node: Node, taken: Route<Union.Member>, value: Node) =>
+      admitted([taken, ...this.#alternates(taken)], value)
+        .choose()
+        .set(node, value);
+
+    const create = (
+      node: Node,
+      route: Route<Union.Member>,
+      update: Morphism<Node, Node>
+    ) =>
+      route
+        .optic()
+        .modify(
+          Morphism.of(value => {
+            const created = update.apply(value);
+
+            admitted([route], created);
+
+            return created;
+          })
+        )
+        .apply(node);
 
     return Optional.of(
       FallibleMorphism.of(
@@ -69,7 +91,9 @@ export class Union<A extends Node> {
           node =>
             this.#along(node, (taken, value) =>
               replace(node, taken, update.apply(value))
-            ) ?? node
+            ) ??
+            this.#fitting(node, route => create(node, route, update)) ??
+            node
         )
       )
     );
@@ -83,7 +107,9 @@ export class Union<A extends Node> {
       node =>
         this.#along(node, (taken, value) =>
           this.#put(node, taken, update(String(value)))
-        ) ?? new Success(node)
+        ) ??
+        this.#fitting(node, route => Union.#create(node, route, update)) ??
+        new Success(node)
     ).write(place);
   }
 
@@ -105,6 +131,17 @@ export class Union<A extends Node> {
       .find(() => true);
   }
 
+  #fitting<R>(
+    node: Node,
+    visit: (route: Route<Union.Member>) => R
+  ): R | undefined {
+    return this.#routes
+      .values()
+      .filter((route: Route<Union.Member>) => route.fits(node))
+      .map(visit)
+      .find(() => true);
+  }
+
   #alternates(taken: Route<Union.Member>): readonly Route<Union.Member>[] {
     return this.#routes.filter(route => taken.alternates(route));
   }
@@ -121,6 +158,18 @@ export class Union<A extends Node> {
         ),
       Union.#take(node, taken, text)
     );
+  }
+
+  static #create(
+    node: Node,
+    route: Route<Union.Member>,
+    update: (text: string) => string
+  ): Result<Node, Mismatch> {
+    return new Writer(value =>
+      route.target().parse(update(String(value)))
+    ).write({
+      modify: rewrite => route.optic().modify(Morphism.of(rewrite)).apply(node),
+    });
   }
 
   static #take(

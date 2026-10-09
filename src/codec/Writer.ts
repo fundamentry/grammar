@@ -1,9 +1,15 @@
 import { Failure, type Result, Success } from '@fundamentry/coproduct';
 
 import { type Mismatch } from '#project/mismatch';
-import { type Focus, type Node } from '#project/tree';
+import { type Node } from '#project/tree';
 
 export const write: unique symbol = Symbol('write');
+
+export namespace Writer {
+  export interface Place<T> {
+    modify(update: (node: Node) => Node): T;
+  }
+}
 
 export class Writer {
   readonly #rewrite: (node: Node) => Result<Node, Mismatch>;
@@ -12,7 +18,7 @@ export class Writer {
     this.#rewrite = rewrite;
   }
 
-  write<T extends Node>(place: Focus<T, Node>): Result<T, Mismatch> {
+  write<T>(place: Writer.Place<T>): Result<T, Mismatch> {
     const failures: Failure<Mismatch>[] = [];
 
     const written = place.modify(node =>

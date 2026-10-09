@@ -12,6 +12,7 @@ import {
   Focus,
   type Node,
   Nonterminal,
+  Option,
 } from '#project/tree';
 
 import { Move } from './Move.js';
@@ -49,6 +50,11 @@ const among = (routes: readonly Route<Union.Member>[]) =>
 
 const choice = (index: number) =>
   Move.choice(index, fallback(new Failure(undefined)));
+
+const optional = (target: Union.Member) =>
+  Route.to(target).after(
+    Move.option(fallback(new Success(new Nonterminal(target, character('a')))))
+  );
 
 const first = Route.to(FIRST).after(choice(0));
 const second = Route.to(SECOND).after(choice(1));
@@ -126,14 +132,37 @@ describe('Union', () => {
     });
 
     it('must leave a tree that takes none of the routes as it is', () => {
-      const tree = character('a');
+      const tree = new Choice(1, character('b'));
 
       expect(
         among([first])
           .optic()
-          .modify(Morphism.of((): Node => character('b')))
+          .modify(Morphism.of((): Node => character('c')))
           .apply(tree)
       ).toBe(tree);
+    });
+
+    it('must create the member along the route that fits a missing place', () => {
+      const created = new Nonterminal(FIRST, character('c'));
+
+      expect(
+        among([optional(FIRST)])
+          .optic()
+          .modify(Morphism.of((): Node => created))
+          .apply(new Option())
+      ).toEqual(new Option(created));
+    });
+
+    it('must refuse to create a node the route does not admit', () => {
+      const create = among([optional(FIRST)])
+        .optic()
+        .modify(
+          Morphism.of((): Node => new Nonterminal(SECOND, character('b')))
+        );
+
+      expect(() => create.apply(new Option())).toThrow(
+        new RangeError("'b' cannot take the place of /option/first")
+      );
     });
   });
 
@@ -190,6 +219,30 @@ describe('Union', () => {
 
       assert(result.ok());
       expect(result.value()).toBe(tree);
+    });
+
+    it('must create the member along the route that fits a missing place', () => {
+      const result = among([optional(FIRST)])[write](
+        Focus.of(new Option(), (node): node is Node => node instanceof Option),
+        text => (text === 'a' ? 'c' : 'x')
+      );
+
+      assert(result.ok());
+      expect(result.value()).toEqual(
+        new Option(new Nonterminal(FIRST, character('c')))
+      );
+    });
+
+    it('must report text the member it creates refuses', () => {
+      const result = among([optional(FIRST)])[write](
+        Focus.of(new Option(), (node): node is Node => node instanceof Option),
+        () => 'x'
+      );
+
+      assert(!result.ok());
+      expect(result.error()).toEqual(
+        new Mismatch(0, [new Named('first')], "'x'")
+      );
     });
   });
 });

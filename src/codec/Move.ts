@@ -1,4 +1,5 @@
 import { Data } from '#project/data';
+import { type Node } from '#project/tree';
 
 import { Steps } from './Steps.js';
 
@@ -43,6 +44,13 @@ export class Move extends Data {
 
   choose(): Steps.Step {
     return this.#choice ?? this.#step;
+  }
+
+  blocks(node: Node): boolean {
+    return (
+      !this.#step.preview(node).ok() &&
+      Boolean(this.#choice?.preview(node).ok())
+    );
   }
 
   excludes(other: unknown): boolean {

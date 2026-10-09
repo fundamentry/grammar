@@ -3,7 +3,13 @@ import { assert, describe, expect, it } from 'vitest';
 import { Failure } from '@fundamentry/coproduct';
 import { CodePoint } from '@fundamentry/scalar';
 
-import { Character, Choice, Nonterminal, Sequence } from '#project/tree';
+import {
+  Character,
+  Choice,
+  Nonterminal,
+  Option,
+  Sequence,
+} from '#project/tree';
 
 import { Move } from './Move.js';
 import { Route } from './Route.js';
@@ -70,6 +76,34 @@ describe('Route', () => {
       const longer = through(Move.sequence(0), choice(0));
 
       expect(longer.excludes(shorter)).toBe(shorter.excludes(longer));
+    });
+  });
+
+  describe('fits', () => {
+    it('must fit a tree that takes it', () => {
+      expect(
+        through(choice(1)).fits(new Choice(1, new Nonterminal(TARGET, A)))
+      ).toBe(true);
+    });
+
+    it('must fit a tree that lacks an option on the way', () => {
+      expect(
+        through(Move.option(fallback(new Failure(undefined)))).fits(
+          new Option()
+        )
+      ).toBe(true);
+    });
+
+    it('must not fit a tree that takes another alternative on the way', () => {
+      expect(through(choice(1)).fits(new Choice(0, A))).toBe(false);
+    });
+
+    it('must not fit a tree that takes another alternative past an option', () => {
+      expect(
+        through(Move.option(fallback(new Failure(undefined))), choice(1)).fits(
+          new Option(new Choice(0, A))
+        )
+      ).toBe(false);
     });
   });
 

@@ -78,6 +78,30 @@ describe('Move', () => {
     });
   });
 
+  describe('blocks', () => {
+    it('must be blocked by a choice taken another way', () => {
+      expect(
+        Move.choice(1, fallback(new Failure(undefined))).blocks(
+          new Choice(0, A)
+        )
+      ).toBe(true);
+    });
+
+    it('must not be blocked by a choice taken its way', () => {
+      expect(
+        Move.choice(0, fallback(new Failure(undefined))).blocks(
+          new Choice(0, A)
+        )
+      ).toBe(false);
+    });
+
+    it('must not be blocked by an absent option', () => {
+      expect(
+        Move.option(fallback(new Failure(undefined))).blocks(new Option())
+      ).toBe(false);
+    });
+  });
+
   describe('excludes', () => {
     it('must hold for moves to different alternatives', () => {
       const first = Move.choice(0, fallback(new Failure(undefined)));

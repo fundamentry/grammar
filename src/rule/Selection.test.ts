@@ -302,7 +302,7 @@ describe('Selection', () => {
       expect(TAG.in(result.value()).to(NAME).find()).toBeDefined();
     });
 
-    it('must leave a missing place as it is', () => {
+    it('must create a missing place on the way to it', () => {
       const NUMBER = new Rule('number', () => DIGIT.many());
 
       const ADDRESS = new Rule('address', codec =>
@@ -312,8 +312,26 @@ describe('Selection', () => {
         )
       );
 
-      const tree = parsed(ADDRESS, 'h');
-      const result = ADDRESS.in(tree).to(Rule.any(NUMBER)).set('80');
+      const result = ADDRESS.in(parsed(ADDRESS, 'h'))
+        .to(Rule.any(NUMBER))
+        .set('80');
+
+      assert(result.ok());
+      expect(String(result.value())).toBe('h:80');
+    });
+
+    it('must not take another alternative to create a missing place', () => {
+      const NUMBER = new Rule('number', () => DIGIT.many());
+
+      const AMOUNT = new Rule('amount', codec =>
+        codec.choice(
+          codec.literal('+'),
+          codec.sequence(codec.literal('-'), NUMBER)
+        )
+      );
+
+      const tree = parsed(AMOUNT, '+');
+      const result = AMOUNT.in(tree).to(Rule.any(NUMBER)).set('5');
 
       assert(result.ok());
       expect(result.value()).toBe(tree);

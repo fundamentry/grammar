@@ -36,6 +36,20 @@ export class Route<
     return node instanceof Nonterminal && node.rule() === this.#target;
   }
 
+  fits(node: Node): boolean {
+    const fits = (current: Node, [move, ...rest]: readonly Move[]): boolean =>
+      !move ||
+      move
+        .step()
+        .preview(current)
+        .match({
+          onSuccess: next => fits(next, rest),
+          onFailure: () => !move.blocks(current),
+        });
+
+    return fits(node, this.#moves);
+  }
+
   optic(): Steps.Step {
     return this.#through(move => move.step());
   }
