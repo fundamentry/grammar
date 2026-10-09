@@ -1,9 +1,11 @@
 import { Optional } from '@fundamentry/category';
+import { type Result, Success } from '@fundamentry/coproduct';
 
 import { Data } from '#project/data';
 import { type Node, Nonterminal } from '#project/tree';
 
 import { type Move } from './Move.js';
+import { type Slots } from './Slots.js';
 import { type Steps } from './Steps.js';
 
 export class Route<
@@ -39,23 +41,27 @@ export class Route<
   fits(node: Node): boolean {
     const fits = (current: Node, [move, ...rest]: readonly Move[]): boolean =>
       !move ||
-      move
-        .step()
-        .preview(current)
-        .match({
-          onSuccess: next => fits(next, rest),
-          onFailure: () => !move.blocks(current),
-        });
+      move.preview(current).match({
+        onSuccess: next => fits(next, rest),
+        onFailure: () => !move.blocks(current),
+      });
 
     return fits(node, this.#moves);
   }
 
-  optic(): Steps.Step {
-    return this.#through(move => move.step());
+  optic(slots: Slots): Steps.Step {
+    return this.#through(move => move.step(slots));
   }
 
-  choose(): Steps.Step {
-    return this.#through(move => move.choose());
+  preview(node: Node): Result<Node, unknown> {
+    return this.#moves.reduce<Result<Node, unknown>>(
+      (result, move) => result.flatMap(current => move.preview(current)),
+      new Success(node)
+    );
+  }
+
+  choose(slots: Slots): Steps.Step {
+    return this.#through(move => move.choose(slots));
   }
 
   excludes(other: Route<R>): boolean {

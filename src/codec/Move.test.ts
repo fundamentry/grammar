@@ -12,6 +12,7 @@ import {
 } from '#project/tree';
 
 import { Move } from './Move.js';
+import { Slots } from './Slots.js';
 
 const fallback = <T>(result: T) => ({ default: () => result });
 
@@ -22,7 +23,7 @@ describe('Move', () => {
     it('must move into the elements of a nonterminal, named by its rule', () => {
       const move = Move.rule('rule');
       const previewed = move
-        .step()
+        .step(Slots.edit)
         .preview(new Nonterminal({ name: () => 'rule' }, A));
 
       assert(previewed.ok());
@@ -34,7 +35,7 @@ describe('Move', () => {
   describe('sequence', () => {
     it('must move to the element of a sequence at the index', () => {
       const move = Move.sequence(1);
-      const previewed = move.step().preview(new Sequence([A, A]));
+      const previewed = move.step(Slots.edit).preview(new Sequence([A, A]));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(A);
@@ -46,8 +47,8 @@ describe('Move', () => {
     it('must move to the alternative of a choice at the index', () => {
       const move = Move.choice(1, fallback(new Failure(undefined)));
 
-      expect(move.step().preview(new Choice(1, A)).ok()).toBe(true);
-      expect(move.step().preview(new Choice(0, A)).ok()).toBe(false);
+      expect(move.step(Slots.edit).preview(new Choice(1, A)).ok()).toBe(true);
+      expect(move.step(Slots.edit).preview(new Choice(0, A)).ok()).toBe(false);
       expect(String(move)).toBe('choice[1]');
     });
   });
@@ -56,15 +57,19 @@ describe('Move', () => {
     it('must take the alternative of a move to an alternative', () => {
       expect(
         Move.choice(1, fallback(new Failure(undefined)))
-          .choose()
+          .choose(Slots.edit)
           .set(new Choice(0, A), A)
       ).toEqual(new Choice(1, A));
     });
 
     it('must take the step of any other move', () => {
-      const move = Move.sequence(1);
+      const B = new Character(CodePoint.of('b'));
 
-      expect(move.choose()).toBe(move.step());
+      expect(
+        Move.sequence(1)
+          .choose(Slots.edit)
+          .set(new Sequence([A, A]), B)
+      ).toEqual(new Sequence([A, B]));
     });
   });
 
@@ -73,8 +78,42 @@ describe('Move', () => {
       const B = new Character(CodePoint.of('b'));
       const move = Move.option(fallback(new Success(A)));
 
-      expect(move.step().set(new Option(), B)).toEqual(new Option(B));
+      expect(move.step(Slots.edit).set(new Option(), B)).toEqual(new Option(B));
       expect(String(move)).toBe('option');
+    });
+  });
+
+  describe('preview', () => {
+    it('must preview the value of a present option', () => {
+      const previewed = Move.option(fallback(new Success(A))).preview(
+        new Option(A)
+      );
+
+      assert(previewed.ok());
+      expect(previewed.value()).toBe(A);
+    });
+
+    it('must find nothing in an absent option, even with a fallback', () => {
+      expect(
+        Move.option(fallback(new Success(A)))
+          .preview(new Option())
+          .ok()
+      ).toBe(false);
+    });
+
+    it('must find nothing in another alternative', () => {
+      expect(
+        Move.choice(1, fallback(new Success(A)))
+          .preview(new Choice(0, A))
+          .ok()
+      ).toBe(false);
+    });
+
+    it('must preview the element of a sequence', () => {
+      const previewed = Move.sequence(1).preview(new Sequence([A, A]));
+
+      assert(previewed.ok());
+      expect(previewed.value()).toBe(A);
     });
   });
 

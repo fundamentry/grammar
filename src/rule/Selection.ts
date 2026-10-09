@@ -3,6 +3,8 @@ import { type Optic } from '@fundamentry/category';
 import {
   type Codec,
   type route,
+  Slot,
+  Slots,
   Steps,
   type union,
   type Union,
@@ -248,7 +250,10 @@ export class Selection<
   value<U extends Node>(this: Selection<T, Option<U>>): Selection<T, U> {
     const codec = this.#grammar.value();
 
-    return new Selection(this.#place.focus(Steps.value(codec)), codec);
+    return new Selection(
+      this.#place.focus(Slot.value(codec).step(Slots.edit)),
+      codec
+    );
   }
 
   alternative<U extends readonly Node[], const I extends Node.Index<U>>(
@@ -258,7 +263,7 @@ export class Selection<
     const codec = this.#grammar.alternative<U, I>(index);
 
     return new Selection(
-      this.#place.focus(Steps.alternative(index, codec)),
+      this.#place.focus(Slot.alternative(index, codec).step(Slots.edit)),
       codec
     );
   }

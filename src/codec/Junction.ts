@@ -4,6 +4,7 @@ import { Failure, Success } from '@fundamentry/coproduct';
 import { type Node, type Nonterminal } from '#project/tree';
 
 import { type Route } from './Route.js';
+import { type Slots } from './Slots.js';
 import { type Steps } from './Steps.js';
 
 export class Junction<R extends Nonterminal.Rule<string>> {
@@ -13,7 +14,7 @@ export class Junction<R extends Nonterminal.Rule<string>> {
     this.#routes = routes;
   }
 
-  optic(): Steps.Step {
+  optic(slots: Slots): Steps.Step {
     const admitted = (routes: readonly Route<R>[], value: Node) => {
       const [taken] = routes;
       const form = routes.find(route => route.admits(value));
@@ -28,7 +29,7 @@ export class Junction<R extends Nonterminal.Rule<string>> {
 
     const replace = (node: Node, taken: Route<R>, value: Node) =>
       admitted([taken, ...this.alternates(taken)], value)
-        .choose()
+        .choose(slots)
         .set(node, value);
 
     const create = (
@@ -37,7 +38,7 @@ export class Junction<R extends Nonterminal.Rule<string>> {
       update: Morphism<Node, Node>
     ) =>
       route
-        .optic()
+        .optic(slots)
         .modify(
           Morphism.of(value => {
             const created = update.apply(value);
@@ -75,13 +76,10 @@ export class Junction<R extends Nonterminal.Rule<string>> {
     return this.#routes
       .values()
       .flatMap(route =>
-        route
-          .optic()
-          .preview(node)
-          .match({
-            onSuccess: value => [visit(route, value)],
-            onFailure: () => [],
-          })
+        route.preview(node).match({
+          onSuccess: value => [visit(route, value)],
+          onFailure: () => [],
+        })
       )
       .find(() => true);
   }

@@ -6,6 +6,7 @@ import { type Focus, type Node, type Nonterminal } from '#project/tree';
 
 import { Junction } from './Junction.js';
 import { type Route } from './Route.js';
+import { Slots } from './Slots.js';
 import { write, Writer } from './Writer.js';
 
 export const members: unique symbol = Symbol('members');
@@ -38,7 +39,7 @@ export class Union<A extends Node> {
   }
 
   optic(): Optional<Node, A, unknown> {
-    return this.#junction.optic().andThen(this.#witness);
+    return this.#junction.optic(Slots.edit).andThen(this.#witness);
   }
 
   [write]<T extends Node>(
@@ -81,7 +82,8 @@ export class Union<A extends Node> {
     return new Writer(value =>
       route.target().parse(update(String(value)))
     ).write({
-      modify: rewrite => route.optic().modify(Morphism.of(rewrite)).apply(node),
+      modify: rewrite =>
+        route.optic(Slots.edit).modify(Morphism.of(rewrite)).apply(node),
     });
   }
 
@@ -93,6 +95,6 @@ export class Union<A extends Node> {
     return route
       .target()
       .parse(text)
-      .map(parsed => route.choose().set(node, parsed));
+      .map(parsed => route.choose(Slots.edit).set(node, parsed));
   }
 }

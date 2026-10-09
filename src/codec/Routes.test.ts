@@ -26,6 +26,7 @@ import {
 } from '#project/tree';
 
 import { Routes } from './Routes.js';
+import { Slots } from './Slots.js';
 
 const fallback = <T>(result: T) => ({ default: () => result });
 
@@ -56,7 +57,7 @@ describe('Routes', () => {
       const [route] = routes(target);
 
       assert(route);
-      expect(route.optic().preview(found).ok()).toBe(true);
+      expect(route.optic(Slots.edit).preview(found).ok()).toBe(true);
     });
 
     it('must lead through a concatenation to the element at the index', () => {
@@ -66,7 +67,9 @@ describe('Routes', () => {
       expect(others).toEqual([]);
       expect(String(route)).toBe('/sequence[1]/target');
 
-      const previewed = route.optic().preview(new Sequence([A, found]));
+      const previewed = route
+        .optic(Slots.edit)
+        .preview(new Sequence([A, found]));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
@@ -77,7 +80,7 @@ describe('Routes', () => {
 
       assert(route);
 
-      const previewed = route.optic().preview(new Choice(1, found));
+      const previewed = route.optic(Slots.edit).preview(new Choice(1, found));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
@@ -92,8 +95,10 @@ describe('Routes', () => {
 
       const other = new Nonterminal(TARGET, new Character(CodePoint.of('b')));
 
-      expect(route.optic().preview(new Choice(0, A)).ok()).toBe(false);
-      expect(route.optic().set(new Choice(0, A), other)).toEqual(
+      expect(route.optic(Slots.edit).preview(new Choice(0, A)).ok()).toBe(
+        false
+      );
+      expect(route.optic(Slots.edit).set(new Choice(0, A), other)).toEqual(
         new Choice(1, other)
       );
     });
@@ -105,12 +110,14 @@ describe('Routes', () => {
 
       assert(route);
 
-      const previewed = route.optic().preview(new Option(found));
+      const previewed = route.optic(Slots.edit).preview(new Option(found));
       const other = new Nonterminal(TARGET, new Character(CodePoint.of('b')));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
-      expect(route.optic().set(new Option(), other)).toEqual(new Option(other));
+      expect(route.optic(Slots.edit).set(new Option(), other)).toEqual(
+        new Option(other)
+      );
     });
 
     it('must lead to each of several targets', () => {
@@ -145,7 +152,9 @@ describe('Routes', () => {
       assert(route);
       expect(String(route)).toBe('/other/target');
 
-      const previewed = route.optic().preview(new Nonterminal(OTHER, found));
+      const previewed = route
+        .optic(Slots.edit)
+        .preview(new Nonterminal(OTHER, found));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);

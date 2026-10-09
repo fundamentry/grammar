@@ -15,6 +15,7 @@ import {
 import { Junction } from './Junction.js';
 import { Move } from './Move.js';
 import { Route } from './Route.js';
+import { Slots } from './Slots.js';
 
 const fallback = <T>(result: T) => ({ default: () => result });
 
@@ -43,14 +44,16 @@ describe('Junction', () => {
   describe('optic', () => {
     it('must preview the node on the route the tree takes', () => {
       const tree = new Choice(1, new Nonterminal(SECOND, character('b')));
-      const previewed = among([first, second]).optic().preview(tree);
+      const previewed = among([first, second]).optic(Slots.edit).preview(tree);
 
       assert(previewed.ok());
       expect(String(previewed.value())).toBe('b');
     });
 
     it('must preview nothing where the tree takes none of the routes', () => {
-      expect(among([first]).optic().preview(character('a')).ok()).toBe(false);
+      expect(
+        among([first]).optic(Slots.edit).preview(character('a')).ok()
+      ).toBe(false);
     });
 
     it('must modify the node on the route the tree takes', () => {
@@ -58,7 +61,7 @@ describe('Junction', () => {
 
       expect(
         among([first, second])
-          .optic()
+          .optic(Slots.edit)
           .modify(Morphism.of((): Node => replaced))
           .apply(taken('a'))
       ).toEqual(new Choice(0, replaced));
@@ -69,7 +72,7 @@ describe('Junction', () => {
 
       expect(
         among([first, second])
-          .optic()
+          .optic(Slots.edit)
           .modify(Morphism.of((): Node => replaced))
           .apply(taken('a'))
       ).toEqual(new Choice(1, replaced));
@@ -77,7 +80,7 @@ describe('Junction', () => {
 
     it('must refuse a node that none of the alternatives admits', () => {
       const replace = among([first])
-        .optic()
+        .optic(Slots.edit)
         .modify(
           Morphism.of((): Node => new Nonterminal(SECOND, character('b')))
         );
@@ -92,7 +95,7 @@ describe('Junction', () => {
 
       expect(
         among([first])
-          .optic()
+          .optic(Slots.edit)
           .modify(Morphism.of((): Node => character('c')))
           .apply(tree)
       ).toBe(tree);
@@ -103,7 +106,7 @@ describe('Junction', () => {
 
       expect(
         among([optional(FIRST)])
-          .optic()
+          .optic(Slots.edit)
           .modify(Morphism.of((): Node => created))
           .apply(new Option())
       ).toEqual(new Option(created));
@@ -111,7 +114,7 @@ describe('Junction', () => {
 
     it('must refuse to create a node the route does not admit', () => {
       const create = among([optional(FIRST)])
-        .optic()
+        .optic(Slots.edit)
         .modify(
           Morphism.of((): Node => new Nonterminal(SECOND, character('b')))
         );

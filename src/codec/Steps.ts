@@ -10,7 +10,6 @@ import {
   Choice,
   type Node,
   Nonterminal,
-  Option,
   Repetition,
   Sequence,
 } from '#project/tree';
@@ -73,24 +72,6 @@ export class Steps {
       .andThen(Repetition.at(index));
   }
 
-  static value(fallback: Steps.Fallback): Steps.Step {
-    return Steps.slot(
-      (node: Node) => node instanceof Option,
-      option => option.value(),
-      value => new Option(value),
-      fallback
-    );
-  }
-
-  static alternative(index: number, fallback: Steps.Fallback): Steps.Step {
-    return Steps.slot(
-      node => node instanceof Choice,
-      choice => (choice.index() === index ? choice.value() : undefined),
-      value => new Choice(index, value),
-      fallback
-    );
-  }
-
   static choose(index: number): Steps.Step {
     return Optional.of(
       FallibleMorphism.of(node =>
@@ -104,46 +85,6 @@ export class Steps {
             ? new Choice(index, update.apply(node.value()))
             : node
         )
-      )
-    );
-  }
-
-  static slot<S extends Node>(
-    is: (node: Node) => node is S,
-    read: (slot: S) => Node | undefined,
-    wrap: (value: Node) => Node,
-    fallback: Steps.Fallback
-  ): Steps.Step {
-    const preview = (slot: S): Result<Node, undefined> => {
-      const value = read(slot);
-
-      return value ? new Success(value) : new Failure(undefined);
-    };
-
-    const created =
-      (slot: S, update: Morphism<Node, Node>) => (initial: Node) => {
-        const updated = update.apply(initial);
-
-        return updated.equals(initial) ? slot : wrap(updated);
-      };
-
-    const modify = (slot: S, update: Morphism<Node, Node>) => {
-      const value = read(slot);
-
-      return value
-        ? wrap(update.apply(value))
-        : fallback.default().match({
-            onSuccess: created(slot, update),
-            onFailure: () => slot,
-          });
-    };
-
-    return Optional.of(
-      FallibleMorphism.of(node =>
-        is(node) ? preview(node) : new Failure(undefined)
-      ),
-      Morphism.of(update =>
-        Morphism.of(node => (is(node) ? modify(node, update) : node))
       )
     );
   }

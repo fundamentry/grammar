@@ -45,6 +45,7 @@ import { Junction } from './Junction.js';
 import { Parts } from './Parts.js';
 import { type Route } from './Route.js';
 import { Routes } from './Routes.js';
+import { Slots } from './Slots.js';
 import { type Steps } from './Steps.js';
 import { members, Union } from './Union.js';
 import { write, Writer } from './Writer.js';
@@ -245,7 +246,9 @@ export class Codec<in out Value extends Node> {
 
   [route](target: Nonterminal.Rule<string>): Steps.Step {
     return this.#routed.get(target, () =>
-      new Junction(Codec.#routes([target]).exclusive(this.#expression)).optic()
+      new Junction(Codec.#routes([target]).exclusive(this.#expression)).optic(
+        Slots.edit
+      )
     );
   }
 

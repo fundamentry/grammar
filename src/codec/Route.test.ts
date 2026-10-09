@@ -13,6 +13,7 @@ import {
 
 import { Move } from './Move.js';
 import { Route } from './Route.js';
+import { Slots } from './Slots.js';
 
 const fallback = <T>(result: T) => ({ default: () => result });
 
@@ -30,7 +31,7 @@ describe('Route', () => {
   describe('to', () => {
     it('must lead to the target itself', () => {
       const found = new Nonterminal(TARGET, A);
-      const previewed = Route.to(TARGET).optic().preview(found);
+      const previewed = Route.to(TARGET).preview(found);
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
@@ -44,13 +45,21 @@ describe('Route', () => {
         .after(Move.sequence(1))
         .after(Move.choice(0, fallback(new Failure(undefined))));
       const found = new Nonterminal(TARGET, A);
-      const previewed = route
-        .optic()
-        .preview(new Choice(0, new Sequence([A, found])));
+      const previewed = route.preview(new Choice(0, new Sequence([A, found])));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
       expect(String(route)).toBe('/choice[0]/sequence[1]/target');
+    });
+  });
+
+  describe('preview', () => {
+    it('must find nothing where a move finds nothing', () => {
+      expect(
+        through(Move.option(fallback(new Failure(undefined))))
+          .preview(new Option())
+          .ok()
+      ).toBe(false);
     });
   });
 
@@ -135,7 +144,7 @@ describe('Route', () => {
 
       expect(
         through(Move.sequence(1), choice(1))
-          .choose()
+          .choose(Slots.edit)
           .set(new Sequence([A, new Choice(0, A)]), found)
       ).toEqual(new Sequence([A, new Choice(1, found)]));
     });
