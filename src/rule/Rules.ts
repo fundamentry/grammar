@@ -1,5 +1,5 @@
 import { Optional, Prism } from '@fundamentry/category';
-import { Success } from '@fundamentry/coproduct';
+import { Failure, Success } from '@fundamentry/coproduct';
 
 import {
   type Codec,
@@ -13,6 +13,14 @@ import { type Focus, type Node } from '#project/tree';
 
 import { type Rule } from './Rule.js';
 import { reach, select, Selection } from './Selection.js';
+
+export namespace Rules {
+  export interface Owned {
+    readonly rule: Union.Member;
+
+    readonly node: Node;
+  }
+}
 
 export class Rules<const R extends readonly Rule.Any[]> {
   readonly #rules: R;
@@ -54,10 +62,22 @@ export class Rules<const R extends readonly Rule.Any[]> {
   ): Codec.Parsed<T> {
     const rules = this[members]();
 
-    return new Writer(
-      node =>
-        rules.find(rule => rule.is(node))?.parse(update(String(node))) ??
-        new Success(node)
-    ).write(place);
+    const owned = (node: Node, rule?: Union.Member) =>
+      rule ? new Success({ rule, node }) : new Failure(undefined);
+
+    return new Writer(({ rule, node }: Rules.Owned) =>
+      rule.parse(update(String(node))).map(parsed => ({ rule, node: parsed }))
+    ).write(
+      place.focus(
+        Prism.of(
+          node =>
+            owned(
+              node,
+              rules.find(rule => rule.is(node))
+            ),
+          ({ node }) => node
+        )
+      )
+    );
   }
 }

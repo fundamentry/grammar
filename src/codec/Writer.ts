@@ -6,19 +6,19 @@ import { type Node } from '#project/tree';
 export const write: unique symbol = Symbol('write');
 
 export namespace Writer {
-  export interface Place<T> {
-    modify(update: (node: Node) => Node): T;
+  export interface Place<T, N = Node> {
+    modify(update: (node: N) => N): T;
   }
 }
 
-export class Writer {
-  readonly #rewrite: (node: Node) => Result<Node, Mismatch>;
+export class Writer<N = Node> {
+  readonly #rewrite: (node: N) => Result<N, Mismatch>;
 
-  constructor(rewrite: (node: Node) => Result<Node, Mismatch>) {
+  constructor(rewrite: (node: N) => Result<N, Mismatch>) {
     this.#rewrite = rewrite;
   }
 
-  write<T>(place: Writer.Place<T>): Result<T, Mismatch> {
+  write<T>(place: Writer.Place<T, N>): Result<T, Mismatch> {
     const failures: Failure<Mismatch>[] = [];
 
     const written = place.modify(node =>
