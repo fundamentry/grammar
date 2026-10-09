@@ -229,6 +229,17 @@ describe('Focus', () => {
       ).toEqual(new Repetition([new Sequence([A])]));
     });
 
+    it('must remove the separator of an element it removes', () => {
+      expect(
+        removed(
+          Focus.of(
+            new Repetition([digit(A), B, digit(B)], [A, B]),
+            isDigit
+          ).remove()
+        )
+      ).toEqual(new Repetition([B], []));
+    });
+
     it('must empty a focused repetition itself', () => {
       expect(
         removed(

@@ -9,6 +9,8 @@ import { Sequence } from './Sequence.js';
 
 const A = new Character(CodePoint.of('a'));
 const B = new Character(CodePoint.of('b'));
+const COMMA = new Character(CodePoint.of(','));
+const SEMICOLON = new Character(CodePoint.of(';'));
 
 class SpecificRepetition extends Repetition<Character> {}
 
@@ -39,11 +41,31 @@ describe('Repetition', () => {
     });
   });
 
+  describe('separators', () => {
+    it('must return the separators passed to the constructor', () => {
+      const separators = [COMMA];
+
+      expect(new Repetition([A, B], separators).separators()).toBe(separators);
+    });
+
+    it('must have none without them', () => {
+      expect(new Repetition([A, B]).separators()).toEqual([]);
+    });
+  });
+
   describe('children', () => {
     it('must have its elements as its children', () => {
-      const elements = [A, B];
+      expect(new Repetition([A, B]).children()).toEqual([A, B]);
+    });
 
-      expect(new Repetition(elements).children()).toBe(elements);
+    it('must have its separators between its elements', () => {
+      expect(new Repetition([A, B, A], [COMMA, SEMICOLON]).children()).toEqual([
+        A,
+        COMMA,
+        B,
+        SEMICOLON,
+        A,
+      ]);
     });
   });
 
@@ -56,6 +78,44 @@ describe('Repetition', () => {
       }
 
       expect(new Repetition([A, A]).map(toB)).toEqual(new Repetition([B, B]));
+    });
+
+    it('must transform every separator', () => {
+      function toB<N extends Node>(node: N): N;
+
+      function toB(node: Node): Node {
+        return node === COMMA ? B : node;
+      }
+
+      expect(new Repetition([A, A], [COMMA]).map(toB)).toEqual(
+        new Repetition([A, A], [B])
+      );
+    });
+  });
+
+  describe('filter', () => {
+    it('must keep the elements that pass', () => {
+      expect(new Repetition([A, B, A]).filter(node => node === A)).toEqual(
+        new Repetition([A, A])
+      );
+    });
+
+    it('must drop the separator before an element it drops', () => {
+      expect(
+        new Repetition([A, B, A], [COMMA, SEMICOLON]).filter(node => node !== B)
+      ).toEqual(new Repetition([A, A], [SEMICOLON]));
+    });
+
+    it('must drop the separator after a first element it drops', () => {
+      expect(
+        new Repetition([B, A, A], [COMMA, SEMICOLON]).filter(node => node !== B)
+      ).toEqual(new Repetition([A, A], [SEMICOLON]));
+    });
+
+    it('must drop every separator when it keeps one element', () => {
+      expect(
+        new Repetition([A, B, B], [COMMA, SEMICOLON]).filter(node => node === A)
+      ).toEqual(new Repetition([A], []));
     });
   });
 
@@ -84,6 +144,15 @@ describe('Repetition', () => {
       ).toEqual(new Repetition([B, A]));
     });
 
+    it('must keep the separators when it updates an element', () => {
+      expect(
+        Repetition.at<Character, Character>(1).set(
+          new Repetition([A, A], [COMMA]),
+          B
+        )
+      ).toEqual(new Repetition([A, B], [COMMA]));
+    });
+
     it('must pass over an index without an element', () => {
       const repetition = new Repetition([A]);
 
@@ -106,6 +175,15 @@ describe('Repetition', () => {
         Repetition.elements<Character>().set(new Repetition([A]), [A, B])
       ).toEqual(new Repetition([A, B]));
     });
+
+    it('must keep the separators that still fall between the elements', () => {
+      expect(
+        Repetition.elements<Character, Character>().set(
+          new Repetition([A, B, A], [COMMA, SEMICOLON]),
+          [B, A]
+        )
+      ).toEqual(new Repetition([B, A], [COMMA]));
+    });
   });
 
   describe('equals', () => {
@@ -125,6 +203,14 @@ describe('Repetition', () => {
       expect(new Repetition([A]).equals(new Repetition([A, A]))).toBe(false);
     });
 
+    it('must not equal a repetition with different separators', () => {
+      expect(
+        new Repetition([A, B], [COMMA]).equals(
+          new Repetition([A, B], [SEMICOLON])
+        )
+      ).toBe(false);
+    });
+
     it('must not equal a different kind of node with the same elements', () => {
       expect(
         new Repetition([A]).equals(
@@ -137,6 +223,12 @@ describe('Repetition', () => {
   describe('toString', () => {
     it('must print its elements in order', () => {
       expect(new Repetition([A, B, A]).toString()).toBe('aba');
+    });
+
+    it('must print its separators between its elements', () => {
+      expect(new Repetition([A, B, A], [COMMA, SEMICOLON]).toString()).toBe(
+        'a,b;a'
+      );
     });
   });
 });

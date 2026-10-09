@@ -106,15 +106,11 @@ export class Focus<T extends Node, A> extends View<A> {
       return false;
     };
 
-    const repetition = (node: Repetition<Node>, rewrite: Node.Transform) =>
-      new Repetition(
-        targets.has(node)
-          ? []
-          : node
-              .elements()
-              .filter(kept)
-              .map(element => rewrite(element))
-      );
+    const repetition = (
+      node: Repetition<Node, Node>,
+      rewrite: Node.Transform
+    ) =>
+      targets.has(node) ? new Repetition([]) : node.filter(kept).map(rewrite);
 
     const tree = Focus.#rewrite(this.#tree, (node, rewrite) => {
       if (node instanceof Option) return option(node, rewrite);

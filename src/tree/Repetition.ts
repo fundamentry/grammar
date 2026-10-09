@@ -9,16 +9,22 @@ import { Failure, Success } from '@fundamentry/coproduct';
 import { Node } from './Node.js';
 import { Sequence } from './Sequence.js';
 
-export class Repetition<out A extends Node> extends Node {
+export class Repetition<
+  out A extends Node,
+  out S extends Node = never,
+> extends Node {
   readonly #sequence: Sequence<readonly A[]>;
 
-  constructor(elements: readonly A[]) {
+  readonly #separators: Sequence<readonly S[]>;
+
+  constructor(elements: readonly A[], separators: readonly S[] = []) {
     super();
 
     this.#sequence = new Sequence(elements);
+    this.#separators = new Sequence(separators);
   }
 
-  static [Symbol.hasInstance]<S extends Repetition<Node>>(
+  static [Symbol.hasInstance]<S extends Repetition<Node, Node>>(
     this: abstract new (...args: never) => S,
     value: unknown
   ): value is S {
@@ -29,21 +35,27 @@ export class Repetition<out A extends Node> extends Node {
     );
   }
 
-  static elements<A extends Node>(): Lens<Repetition<A>, readonly A[]> {
+  static elements<A extends Node, S extends Node = never>(): Lens<
+    Repetition<A, S>,
+    readonly A[]
+  > {
     return Lens.of(
-      Morphism.of((repetition: Repetition<A>) =>
+      Morphism.of((repetition: Repetition<A, S>) =>
         repetition.#sequence.elements()
       ),
       Morphism.of(
-        ([, elements]: readonly [Repetition<A>, readonly A[]]) =>
-          new Repetition(elements)
+        ([repetition, elements]: readonly [Repetition<A, S>, readonly A[]]) =>
+          new Repetition(
+            elements,
+            repetition.separators().slice(0, Math.max(elements.length - 1, 0))
+          )
       )
     );
   }
 
-  static at<A extends Node>(
+  static at<A extends Node, S extends Node = never>(
     index: number
-  ): Optional<Repetition<A>, A, undefined> {
+  ): Optional<Repetition<A, S>, A, undefined> {
     return Optional.of(
       FallibleMorphism.of(repetition => {
         const element = repetition.elements().at(index);
@@ -56,7 +68,8 @@ export class Repetition<out A extends Node> extends Node {
 
           return element
             ? new Repetition(
-                repetition.elements().with(index, update.apply(element))
+                repetition.elements().with(index, update.apply(element)),
+                repetition.separators()
               )
             : repetition;
         })
@@ -64,25 +77,51 @@ export class Repetition<out A extends Node> extends Node {
     );
   }
 
-  override map(transform: Node.Transform): Repetition<A> {
-    return new Repetition(this.elements().map(transform));
+  override map(transform: Node.Transform): Repetition<A, S> {
+    return new Repetition(
+      this.elements().map(transform),
+      this.separators().map(transform)
+    );
+  }
+
+  filter(keep: (element: A) => boolean): Repetition<A, S> {
+    const separators = this.separators();
+    const kept = this.elements().flatMap((element, index) =>
+      keep(element) ? [{ element, index }] : []
+    );
+
+    return new Repetition(
+      kept.map(({ element }) => element),
+      kept.slice(1).flatMap(({ index }) => separators.slice(index - 1, index))
+    );
   }
 
   elements(): readonly A[] {
     return this.#sequence.elements();
   }
 
-  override children(): readonly A[] {
-    return this.elements();
+  separators(): readonly S[] {
+    return this.#separators.elements();
+  }
+
+  override children(): readonly (A | S)[] {
+    const separators = this.separators();
+
+    return this.elements().flatMap((element, index) => [
+      element,
+      ...separators.slice(index, index + 1),
+    ]);
   }
 
   override equals(other: unknown): boolean {
     return (
-      other instanceof Repetition && this.#sequence.equals(other.#sequence)
+      other instanceof Repetition &&
+      this.#sequence.equals(other.#sequence) &&
+      this.#separators.equals(other.#separators)
     );
   }
 
   override toString(): string {
-    return this.#sequence.toString();
+    return this.children().join('');
   }
 }
