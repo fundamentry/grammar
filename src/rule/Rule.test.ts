@@ -2,7 +2,7 @@ import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
-import { type Codec } from '#project/codec';
+import { type Codec, members } from '#project/codec';
 import {
   Choice,
   Character,
@@ -14,7 +14,6 @@ import {
 } from '#project/tree';
 
 import { Rule } from './Rule.js';
-import { members } from './Rules.js';
 import { type Selection } from './Selection.js';
 
 const character = (char: string) => new Character(CodePoint.of(char));

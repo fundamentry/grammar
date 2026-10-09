@@ -1,11 +1,9 @@
 import { Prism } from '@fundamentry/category';
 
-import { type Union } from '#project/codec';
+import { members, type Union } from '#project/codec';
 import { Focus, type Node } from '#project/tree';
 
 import { type Rule } from './Rule.js';
-
-export const members: unique symbol = Symbol('members');
 
 export class Rules<const R extends readonly Rule.Any[]> {
   readonly #rules: R;

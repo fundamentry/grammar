@@ -4,6 +4,7 @@ import { Range, RangeSet } from '@fundamentry/range';
 import { CodePoint, Integer } from '@fundamentry/scalar';
 import { Point } from '@fundamentry/stream';
 
+import { Cache } from '#project/cache';
 import { type Definition, Definitions } from '#project/definition';
 import {
   type Expectation,
@@ -41,9 +42,10 @@ import {
 import { Caseless } from './Caseless.js';
 import { Defaults } from './Defaults.js';
 import { Parts } from './Parts.js';
+import { type Route } from './Route.js';
 import { Routes } from './Routes.js';
 import { type Steps } from './Steps.js';
-import { Union } from './Union.js';
+import { members, Union } from './Union.js';
 import { write, Writer } from './Writer.js';
 
 export const route: unique symbol = Symbol('route');
@@ -83,6 +85,14 @@ export class Codec<in out Value extends Node> {
 
   #printer?: Printer<CodePoint>;
 
+  readonly #routed = new Cache<Nonterminal.Rule<string>, Steps.Step>(
+    new WeakMap()
+  );
+
+  readonly #unions = new Cache<object, readonly Route<Union.Member>[]>(
+    new WeakMap()
+  );
+
   protected constructor(
     expression: Expression<CodePoint>,
     alternatives?: Expression.Alternatives<CodePoint>
@@ -115,9 +125,7 @@ export class Codec<in out Value extends Node> {
       to: Codec.CodePointLike,
     ] => Array.isArray(member);
 
-    const members = (
-      member: Codec.CharacterSet
-    ): readonly Range<CodePoint>[] => {
+    const spans = (member: Codec.CharacterSet): readonly Range<CodePoint>[] => {
       if (member instanceof RangeSet) return member.asRanges();
 
       if (member instanceof Range) return [member];
@@ -128,7 +136,7 @@ export class Codec<in out Value extends Node> {
       return [Range.singleton(point(member))];
     };
 
-    const ranges = RangeSet.from(characters.flatMap(members));
+    const ranges = RangeSet.from(characters.flatMap(spans));
 
     return Codec.terminal(
       PartialIso.of<CodePoint, Character, undefined, string>(
@@ -235,16 +243,17 @@ export class Codec<in out Value extends Node> {
   }
 
   [route](target: Nonterminal.Rule<string>): Steps.Step {
-    return Codec.#routes([target]).only(this.#expression).optic();
+    return this.#routed.get(target, () =>
+      Codec.#routes([target]).only(this.#expression).optic()
+    );
   }
 
-  [union]<A extends Node>(
-    members: readonly Union.Member[],
-    witness: Prism<Node, A, unknown>
-  ): Union<A> {
+  [union]<A extends Node>(targets: Union.Targets<A>): Union<A> {
     return new Union(
-      Codec.#routes(members).exclusive(this.#expression),
-      witness
+      this.#unions.get(targets, () =>
+        Codec.#routes(targets[members]()).exclusive(this.#expression)
+      ),
+      targets.optic()
     );
   }
 

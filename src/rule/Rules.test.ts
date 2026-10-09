@@ -2,10 +2,11 @@ import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { CodePoint } from '@fundamentry/scalar';
 
+import { members } from '#project/codec';
 import { Character, Focus, type Nonterminal } from '#project/tree';
 
 import { Rule } from './Rule.js';
-import { members, Rules } from './Rules.js';
+import { Rules } from './Rules.js';
 
 const DIGIT = new Rule('DIGIT', codec => codec.character(['0', '9']));
 const ALPHA = new Rule('ALPHA', codec => codec.character(['a', 'z']));

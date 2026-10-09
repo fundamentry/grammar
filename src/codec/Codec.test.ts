@@ -1,11 +1,12 @@
 import { assert, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import { PartialIso } from '@fundamentry/category';
+import { PartialIso, Prism } from '@fundamentry/category';
 import { Failure, type Result, Success } from '@fundamentry/coproduct';
 import { Range, RangeSet } from '@fundamentry/range';
 import { CodePoint, Integer } from '@fundamentry/scalar';
 
 import { Named } from '#project/expectation';
+import { Mismatch } from '#project/mismatch';
 import { Misprint } from '#project/misprint';
 import {
   Choice,
@@ -18,13 +19,26 @@ import {
   type Literal,
 } from '#project/tree';
 
-import { Codec } from './Codec.js';
+import { Codec, route, union } from './Codec.js';
+import { members, type Union } from './Union.js';
 import { write } from './Writer.js';
 
 class Exposed extends Codec<never> {
   static readonly build = Codec.builder;
 
   static readonly terminal = Codec.terminal;
+
+  static rule<Value extends Node>(
+    target: Union.Member,
+    body: Codec<Value>
+  ): Codec<never> {
+    return new Exposed(
+      Codec.named(
+        () => target,
+        () => body
+      )
+    );
+  }
 }
 
 const { build, terminal } = Exposed;
@@ -721,6 +735,41 @@ describe('Codec', () => {
 
       assert(!defaulted.ok());
       expect(String(defaulted.error())).toBe('a digit');
+    });
+  });
+
+  describe('route', () => {
+    it('must find the route to a target once', () => {
+      const target: Union.Member = {
+        name: () => 'target',
+        parse: () => new Failure(new Mismatch(0, [], 'nothing')),
+      };
+      const codec = build.sequence(digit, Exposed.rule(target, letter));
+
+      expect(codec[route](target)).toBe(codec[route](target));
+    });
+  });
+
+  describe('union', () => {
+    it('must find the routes to its targets once', () => {
+      const target: Union.Member = {
+        name: () => 'target',
+        parse: () => new Failure(new Mismatch(0, [], 'nothing')),
+      };
+      const targets = {
+        [members]: vi.fn(() => [target]),
+        optic: () =>
+          Prism.fromPredicate(
+            (node: Node): node is Node => node instanceof Sequence,
+            () => undefined
+          ),
+      };
+      const codec = build.sequence(digit, Exposed.rule(target, letter));
+
+      codec[union](targets);
+      codec[union](targets);
+
+      expect(targets[members]).toHaveBeenCalledOnce();
     });
   });
 

@@ -20,7 +20,7 @@ import {
 } from '#project/tree';
 
 import { type Rule } from './Rule.js';
-import { members, Rules } from './Rules.js';
+import { Rules } from './Rules.js';
 
 export const select: unique symbol = Symbol('select');
 
@@ -244,9 +244,6 @@ export class Selection<
     this: Selection<T, A>,
     rules: Rules<R>
   ): Selection<T, Rule.Selected<R[number]>, Union<Rule.Selected<R[number]>>> {
-    return new Selection(
-      this.#place,
-      this.#grammar[union](rules[members](), rules.optic())
-    );
+    return new Selection(this.#place, this.#grammar[union](rules));
   }
 }

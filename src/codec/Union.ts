@@ -13,9 +13,17 @@ import { type Route } from './Route.js';
 import { type Steps } from './Steps.js';
 import { write, Writer } from './Writer.js';
 
+export const members: unique symbol = Symbol('members');
+
 export namespace Union {
   export interface Member extends Nonterminal.Rule<string> {
     parse(input: string): Result<Node, Mismatch>;
+  }
+
+  export interface Targets<A extends Node> {
+    [members](): readonly Member[];
+
+    optic(): Prism<Node, A, unknown>;
   }
 }
 

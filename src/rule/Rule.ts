@@ -1,7 +1,7 @@
-import { Codec, type Union } from '#project/codec';
+import { Codec, members, type Union } from '#project/codec';
 import { type Node, Nonterminal, type View } from '#project/tree';
 
-import { members, Rules } from './Rules.js';
+import { Rules } from './Rules.js';
 import { select, Selection } from './Selection.js';
 
 export namespace Rule {
