@@ -1,4 +1,4 @@
-import { FallibleMorphism, PartialIso } from '@fundamentry/category';
+import { FallibleMorphism, PartialIso, Prism } from '@fundamentry/category';
 import { Failure, type Result, Success } from '@fundamentry/coproduct';
 import { Range, RangeSet } from '@fundamentry/range';
 import { CodePoint, Integer } from '@fundamentry/scalar';
@@ -247,6 +247,19 @@ export class Codec<in out Value extends Node> {
     update: (text: string) => string
   ): Codec.Parsed<T> {
     return new Writer(node => this.parse(update(String(node)))).write(place);
+  }
+
+  is(node: Node): node is Value {
+    this.#printer ??= new Printer(this.#expression);
+
+    return this.#printer.print(node).ok();
+  }
+
+  optic(): Prism<Node, Value, undefined> {
+    return Prism.fromPredicate(
+      node => this.is(node),
+      () => undefined
+    );
   }
 
   definition(): Definition {

@@ -618,6 +618,32 @@ describe('Codec', () => {
     });
   });
 
+  describe('is', () => {
+    it('must accept a node it can print', () => {
+      expect(digit.many().is(new Repetition(characters('12')))).toBe(true);
+    });
+
+    it('must refuse a node it cannot print', () => {
+      expect(digit.many().is(new Repetition(characters('1a')))).toBe(false);
+    });
+  });
+
+  describe('optic', () => {
+    it('must preview a node it can print', () => {
+      const node = new Sequence(characters('1a'));
+
+      expect(build.sequence(digit, letter).optic().preview(node)).toEqual(
+        new Success(node)
+      );
+    });
+
+    it('must not preview a node it cannot print', () => {
+      expect(
+        build.sequence(digit, letter).optic().preview(character('1'))
+      ).toEqual(new Failure(undefined));
+    });
+  });
+
   describe('at', () => {
     it('must parse with the element of a sequence at the index', () => {
       const second = build.sequence(digit, letter).at(1);
