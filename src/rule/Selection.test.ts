@@ -172,7 +172,9 @@ describe('Selection', () => {
       );
 
       expect(() => RANGE.in(parsed(RANGE, '1-2')).to(NUMBER)).toThrow(
-        new RangeError('2 routes lead to number')
+        new RangeError(
+          'Routes /range/sequence[0]/number and /range/sequence[2]/number can meet in one tree'
+        )
       );
     });
 

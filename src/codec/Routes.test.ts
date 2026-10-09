@@ -46,7 +46,7 @@ const target = new Rule(letter, () => TARGET);
 const found = new Nonterminal(TARGET, A);
 
 const routes = (expression: Expression<CodePoint>) =>
-  new Routes(TARGET, () => new Failure(undefined)).from(expression);
+  new Routes(new Set([TARGET]), () => new Failure(undefined)).from(expression);
 
 describe('Routes', () => {
   describe('from', () => {
@@ -54,7 +54,7 @@ describe('Routes', () => {
       const [route] = routes(target);
 
       assert(route);
-      expect(route.preview(found).ok()).toBe(true);
+      expect(route.optic().preview(found).ok()).toBe(true);
     });
 
     it('must lead through a concatenation to the element at the index', () => {
@@ -62,8 +62,9 @@ describe('Routes', () => {
 
       assert(route);
       expect(others).toEqual([]);
+      expect(String(route)).toBe('/sequence[1]/target');
 
-      const previewed = route.preview(new Sequence([A, found]));
+      const previewed = route.optic().preview(new Sequence([A, found]));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
@@ -74,38 +75,63 @@ describe('Routes', () => {
 
       assert(route);
 
-      const previewed = route.preview(new Choice(1, found));
+      const previewed = route.optic().preview(new Choice(1, found));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
     });
 
     it('must create the alternative from its default', () => {
-      const [route] = new Routes(TARGET, () => new Success(found)).from(
-        new Alternation([letter, target])
-      );
+      const [route] = new Routes(
+        new Set([TARGET]),
+        () => new Success(found)
+      ).from(new Alternation([letter, target]));
 
       assert(route);
 
       const other = new Nonterminal(TARGET, new Character(CodePoint.of('b')));
 
-      expect(route.preview(new Choice(0, A)).ok()).toBe(false);
-      expect(route.set(new Choice(0, A), other)).toEqual(new Choice(1, other));
+      expect(route.optic().preview(new Choice(0, A)).ok()).toBe(false);
+      expect(route.optic().set(new Choice(0, A), other)).toEqual(
+        new Choice(1, other)
+      );
     });
 
     it('must lead through an option to its value', () => {
-      const [route] = new Routes(TARGET, () => new Success(found)).from(
-        new Optional(target)
-      );
+      const [route] = new Routes(
+        new Set([TARGET]),
+        () => new Success(found)
+      ).from(new Optional(target));
 
       assert(route);
 
-      const previewed = route.preview(new Option(found));
+      const previewed = route.optic().preview(new Option(found));
       const other = new Nonterminal(TARGET, new Character(CodePoint.of('b')));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
-      expect(route.set(new Option(), other)).toEqual(new Option(other));
+      expect(route.optic().set(new Option(), other)).toEqual(new Option(other));
+    });
+
+    it('must lead to each of several targets', () => {
+      const SECOND = { name: () => 'second' };
+      const second = new Rule(letter, () => SECOND);
+
+      expect(
+        new Routes(new Set([TARGET, SECOND]), () => new Failure(undefined))
+          .from(new Concatenation([target, second]))
+          .map(String)
+      ).toEqual(['/sequence[0]/target', '/sequence[1]/second']);
+    });
+
+    it('must stop at the first target on its way', () => {
+      const outer = new Rule(target, () => OTHER);
+
+      expect(
+        new Routes(new Set([TARGET, OTHER]), () => new Failure(undefined))
+          .from(outer)
+          .map(String)
+      ).toEqual(['/other']);
     });
 
     it('must lead through other rules, labels and references', () => {
@@ -117,8 +143,9 @@ describe('Routes', () => {
       );
 
       assert(route);
+      expect(String(route)).toBe('/other/target');
 
-      const previewed = route.preview(new Nonterminal(OTHER, found));
+      const previewed = route.optic().preview(new Nonterminal(OTHER, found));
 
       assert(previewed.ok());
       expect(previewed.value()).toBe(found);
@@ -150,10 +177,12 @@ describe('Routes', () => {
 
   describe('only', () => {
     const only = (expression: Expression<CodePoint>) =>
-      new Routes(TARGET, () => new Failure(undefined)).only(expression);
+      new Routes(new Set([TARGET]), () => new Failure(undefined)).only(
+        expression
+      );
 
     it('must return the one route to the target', () => {
-      expect(only(target).preview(found).ok()).toBe(true);
+      expect(String(only(target))).toBe('/target');
     });
 
     it('must refuse an expression without a route to the target', () => {
@@ -163,8 +192,60 @@ describe('Routes', () => {
     });
 
     it('must refuse an expression with several routes to the target', () => {
-      expect(() => only(new Concatenation([target, target]))).toThrow(
+      expect(() => only(new Alternation([target, target]))).toThrow(
         new RangeError('2 routes lead to target')
+      );
+    });
+
+    it('must refuse routes to the target that can meet in one tree', () => {
+      expect(() => only(new Concatenation([target, target]))).toThrow(
+        new RangeError(
+          'Routes /sequence[0]/target and /sequence[1]/target can meet in one tree'
+        )
+      );
+    });
+  });
+
+  describe('exclusive', () => {
+    const SECOND = { name: () => 'second' };
+    const second = new Rule(letter, () => SECOND);
+
+    const exclusive = (expression: Expression<CodePoint>) =>
+      new Routes(
+        new Set([TARGET, SECOND]),
+        () => new Failure(undefined)
+      ).exclusive(expression);
+
+    it('must return routes that branch only where an alternative is chosen', () => {
+      expect(
+        exclusive(
+          new Alternation([
+            new Concatenation([letter, target]),
+            new Alternation([target, second]),
+          ])
+        ).map(String)
+      ).toEqual([
+        '/choice[0]/sequence[1]/target',
+        '/choice[1]/choice[0]/target',
+        '/choice[1]/choice[1]/second',
+      ]);
+    });
+
+    it('must refuse routes that branch within a concatenation', () => {
+      expect(() =>
+        exclusive(
+          new Alternation([letter, new Concatenation([target, second])])
+        )
+      ).toThrow(
+        new RangeError(
+          'Routes /choice[1]/sequence[0]/target and /choice[1]/sequence[1]/second can meet in one tree'
+        )
+      );
+    });
+
+    it('must refuse an expression without a route to any target', () => {
+      expect(() => exclusive(letter)).toThrow(
+        new RangeError('0 routes lead to target or second')
       );
     });
   });

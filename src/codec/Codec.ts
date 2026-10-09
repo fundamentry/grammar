@@ -234,9 +234,11 @@ export class Codec<in out Value extends Node> {
   }
 
   [route](target: Nonterminal.Rule<string>): Steps.Step {
-    return new Routes(target, expression =>
+    return new Routes(new Set([target]), expression =>
       new Codec(expression).default()
-    ).only(this.#expression);
+    )
+      .only(this.#expression)
+      .optic();
   }
 
   [write]<T extends Node>(

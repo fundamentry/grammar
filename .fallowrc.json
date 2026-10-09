@@ -137,6 +137,7 @@
       {
         "from": "codec",
         "allow": [
+          "data",
           "definition",
           "expectation",
           "expression",
