@@ -727,6 +727,18 @@ describe('Codec', () => {
     });
   });
 
+  describe('separators', () => {
+    it('must have none for a plain repetition', () => {
+      expect(digit.many().separators()).toEqual([]);
+    });
+
+    it('must have the separator of a list', () => {
+      const [separator] = digit.many(build.literal('&')).separators();
+
+      expect(separator && String(separator.definition())).toBe('"&"');
+    });
+  });
+
   describe('default', () => {
     it('must parse the default text of the codec', () => {
       const defaulted = build

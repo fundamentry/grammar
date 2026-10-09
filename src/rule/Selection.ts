@@ -18,7 +18,7 @@ import {
   type Node,
   type Nonterminal,
   type Option,
-  Repetition,
+  type Repetition,
   type Sequence,
   View,
 } from '#project/tree';
@@ -147,62 +147,79 @@ export class Selection<
     return this.#focus.remove();
   }
 
-  insert<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  insert<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     index: number,
     element: E
   ): T;
 
-  insert<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  insert<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     index: number,
     text: string
   ): Codec.Parsed<T>;
 
-  insert<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  insert<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     index: number,
     element: E | string
   ): T | Codec.Parsed<T>;
 
-  insert<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  insert<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     index: number,
     element: E | string
   ): T | Codec.Parsed<T> {
+    const separators = this.#grammar.separators().map(separator =>
+      separator.default().match({
+        onSuccess: value => value,
+        onFailure: error => {
+          throw new RangeError(
+            `Cannot separate an inserted element: ${String(error)}`
+          );
+        },
+      })
+    );
+
     const inserted = (value: E) =>
-      this.#focus
-        .focus(Repetition.elements())
-        .modify(elements => elements.toSpliced(index, 0, value));
+      this.#focus.modify(repetition =>
+        repetition.inserted(index, value, separators)
+      );
 
     return typeof element === 'string'
       ? this.#grammar.element().parse(element).map(inserted)
       : inserted(element);
   }
 
-  append<E extends Node>(this: Selection<T, Repetition<E>>, element: E): T;
+  append<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
+    element: E
+  ): T;
 
-  append<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  append<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     text: string
   ): Codec.Parsed<T>;
 
-  append<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  append<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     element: E | string
   ): T | Codec.Parsed<T> {
     return this.insert(Infinity, element);
   }
 
-  prepend<E extends Node>(this: Selection<T, Repetition<E>>, element: E): T;
+  prepend<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
+    element: E
+  ): T;
 
-  prepend<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  prepend<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     text: string
   ): Codec.Parsed<T>;
 
-  prepend<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  prepend<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     element: E | string
   ): T | Codec.Parsed<T> {
     return this.insert(0, element);
@@ -277,8 +294,8 @@ export class Selection<
     );
   }
 
-  element<E extends Node>(
-    this: Selection<T, Repetition<E>>,
+  element<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>,
     index: number
   ): Selection<T, E> {
     return new Selection(
@@ -288,11 +305,15 @@ export class Selection<
     );
   }
 
-  first<E extends Node>(this: Selection<T, Repetition<E>>): Selection<T, E> {
+  first<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>
+  ): Selection<T, E> {
     return this.element(0);
   }
 
-  last<E extends Node>(this: Selection<T, Repetition<E>>): Selection<T, E> {
+  last<E extends Node, S extends Node = never>(
+    this: Selection<T, Repetition<E, S>>
+  ): Selection<T, E> {
     return this.element(-1);
   }
 

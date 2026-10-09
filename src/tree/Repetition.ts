@@ -96,6 +96,21 @@ export class Repetition<
     );
   }
 
+  inserted(
+    index: number,
+    element: A,
+    separators: readonly S[]
+  ): Repetition<A, S> {
+    const count = this.elements().length;
+    const at = Math.min(Math.max(index < 0 ? count + index : index, 0), count);
+    const gap = count > 0 ? separators.slice(0, 1) : [];
+
+    return new Repetition(
+      this.elements().toSpliced(at, 0, element),
+      this.separators().toSpliced(Math.max(at - 1, 0), 0, ...gap)
+    );
+  }
+
   elements(): readonly A[] {
     return this.#sequence.elements();
   }

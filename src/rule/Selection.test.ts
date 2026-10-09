@@ -997,6 +997,54 @@ describe('Selection', () => {
       assert(appended.ok());
       expect(String(appended.value())).toBe('h:8');
     });
+
+    describe('in a list', () => {
+      const PARAM = new Rule('param', codec =>
+        codec.character(['a', 'z']).oneOrMore()
+      );
+
+      const QUERY = new Rule('query', codec => PARAM.many(codec.literal('&')));
+
+      const params = (input: string) =>
+        QUERY.in(parsed(QUERY, input)).elements();
+
+      const written = (result: Codec.Parsed<Node>) => {
+        assert(result.ok());
+
+        return String(result.value());
+      };
+
+      it('must append to an empty list without a separator', () => {
+        expect(written(params('').append('a'))).toBe('a');
+      });
+
+      it('must append and prepend with a separator', () => {
+        expect(written(params('a').append('b'))).toBe('a&b');
+        expect(written(params('a').prepend('b'))).toBe('b&a');
+      });
+
+      it('must insert between two elements with a separator', () => {
+        expect(written(params('a&c').insert(1, 'b'))).toBe('a&b&c');
+      });
+
+      it('must remove the first element and the separator after it', () => {
+        expect(String(removed(params('a&b&c').first().remove()))).toBe('b&c');
+      });
+
+      it('must set an element and keep the separators', () => {
+        expect(written(params('a&b&c').element(1).set('x'))).toBe('a&x&c');
+      });
+
+      it('must refuse to insert where the separator has no default', () => {
+        const LIST = new Rule('list', codec =>
+          PARAM.many(codec.character(['0', '9']).label('a digit'))
+        );
+
+        expect(() => LIST.in(parsed(LIST, 'a')).elements().append('b')).toThrow(
+          RangeError
+        );
+      });
+    });
   });
 
   describe('alternative', () => {

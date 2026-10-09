@@ -33,6 +33,43 @@ describe('Repetition', () => {
     });
   });
 
+  describe('inserted', () => {
+    it('must insert an element into a plain repetition', () => {
+      expect(new Repetition([A, A]).inserted(1, B, [])).toEqual(
+        new Repetition([A, B, A])
+      );
+    });
+
+    it('must insert the separator before an element it inserts', () => {
+      expect(
+        new Repetition([A, A], [COMMA]).inserted(2, B, [SEMICOLON])
+      ).toEqual(new Repetition([A, A, B], [COMMA, SEMICOLON]));
+    });
+
+    it('must insert the separator after a first element it inserts', () => {
+      expect(
+        new Repetition([A, A], [COMMA]).inserted(0, B, [SEMICOLON])
+      ).toEqual(new Repetition([B, A, A], [SEMICOLON, COMMA]));
+    });
+
+    it('must insert no separator into an empty repetition', () => {
+      expect(
+        new Repetition<Character, Character>([], []).inserted(0, B, [COMMA])
+      ).toEqual(new Repetition([B], []));
+    });
+
+    it('must count a negative index from the end and clamp the index', () => {
+      expect(
+        new Repetition([A, A], [COMMA]).inserted(-1, B, [SEMICOLON])
+      ).toEqual(new Repetition([A, B, A], [SEMICOLON, COMMA]));
+      expect(
+        new Repetition<Character, Character>([A], []).inserted(Infinity, B, [
+          COMMA,
+        ])
+      ).toEqual(new Repetition([A, B], [COMMA]));
+    });
+  });
+
   describe('elements', () => {
     it('must return the elements passed to the constructor', () => {
       const elements = [A, B];

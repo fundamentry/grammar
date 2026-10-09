@@ -33,6 +33,17 @@ const letter = (character: string) =>
   );
 
 describe('Parts', () => {
+  describe('from', () => {
+    it('must find the parts from the index on', () => {
+      const a = letter('a');
+      const b = letter('b');
+
+      expect(
+        new Parts(new Separated(a, b, Range.atLeast(Integer.of(0)))).from(1)
+      ).toEqual([b]);
+    });
+  });
+
   describe('at', () => {
     it('must find the element of a concatenation at the index', () => {
       const b = letter('b');

@@ -21,6 +21,10 @@ export class Parts implements Expression.Visitor<
     return part;
   }
 
+  from(index: number): readonly Expression<CodePoint>[] {
+    return this.#expression.accept(this, undefined).slice(index);
+  }
+
   terminal(): readonly Expression<CodePoint>[] {
     return [];
   }

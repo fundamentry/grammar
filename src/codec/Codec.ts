@@ -339,6 +339,12 @@ export class Codec<in out Value extends Node> {
     return this.#part(1);
   }
 
+  separators<A extends Node, S extends Node>(
+    this: Codec<Repetition<A, S>>
+  ): readonly Codec<S>[] {
+    return new Parts(this.#expression).from(1).map(part => new Codec<S>(part));
+  }
+
   or<Alternative extends Node>(
     next: Codec<Alternative>
   ): Codec<Choice<Codec.Alternatives<[Value, Alternative]>>> {
