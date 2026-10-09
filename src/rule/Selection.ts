@@ -178,6 +178,15 @@ export class Selection<
       : this.#through(target);
   }
 
+  within<Name extends string, Elements extends Node>(
+    rule: Rule<Name, Elements>
+  ): Selection<T, Nonterminal<Name, Elements>> {
+    return new Selection(
+      this.#focus.within((node): node is Node => rule.is(node)),
+      rule
+    );
+  }
+
   elements<Name extends string, Elements extends Node>(
     this: Selection<T, Nonterminal<Name, Elements>>
   ): Selection<T, Elements> {

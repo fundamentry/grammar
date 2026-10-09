@@ -443,6 +443,70 @@ describe('Selection', () => {
       // @ts-expect-error the rules have no parts in common
       expect(() => path('s:').elements()).toThrow();
     });
+
+    it('must select the nodes of a rule within whichever of the rules the tree has', () => {
+      expect(
+        path('s://h/a/b').within(ALPHA).values().map(String).toArray()
+      ).toEqual(['a', 'b']);
+    });
+  });
+
+  describe('within', () => {
+    const PAIR = new Rule('pair', codec =>
+      codec.sequence(PORT, codec.literal(','), PORT)
+    );
+
+    const second = (input: string) =>
+      PAIR.in(parsed(PAIR, input)).elements().at(2);
+
+    it('must select the outermost nodes of the rule within each value', () => {
+      expect(
+        second('h:12,h:34').within(DIGIT).values().map(String).toArray()
+      ).toEqual(['3', '4']);
+    });
+
+    it('must select nothing within a value without the rule', () => {
+      expect(second('h:12,h').within(DIGIT).find()).toBeUndefined();
+    });
+
+    it('must set text only within the values', () => {
+      const set = second('h:12,h:34').within(DIGIT).set('7');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:12,h:77');
+    });
+
+    it('must edit text only within the values', () => {
+      const edited = second('h:12,h:34')
+        .within(DIGIT)
+        .edit(digit => String(Number(digit) + 1));
+
+      assert(edited.ok());
+      expect(String(edited.value())).toBe('h:12,h:45');
+    });
+
+    it('must remove only within the values', () => {
+      expect(String(second('h:12,h:34').within(DIGIT).remove())).toBe(
+        'h:12,h:'
+      );
+    });
+
+    it('must navigate from the nodes it selects', () => {
+      const set = PAIR.in(parsed(PAIR, 'h:1,h:2'))
+        .within(PORT)
+        .elements()
+        .at(1)
+        .set(':5');
+
+      assert(set.ok());
+      expect(String(set.value())).toBe('h:5,h:5');
+    });
+
+    it('must type the selection as the nodes of the rule', () => {
+      expectTypeOf(second('h,h').within(DIGIT).find()).toEqualTypeOf<
+        Rule.Value<typeof DIGIT> | undefined
+      >();
+    });
   });
 
   describe('edit', () => {
