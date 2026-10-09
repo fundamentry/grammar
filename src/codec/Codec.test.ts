@@ -18,7 +18,8 @@ import {
   type Literal,
 } from '#project/tree';
 
-import { Codec, write } from './Codec.js';
+import { Codec } from './Codec.js';
+import { write } from './Writer.js';
 
 class Exposed extends Codec<never> {
   static readonly build = Codec.builder;

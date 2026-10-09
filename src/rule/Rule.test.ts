@@ -14,6 +14,7 @@ import {
 } from '#project/tree';
 
 import { Rule } from './Rule.js';
+import { members } from './Rules.js';
 import { type Selection } from './Selection.js';
 
 const character = (char: string) => new Character(CodePoint.of(char));
@@ -213,6 +214,12 @@ describe('Rule', () => {
           Nonterminal<'DIGIT', Character>
         >
       >();
+    });
+  });
+
+  describe('members', () => {
+    it('must list the rule itself', () => {
+      expect(DIGIT[members]()).toEqual([DIGIT]);
     });
   });
 

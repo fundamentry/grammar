@@ -1,17 +1,35 @@
+import { Prism } from '@fundamentry/category';
+
+import { type Union } from '#project/codec';
 import { Focus, type Node } from '#project/tree';
 
-export class Rules<A extends Node> {
-  readonly #is: (node: Node) => node is A;
+import { type Rule } from './Rule.js';
 
-  constructor(is: (node: Node) => node is A) {
-    this.#is = is;
+export const members: unique symbol = Symbol('members');
+
+export class Rules<const R extends readonly Rule.Any[]> {
+  readonly #rules: R;
+
+  constructor(rules: R) {
+    this.#rules = rules;
   }
 
-  is(node: Node): node is A {
-    return this.#is(node);
+  is(node: Node): node is Rule.Selected<R[number]> {
+    return this.#rules.some(rule => rule.is(node));
   }
 
-  in<T extends Node>(tree: T): Focus<T, A> {
-    return Focus.of(tree, this.#is);
+  prism(): Prism<Node, Rule.Selected<R[number]>, undefined> {
+    return Prism.fromPredicate(
+      node => this.is(node),
+      () => undefined
+    );
+  }
+
+  in<T extends Node>(tree: T): Focus<T, Rule.Selected<R[number]>> {
+    return Focus.of(tree, node => this.is(node));
+  }
+
+  [members](): readonly Union.Member[] {
+    return this.#rules.flatMap(rule => rule[members]());
   }
 }

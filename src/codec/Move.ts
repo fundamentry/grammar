@@ -7,45 +7,49 @@ export class Move extends Data {
 
   readonly #step: Steps.Step;
 
-  readonly #chooses: boolean;
+  readonly #choice?: Steps.Step;
 
-  private constructor(label: string, step: Steps.Step, chooses: boolean) {
+  private constructor(label: string, step: Steps.Step, choice?: Steps.Step) {
     super();
 
     this.#label = label;
     this.#step = step;
-    this.#chooses = chooses;
+    this.#choice = choice;
   }
 
   static rule(name: string): Move {
-    return new Move(name, Steps.elements(), false);
+    return new Move(name, Steps.elements());
   }
 
   static sequence(index: number): Move {
-    return new Move(`sequence[${String(index)}]`, Steps.at(index), false);
+    return new Move(`sequence[${String(index)}]`, Steps.at(index));
   }
 
   static choice(index: number, fallback: Steps.Fallback): Move {
     return new Move(
       `choice[${String(index)}]`,
       Steps.alternative(index, fallback),
-      true
+      Steps.choose(index)
     );
   }
 
   static option(fallback: Steps.Fallback): Move {
-    return new Move('option', Steps.value(fallback), false);
+    return new Move('option', Steps.value(fallback));
   }
 
   step(): Steps.Step {
     return this.#step;
   }
 
+  choose(): Steps.Step {
+    return this.#choice ?? this.#step;
+  }
+
   excludes(other: unknown): boolean {
-    return (
+    return Boolean(
       other instanceof Move &&
-      this.#chooses &&
-      other.#chooses &&
+      this.#choice &&
+      other.#choice &&
       !this.equals(other)
     );
   }

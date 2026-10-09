@@ -1,0 +1,113 @@
+import { FallibleMorphism, Morphism, Optional } from '@fundamentry/category';
+import { Failure, type Result, Success } from '@fundamentry/coproduct';
+
+import { type Mismatch } from '#project/mismatch';
+import { type Focus, type Node, type Nonterminal } from '#project/tree';
+
+import { type Route } from './Route.js';
+import { type Steps } from './Steps.js';
+import { write, Writer } from './Writer.js';
+
+export namespace Union {
+  export interface Member extends Nonterminal.Rule<string> {
+    parse(input: string): Result<Node, Mismatch>;
+  }
+}
+
+export class Union {
+  readonly #routes: readonly Route<Union.Member>[];
+
+  constructor(routes: readonly Route<Union.Member>[]) {
+    this.#routes = routes;
+  }
+
+  optic(): Steps.Step {
+    const replace = (node: Node, taken: Route<Union.Member>, value: Node) => {
+      const form = [taken, ...this.#alternates(taken)].find(
+        (route: Route<Union.Member>) => route.admits(value)
+      );
+
+      if (!form)
+        throw new RangeError(
+          `'${String(value)}' cannot take the place of ${String(taken)}`
+        );
+
+      return form.choose().set(node, value);
+    };
+
+    return Optional.of(
+      FallibleMorphism.of(
+        node =>
+          this.#along(node, (_, value) => new Success(value)) ??
+          new Failure(undefined)
+      ),
+      Morphism.of(update =>
+        Morphism.of(
+          node =>
+            this.#along(node, (taken, value) =>
+              replace(node, taken, update.apply(value))
+            ) ?? node
+        )
+      )
+    );
+  }
+
+  [write]<T extends Node>(
+    place: Focus<T, Node>,
+    update: (text: string) => string
+  ): Result<T, Mismatch> {
+    return new Writer(
+      node =>
+        this.#along(node, (taken, value) =>
+          this.#put(node, taken, update(String(value)))
+        ) ?? new Success(node)
+    ).write(place);
+  }
+
+  #along<R>(
+    node: Node,
+    visit: (taken: Route<Union.Member>, value: Node) => R
+  ): R | undefined {
+    return this.#routes
+      .values()
+      .flatMap((route: Route<Union.Member>) =>
+        route
+          .optic()
+          .preview(node)
+          .match({
+            onSuccess: value => [visit(route, value)],
+            onFailure: () => [],
+          })
+      )
+      .find(() => true);
+  }
+
+  #alternates(taken: Route<Union.Member>): readonly Route<Union.Member>[] {
+    return this.#routes.filter(route => taken.alternates(route));
+  }
+
+  #put(
+    node: Node,
+    taken: Route<Union.Member>,
+    text: string
+  ): Result<Node, Mismatch> {
+    return this.#alternates(taken).reduce(
+      (result, route) =>
+        result.orElse(mismatch =>
+          Union.#take(node, route, text).orElse(() => new Failure(mismatch))
+        ),
+      Union.#take(node, taken, text)
+    );
+  }
+
+  static #take(
+    node: Node,
+    route: Route<Union.Member>,
+    text: string
+  ): Result<Node, Mismatch> {
+    return route
+      .target()
+      .parse(text)
+      .map(parsed => route.choose().set(node, parsed));
+  }
+}

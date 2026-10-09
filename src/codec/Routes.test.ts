@@ -46,7 +46,7 @@ const target = new Rule(letter, () => TARGET);
 const found = new Nonterminal(TARGET, A);
 
 const routes = (expression: Expression<CodePoint>) =>
-  new Routes(new Set([TARGET]), () => new Failure(undefined)).from(expression);
+  new Routes([TARGET], () => new Failure(undefined)).from(expression);
 
 describe('Routes', () => {
   describe('from', () => {
@@ -82,10 +82,9 @@ describe('Routes', () => {
     });
 
     it('must create the alternative from its default', () => {
-      const [route] = new Routes(
-        new Set([TARGET]),
-        () => new Success(found)
-      ).from(new Alternation([letter, target]));
+      const [route] = new Routes([TARGET], () => new Success(found)).from(
+        new Alternation([letter, target])
+      );
 
       assert(route);
 
@@ -98,10 +97,9 @@ describe('Routes', () => {
     });
 
     it('must lead through an option to its value', () => {
-      const [route] = new Routes(
-        new Set([TARGET]),
-        () => new Success(found)
-      ).from(new Optional(target));
+      const [route] = new Routes([TARGET], () => new Success(found)).from(
+        new Optional(target)
+      );
 
       assert(route);
 
@@ -118,7 +116,7 @@ describe('Routes', () => {
       const second = new Rule(letter, () => SECOND);
 
       expect(
-        new Routes(new Set([TARGET, SECOND]), () => new Failure(undefined))
+        new Routes([TARGET, SECOND], () => new Failure(undefined))
           .from(new Concatenation([target, second]))
           .map(String)
       ).toEqual(['/sequence[0]/target', '/sequence[1]/second']);
@@ -128,7 +126,7 @@ describe('Routes', () => {
       const outer = new Rule(target, () => OTHER);
 
       expect(
-        new Routes(new Set([TARGET, OTHER]), () => new Failure(undefined))
+        new Routes([TARGET, OTHER], () => new Failure(undefined))
           .from(outer)
           .map(String)
       ).toEqual(['/other']);
@@ -177,9 +175,7 @@ describe('Routes', () => {
 
   describe('only', () => {
     const only = (expression: Expression<CodePoint>) =>
-      new Routes(new Set([TARGET]), () => new Failure(undefined)).only(
-        expression
-      );
+      new Routes([TARGET], () => new Failure(undefined)).only(expression);
 
     it('must return the one route to the target', () => {
       expect(String(only(target))).toBe('/target');
@@ -211,10 +207,9 @@ describe('Routes', () => {
     const second = new Rule(letter, () => SECOND);
 
     const exclusive = (expression: Expression<CodePoint>) =>
-      new Routes(
-        new Set([TARGET, SECOND]),
-        () => new Failure(undefined)
-      ).exclusive(expression);
+      new Routes([TARGET, SECOND], () => new Failure(undefined)).exclusive(
+        expression
+      );
 
     it('must return routes that branch only where an alternative is chosen', () => {
       expect(

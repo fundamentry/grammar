@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import { type Codec } from '#project/codec';
 import { Focus, type Node, Sequence } from '#project/tree';
@@ -182,6 +182,187 @@ describe('Selection', () => {
       expect(() => NUMBER.in(parsed(NUMBER, '12')).to(DIGIT)).toThrow(
         new RangeError('0 routes lead to DIGIT')
       );
+    });
+  });
+
+  describe('to several rules', () => {
+    const ALPHA = new Rule('ALPHA', codec => codec.character(['a', 'z']));
+
+    const ABEMPTY = new Rule('abempty', codec =>
+      codec.sequence(codec.literal('/'), ALPHA).many()
+    );
+
+    const ABSOLUTE = new Rule('absolute', codec =>
+      codec.sequence(codec.literal('/'), ALPHA.many())
+    );
+
+    const ROOTLESS = new Rule('rootless', codec =>
+      codec.sequence(ALPHA, ALPHA.many())
+    );
+
+    const EMPTY = new Rule('empty', codec => codec.literal(''));
+
+    const IRI = new Rule('iri', codec =>
+      codec.sequence(
+        ALPHA,
+        codec.literal(':'),
+        codec.choice(
+          codec.sequence(codec.literal('//'), ALPHA.many(), ABEMPTY),
+          ABSOLUTE,
+          ROOTLESS,
+          EMPTY
+        )
+      )
+    );
+
+    const PATH = Rule.any(ABEMPTY, ABSOLUTE, ROOTLESS, EMPTY);
+
+    const path = (input: string) => IRI.in(parsed(IRI, input)).to(PATH);
+
+    const set = (input: string, text: string) => {
+      const result = path(input).set(text);
+
+      assert(result.ok());
+
+      return result.value();
+    };
+
+    it('must narrow to whichever of the rules the tree has', () => {
+      expect(String(path('s:/a').find())).toBe('/a');
+      expect(String(path('s://h/a').find())).toBe('/a');
+      expect(String(path('s:ab').find())).toBe('ab');
+    });
+
+    it('must keep the rule the tree has when it accepts the text', () => {
+      const tree = set('s:/a', '/b');
+
+      expect(String(tree)).toBe('s:/b');
+      expect(IRI.in(tree).to(ABSOLUTE).find()).toBeDefined();
+    });
+
+    it('must take another alternative whose rule accepts the text', () => {
+      const tree = set('s:', 'ab');
+
+      expect(String(tree)).toBe('s:ab');
+      expect(IRI.in(tree).to(ROOTLESS).find()).toBeDefined();
+    });
+
+    it('must take another alternative even for the text it has by default', () => {
+      const tree = set('s:ab', '');
+
+      expect(String(tree)).toBe('s:');
+      expect(IRI.in(tree).to(EMPTY).find()).toBeDefined();
+    });
+
+    it('must take the alternative of a node of another of the rules', () => {
+      const tree = path('s:/a').set(parsed(ROOTLESS, 'ab'));
+
+      expect(String(tree)).toBe('s:ab');
+      expect(IRI.in(tree).to(ROOTLESS).find()).toBeDefined();
+    });
+
+    it('must refuse a node of a rule that cannot take the place', () => {
+      expect(() => path('s:/a').set(parsed(ABEMPTY, '/b'))).toThrow(
+        new RangeError(
+          "'/b' cannot take the place of /iri/sequence[2]/choice[1]/absolute"
+        )
+      );
+    });
+
+    it('must rewrite the text the tree has', () => {
+      const edited = path('s:/a').edit(text => `${text}b`);
+
+      assert(edited.ok());
+      expect(String(edited.value())).toBe('s:/ab');
+    });
+
+    it('must refuse text the rule cannot take without changing the parts around it', () => {
+      expect(path('s://h/a').set('b').ok()).toBe(false);
+    });
+
+    it('must report why the rule the tree has refuses the text', () => {
+      const result = path('s:ab').set('1');
+      const refused = ROOTLESS.parse('1');
+
+      assert(!result.ok());
+      assert(!refused.ok());
+      expect(result.error()).toEqual(refused.error());
+    });
+
+    it('must prefer the rule the tree has over an earlier alternative', () => {
+      const WORD = new Rule('word', () => ALPHA.many());
+
+      const NAME = new Rule('name', codec => codec.choice(ALPHA, DIGIT).many());
+
+      const TAG = new Rule('tag', codec => codec.choice(WORD, NAME));
+
+      const result = TAG.in(parsed(TAG, '1')).to(Rule.any(WORD, NAME)).set('a');
+
+      assert(result.ok());
+      expect(TAG.in(result.value()).to(NAME).find()).toBeDefined();
+    });
+
+    it('must leave a missing place as it is', () => {
+      const NUMBER = new Rule('number', () => DIGIT.many());
+
+      const ADDRESS = new Rule('address', codec =>
+        codec.sequence(
+          codec.literal('h'),
+          codec.sequence(codec.literal(':'), NUMBER).optional()
+        )
+      );
+
+      const tree = parsed(ADDRESS, 'h');
+      const result = ADDRESS.in(tree).to(Rule.any(NUMBER)).set('80');
+
+      assert(result.ok());
+      expect(result.value()).toBe(tree);
+    });
+
+    it('must remove whichever of the rules the tree has', () => {
+      const NUMBER = new Rule('number', () => DIGIT.many());
+
+      const ADDRESS = new Rule('address', codec =>
+        codec.sequence(
+          codec.literal('h'),
+          codec.sequence(codec.literal(':'), NUMBER).optional()
+        )
+      );
+
+      expect(
+        String(
+          ADDRESS.in(parsed(ADDRESS, 'h:12')).to(Rule.any(NUMBER)).remove()
+        )
+      ).toBe('h');
+    });
+
+    it('must refuse rules that can meet in one tree', () => {
+      const RANGE = new Rule('range', codec =>
+        codec.sequence(ALPHA, codec.literal('-'), DIGIT)
+      );
+
+      expect(() =>
+        RANGE.in(parsed(RANGE, 'a-1')).to(Rule.any(ALPHA, DIGIT))
+      ).toThrow(
+        new RangeError(
+          'Routes /range/sequence[0]/ALPHA and /range/sequence[2]/DIGIT can meet in one tree'
+        )
+      );
+    });
+
+    it('must type the selection as the nodes of any of the rules', () => {
+      expectTypeOf(path('s:').find()).toEqualTypeOf<
+        | Rule.Value<typeof ABEMPTY>
+        | Rule.Value<typeof ABSOLUTE>
+        | Rule.Value<typeof ROOTLESS>
+        | Rule.Value<typeof EMPTY>
+        | undefined
+      >();
+    });
+
+    it('must not step into the parts of the rules', () => {
+      // @ts-expect-error the rules have no parts in common
+      expect(() => path('s:').elements()).toThrow();
     });
   });
 

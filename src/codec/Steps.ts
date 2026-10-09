@@ -89,6 +89,23 @@ export class Steps {
     );
   }
 
+  static choose(index: number): Steps.Step {
+    return Optional.of(
+      FallibleMorphism.of(node =>
+        node instanceof Choice
+          ? new Success(node.value())
+          : new Failure(undefined)
+      ),
+      Morphism.of(update =>
+        Morphism.of(node =>
+          node instanceof Choice
+            ? new Choice(index, update.apply(node.value()))
+            : node
+        )
+      )
+    );
+  }
+
   static slot<S extends Node>(
     is: (node: Node) => node is S,
     read: (slot: S) => Node | undefined,

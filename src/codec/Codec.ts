@@ -43,11 +43,12 @@ import { Defaults } from './Defaults.js';
 import { Parts } from './Parts.js';
 import { Routes } from './Routes.js';
 import { type Steps } from './Steps.js';
-import { Writer } from './Writer.js';
+import { Union } from './Union.js';
+import { write, Writer } from './Writer.js';
 
 export const route: unique symbol = Symbol('route');
 
-export const write: unique symbol = Symbol('write');
+export const union: unique symbol = Symbol('union');
 
 export namespace Codec {
   export type CodePointLike = string | number | CodePoint;
@@ -234,18 +235,18 @@ export class Codec<in out Value extends Node> {
   }
 
   [route](target: Nonterminal.Rule<string>): Steps.Step {
-    return new Routes(new Set([target]), expression =>
-      new Codec(expression).default()
-    )
-      .only(this.#expression)
-      .optic();
+    return Codec.#routes([target]).only(this.#expression).optic();
+  }
+
+  [union](members: readonly Union.Member[]): Union {
+    return new Union(Codec.#routes(members).exclusive(this.#expression));
   }
 
   [write]<T extends Node>(
     place: Focus<T, Node>,
     update: (text: string) => string
   ): Codec.Parsed<T> {
-    return new Writer(text => this.parse(text)).write(place, update);
+    return new Writer(node => this.parse(update(String(node)))).write(place);
   }
 
   definition(): Definition {
@@ -344,6 +345,12 @@ export class Codec<in out Value extends Node> {
 
   #part<Part extends Node>(index: number): Codec<Part> {
     return new Codec(new Parts(this.#expression).at(index));
+  }
+
+  static #routes<R extends Nonterminal.Rule<string>>(
+    targets: readonly R[]
+  ): Routes<R> {
+    return new Routes(targets, expression => new Codec(expression).default());
   }
 
   static #verified<Source, Value, Reason>(

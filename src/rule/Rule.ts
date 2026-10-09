@@ -1,9 +1,9 @@
 import { Prism } from '@fundamentry/category';
 
-import { Codec } from '#project/codec';
+import { Codec, type Union } from '#project/codec';
 import { type Node, Nonterminal, type View } from '#project/tree';
 
-import { Rules } from './Rules.js';
+import { members, Rules } from './Rules.js';
 import { select, Selection } from './Selection.js';
 
 export namespace Rule {
@@ -11,6 +11,8 @@ export namespace Rule {
     is(node: Node): boolean;
 
     in(tree: Node): View<Node>;
+
+    [members](): readonly Union.Member[];
   }
 
   export type Selected<R> = R extends {
@@ -48,12 +50,8 @@ export class Rule<
     this.#name = name;
   }
 
-  static any<const R extends readonly Rule.Any[]>(
-    ...rules: R
-  ): Rules<Rule.Selected<R[number]>> {
-    return new Rules((node): node is Rule.Selected<R[number]> =>
-      rules.some(rule => rule.is(node))
-    );
+  static any<const R extends readonly Rule.Any[]>(...rules: R): Rules<R> {
+    return new Rules(rules);
   }
 
   name(): Name {
@@ -77,5 +75,9 @@ export class Rule<
 
   in<T extends Node>(tree: T): Selection<T, Nonterminal<Name, Elements>> {
     return Selection[select](tree, this);
+  }
+
+  [members](): readonly Union.Member[] {
+    return [this];
   }
 }

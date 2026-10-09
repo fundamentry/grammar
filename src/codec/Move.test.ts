@@ -50,6 +50,20 @@ describe('Move', () => {
     });
   });
 
+  describe('choose', () => {
+    it('must take the alternative of a move to an alternative', () => {
+      expect(
+        Move.choice(1, new Failure(undefined)).choose().set(new Choice(0, A), A)
+      ).toEqual(new Choice(1, A));
+    });
+
+    it('must take the step of any other move', () => {
+      const move = Move.sequence(1);
+
+      expect(move.choose()).toBe(move.step());
+    });
+  });
+
   describe('option', () => {
     it('must move to the value of an option, creating it from the fallback', () => {
       const B = new Character(CodePoint.of('b'));

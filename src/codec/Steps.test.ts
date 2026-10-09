@@ -168,4 +168,29 @@ describe('Steps', () => {
       expect(Steps.alternative(0, new Success(A)).preview(A).ok()).toBe(false);
     });
   });
+
+  describe('choose', () => {
+    it('must preview whichever alternative was taken', () => {
+      expect(previewed(Steps.choose(1), new Choice(0, A))).toBe(A);
+    });
+
+    it('must take the alternative at the index when updated', () => {
+      expect(Steps.choose(1).set(new Choice(0, A), B)).toEqual(
+        new Choice(1, B)
+      );
+    });
+
+    it('must take the alternative even when the value is kept', () => {
+      expect(Steps.choose(1).set(new Choice(0, A), A)).toEqual(
+        new Choice(1, A)
+      );
+    });
+
+    it('must pass over anything but a choice', () => {
+      const step = Steps.choose(0);
+
+      expect(step.preview(A).ok()).toBe(false);
+      expect(step.set(A, B)).toBe(A);
+    });
+  });
 });

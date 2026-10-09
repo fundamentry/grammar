@@ -13,29 +13,27 @@ export namespace Routes {
   export type Defaults = (expression: Expression<CodePoint>) => Steps.Fallback;
 }
 
-export class Routes implements Expression.Visitor<
-  CodePoint,
-  Routes.Rules,
-  readonly Route[]
-> {
+export class Routes<
+  R extends Nonterminal.Rule<string> = Nonterminal.Rule<string>,
+> implements Expression.Visitor<CodePoint, Routes.Rules, readonly Route<R>[]> {
   static readonly #alternatives = new Intl.ListFormat('en', {
     type: 'disjunction',
   });
 
-  readonly #targets: Routes.Rules;
+  readonly #targets: readonly R[];
 
   readonly #defaults: Routes.Defaults;
 
-  constructor(targets: Routes.Rules, defaults: Routes.Defaults) {
+  constructor(targets: readonly R[], defaults: Routes.Defaults) {
     this.#targets = targets;
     this.#defaults = defaults;
   }
 
-  from(expression: Expression<CodePoint>): readonly Route[] {
+  from(expression: Expression<CodePoint>): readonly Route<R>[] {
     return expression.accept(this, new Set());
   }
 
-  only(expression: Expression<CodePoint>): Route {
+  only(expression: Expression<CodePoint>): Route<R> {
     const routes = this.exclusive(expression);
     const [route] = routes;
 
@@ -47,13 +45,13 @@ export class Routes implements Expression.Visitor<
     return route;
   }
 
-  exclusive(expression: Expression<CodePoint>): readonly Route[] {
+  exclusive(expression: Expression<CodePoint>): readonly Route<R>[] {
     const routes = this.from(expression);
     const [first] = routes;
 
     if (!first) throw new RangeError(`0 routes lead to ${this.#names()}`);
 
-    const [clash] = routes.flatMap((route: Route, index) =>
+    const [clash] = routes.flatMap((route: Route<R>, index) =>
       routes
         .slice(index + 1)
         .filter(other => !route.excludes(other))
@@ -65,14 +63,14 @@ export class Routes implements Expression.Visitor<
     return routes;
   }
 
-  terminal(): readonly Route[] {
+  terminal(): readonly Route<R>[] {
     return [];
   }
 
   concatenation(
     elements: readonly Expression<CodePoint>[],
     rules: Routes.Rules
-  ): readonly Route[] {
+  ): readonly Route<R>[] {
     return elements.flatMap((element, index) =>
       element
         .accept(this, rules)
@@ -83,7 +81,7 @@ export class Routes implements Expression.Visitor<
   alternation(
     alternatives: Expression.Alternatives<CodePoint>,
     rules: Routes.Rules
-  ): readonly Route[] {
+  ): readonly Route<R>[] {
     return alternatives.flatMap((alternative, index) =>
       alternative
         .accept(this, rules)
@@ -96,13 +94,13 @@ export class Routes implements Expression.Visitor<
   optional(
     element: Expression<CodePoint>,
     rules: Routes.Rules
-  ): readonly Route[] {
+  ): readonly Route<R>[] {
     return element
       .accept(this, rules)
       .map(route => route.after(Move.option(this.#defaults(element))));
   }
 
-  repetition(): readonly Route[] {
+  repetition(): readonly Route<R>[] {
     return [];
   }
 
@@ -110,7 +108,7 @@ export class Routes implements Expression.Visitor<
     element: Expression<CodePoint>,
     _: unknown,
     rules: Routes.Rules
-  ): readonly Route[] {
+  ): readonly Route<R>[] {
     return element.accept(this, rules);
   }
 
@@ -118,8 +116,10 @@ export class Routes implements Expression.Visitor<
     element: Expression<CodePoint>,
     rule: Nonterminal.Rule<string>,
     rules: Routes.Rules
-  ): readonly Route[] {
-    if (this.#targets.has(rule)) return [Route.to(rule)];
+  ): readonly Route<R>[] {
+    const target = this.#targets.find(member => member === rule);
+
+    if (target) return [Route.to(target)];
 
     return rules.has(rule)
       ? []
@@ -131,13 +131,11 @@ export class Routes implements Expression.Visitor<
   reference(
     target: () => Expression<CodePoint>,
     rules: Routes.Rules
-  ): readonly Route[] {
+  ): readonly Route<R>[] {
     return target().accept(this, rules);
   }
 
   #names(): string {
-    return Routes.#alternatives.format(
-      Array.from(this.#targets, rule => rule.name())
-    );
+    return Routes.#alternatives.format(this.#targets.map(rule => rule.name()));
   }
 }

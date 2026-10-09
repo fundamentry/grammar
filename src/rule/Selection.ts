@@ -1,6 +1,13 @@
 import { type Optic } from '@fundamentry/category';
 
-import { type Codec, route, Steps, write } from '#project/codec';
+import {
+  type Codec,
+  route,
+  Steps,
+  union,
+  type Union,
+  write,
+} from '#project/codec';
 import {
   Choice,
   Focus,
@@ -13,6 +20,7 @@ import {
 } from '#project/tree';
 
 import { type Rule } from './Rule.js';
+import { members, Rules } from './Rules.js';
 
 export const select: unique symbol = Symbol('select');
 
@@ -74,7 +82,7 @@ export class Selection<
   }
 
   remove(): T {
-    return this.#place.remove();
+    return this.#focus.remove();
   }
 
   insert<E extends Node>(
@@ -145,10 +153,26 @@ export class Selection<
   to<Name extends string, Elements extends Node>(
     this: Selection<T, A>,
     rule: Rule<Name, Elements>
-  ): Selection<T, Nonterminal<Name, Elements>> {
-    const place = this.#place.focus(this.#grammar[route](rule));
+  ): Selection<T, Nonterminal<Name, Elements>>;
 
-    return new Selection(place.focus(rule.prism()), rule, place);
+  to<const R extends readonly Rule.Any[]>(
+    this: Selection<T, A>,
+    rules: Rules<R>
+  ): Selection<T, Rule.Selected<R[number]>, Union>;
+
+  to<
+    Name extends string,
+    Elements extends Node,
+    const R extends readonly Rule.Any[],
+  >(
+    this: Selection<T, A>,
+    target: Rule<Name, Elements> | Rules<R>
+  ):
+    | Selection<T, Nonterminal<Name, Elements>>
+    | Selection<T, Rule.Selected<R[number]>, Union> {
+    return target instanceof Rules
+      ? this.#among(target)
+      : this.#through(target);
   }
 
   elements<Name extends string, Elements extends Node>(
@@ -223,6 +247,28 @@ export class Selection<
       ),
       codec,
       this.#place.focus(Steps.alternative(index, fallback))
+    );
+  }
+
+  #through<Name extends string, Elements extends Node>(
+    this: Selection<T, A>,
+    rule: Rule<Name, Elements>
+  ): Selection<T, Nonterminal<Name, Elements>> {
+    const place = this.#place.focus(this.#grammar[route](rule));
+
+    return new Selection(place.focus(rule.prism()), rule, place);
+  }
+
+  #among<const R extends readonly Rule.Any[]>(
+    this: Selection<T, A>,
+    rules: Rules<R>
+  ): Selection<T, Rule.Selected<R[number]>, Union> {
+    const grammar = this.#grammar[union](rules[members]());
+
+    return new Selection(
+      this.#place.focus(grammar.optic()).focus(rules.prism()),
+      grammar,
+      this.#place
     );
   }
 }
