@@ -15,6 +15,7 @@ import {
   Reference,
   Repetition as Repeated,
   Rule,
+  Separated,
   Terminal,
 } from '#project/expression';
 import { Misprint } from '#project/misprint';
@@ -217,6 +218,34 @@ describe('Printer', () => {
     it('must reject a count outside its bounds', () => {
       expect(print(digits, new Repetition(characters('123')))).toEqual(
         misprint('Expected a count in (0..3), got 3')
+      );
+    });
+
+    it('must reject a value that is not a repetition', () => {
+      expect(print(digits, character('1'))).toEqual(
+        misprint("Expected a repetition, got '1'")
+      );
+    });
+  });
+
+  describe('separated', () => {
+    const digits = new Separated(digit, digit, Range.atLeast(Integer.of(1)));
+
+    it('must print its elements with the separators between them', () => {
+      expect(
+        print(digits, new Repetition(characters('13'), [character('2')]))
+      ).toEqual(printed('123'));
+    });
+
+    it('must reject a count outside its bounds', () => {
+      expect(print(digits, new Repetition([], []))).toEqual(
+        misprint('Expected a count in [1..+∞), got 0')
+      );
+    });
+
+    it('must reject a list without one separator between each element', () => {
+      expect(print(digits, new Repetition(characters('13'), []))).toEqual(
+        misprint('Expected 1 separators, got 0')
       );
     });
 

@@ -164,6 +164,12 @@ describe('Separated', () => {
       );
     });
 
+    it('must spread an empty list into an empty sequence where an element is required', () => {
+      expect(Separated.spread(new Repetition([], []), some)).toEqual(
+        new Sequence([])
+      );
+    });
+
     it('must spread a list of at least one element without the option', () => {
       expect(Separated.spread(new Repetition([A], []), some)).toEqual(
         new Sequence([A, new Repetition([])])

@@ -912,6 +912,27 @@ describe('Selection', () => {
       ).toBe('12');
     });
 
+    it('must pass over places without a value to test', () => {
+      const NUMBER = new Rule('number', () => DIGIT.many());
+
+      const ADDRESS = new Rule('address', codec =>
+        codec.sequence(
+          codec.literal('h'),
+          codec.sequence(codec.literal(':'), NUMBER).optional()
+        )
+      );
+
+      const predicate = vi.fn(() => true);
+
+      expect(
+        ADDRESS.in(parsed(ADDRESS, 'h'))
+          .to(Rule.any(NUMBER))
+          .where(predicate)
+          .find()
+      ).toBeUndefined();
+      expect(predicate).not.toHaveBeenCalled();
+    });
+
     it('must not guarantee exactly one value', () => {
       expect(() =>
         PORT.in(parsed(PORT, 'h'))
